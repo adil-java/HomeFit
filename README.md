@@ -1,0 +1,2 @@
+HomeFit AR
+HomeFit AR is a furniture-focused application that combines traditional shopping features with immersive visualization. Users can browse catalogs, manage carts, and complete secure purchases while using augmented reality to preview items within their real-world environment.
