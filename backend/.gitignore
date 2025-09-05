@@ -4,3 +4,4 @@ npm-debug.log
 .DS_Store
 .vscode/ # Ignore VSCode settings
 package-lock.json
+/generated/prisma

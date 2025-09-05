@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import userRoutes from "./routes/userRoutes.js";
+import prisma from "./config/db.js";
 
 // Load env variables
 dotenv.config({ path: "./config/config.env" });
@@ -21,3 +22,12 @@ app.get("/", (req, res) => {
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Test database connection PRISMA+AIVNCLOUD MYSQL
+// prisma.$connect().then(async () => {
+//   const user = await prisma.user.create(
+//     {data: { email: "test@example.com", name: "Test User", password: "password" }}
+//   );
+//   console.log("Database connected and test user created:", user);
+// }).catch((err) => {
+//   console.error("Database connection error:", err);
+// });
