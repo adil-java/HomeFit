@@ -1,24 +1,23 @@
-import express from 'express';
+import express from "express";
+import dotenv from "dotenv";
+import cors from "cors";
+import userRoutes from "./routes/userRoutes.js";
 
-import dotenv from 'dotenv';
-import cors from 'cors';
-
+// Load env variables
+dotenv.config({ path: "./config/config.env" });
 
 const app = express();
-const PORT = process.env.PORT || 5000;
-dotenv.config();
 
-// Middleware
-app.use(cors());
+// Middlewares
 app.use(express.json());
+app.use(cors());
 
-// Sample route
-app.get('/', (req, res) => {
-  res.send('Welcome to the E-commerce backend!');
+// Routes
+app.use("/api/users", userRoutes);
+
+app.get("/", (req, res) => {
+  res.send("Welcome to the e-commerce API");
 });
 
-// Start the server
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
-
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
