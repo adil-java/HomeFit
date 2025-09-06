@@ -19,28 +19,28 @@ interface CategoryCardProps {
 const categoryData = {
   'Sofas': {
     colors: ['#2A5C54', '#1E3D33'],
-    image: require('.././assets/images/'),
-    icon: 'sofa-outline',
+    image: require('../assets/images/sofa-category.jpeg'),
+    icon: 'home-outline',
   },
   'Chairs': {
     colors: ['#5D4037', '#3E2723'],
-    image: require('@/assets/images/chair-category.jpeg'),
-    icon: 'chair-outline',
+    image: require('../assets/images/chair-category.jpeg'),
+    icon: 'people-outline',
   },
   'Tables': {
     colors: ['#8B5E3C', '#5D4037'],
-    image: require('@/assets/images/table-category.jpeg'),
+    image: require('../assets/images/table-category.jpeg'),
     icon: 'grid-outline',
   },
   'Beds': {
     colors: ['#3E2723', '#1B1B1B'],
-    image: require('@/assets/images/bed-category.jpeg'),
+    image: require('../assets/images/bed-category.jpeg'),
     icon: 'bed-outline',
   },
   'Decor': {
     colors: ['#3E5151', '#1E3D33'],
-    image: require('@/assets/images/decor-category.jpeg'),
-    icon: 'flower-outline',
+    image: require('../assets/images/decor-category.jpeg'),
+    icon: 'sparkles-outline',
   },
 };
 

@@ -64,13 +64,19 @@ export default function HomeScreen() {
 
         {/* Categories */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text, marginBottom: 12}]}>
             Categories
           </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false} 
+            style={styles.horizontalScroll}
+            contentContainerStyle={styles.categoriesContent}
+          >
             {categories.map((category, index) => (
               <CategoryCard key={index} category={category} />
             ))}
+            <View style={styles.endPadding} />
           </ScrollView>
         </View>
 
@@ -177,6 +183,12 @@ const styles = StyleSheet.create({
   horizontalScroll: {
     marginHorizontal: -20,
     paddingHorizontal: 20,
+  },
+  categoriesContent: {
+    paddingHorizontal: 1,
+  },
+  endPadding: {
+    width: 20,
   },
   dealsBanner: {
     padding: 24,
