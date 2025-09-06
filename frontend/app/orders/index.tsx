@@ -115,38 +115,46 @@ export default function OrdersScreen() {
       </View>
 
       {/* Filter Tabs */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterContainer}
-        contentContainerStyle={styles.filterContent}
-      >
-        {filterOptions.map((filter) => (
-          <TouchableOpacity
-            key={filter.key}
-            onPress={() => setSelectedFilter(filter.key)}
-            style={[
-              styles.filterTab,
-              {
-                backgroundColor: selectedFilter === filter.key ? theme.colors.primary : theme.colors.surface,
-                borderColor: theme.colors.border,
-              },
-            ]}
-          >
-            <Text
+      <View style={styles.filterContainer}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterContent}
+        >
+          {filterOptions.map((filter) => (
+            <TouchableOpacity
+              key={filter.key}
+              onPress={() => setSelectedFilter(filter.key)}
               style={[
-                styles.filterText,
+                styles.filterTab,
                 {
-                  color: selectedFilter === filter.key ? '#fff' : theme.colors.text,
-                  fontWeight: selectedFilter === filter.key ? '600' : '400',
+                  backgroundColor: selectedFilter === filter.key 
+                    ? theme.colors.primary 
+                    : 'transparent',
+                  borderColor: selectedFilter === filter.key 
+                    ? theme.colors.primary 
+                    : theme.colors.border,
                 },
               ]}
+              activeOpacity={0.7}
             >
-              {filter.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+              <Text
+                style={[
+                  styles.filterText,
+                  {
+                    color: selectedFilter === filter.key 
+                      ? '#fff' 
+                      : theme.colors.text,
+                    fontWeight: selectedFilter === filter.key ? '600' : '400',
+                  },
+                ]}
+              >
+                {filter.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
 
       {/* Results Count */}
       <View style={styles.resultsContainer}>
@@ -204,23 +212,23 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   filterContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
   },
   filterContent: {
     gap: 8,
   },
   filterTab: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
     borderWidth: 1,
-    minWidth: 60,
-    alignItems: 'center',
   },
   filterText: {
-    fontSize: 12,
-    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '500',
   },
   resultsContainer: {
     paddingHorizontal: 20,

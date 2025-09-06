@@ -18,6 +18,8 @@ import { ProductCard } from '@/components/ProductCard';
 import { CategoryCard } from '@/components/CategoryCard';
 import { HeroBanner } from '@/components/HeroBanner';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Search, Bell } from 'lucide-react-native';
+import logo from '@/assets/images/logo.png';
 
 const { width } = Dimensions.get('window');
 
@@ -51,12 +53,22 @@ export default function HomeScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={[styles.welcomeText, { color: theme.colors.textSecondary }]}>
-            Welcome back,
-          </Text>
-          <Text style={[styles.nameText, { color: theme.colors.text }]}>
-            {user.name}
-          </Text>
+          <View style={styles.headerLeft}>
+            <Image 
+              source={logo} 
+              style={styles.logo} 
+              resizeMode="contain"
+            />
+            <Text style={[styles.buyText, { color: theme.colors.primary, fontSize: 24, fontWeight: '800', letterSpacing: 1, marginLeft: 8 }]}>
+              HomeFit
+            </Text>
+          </View>
+          <TouchableOpacity 
+            style={[styles.searchButton, { backgroundColor: theme.colors.surface }]}
+            onPress={() => router.push('/search')}
+          >
+            <Bell size={20} color={theme.colors.text} />
+          </TouchableOpacity>
         </View>
 
         {/* Hero Banner */}
@@ -92,10 +104,16 @@ export default function HomeScreen() {
               </Text>
             </TouchableOpacity>
           </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false} 
+            style={styles.horizontalScroll}
+            contentContainerStyle={styles.productsContent}
+          >
             {featuredProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
+            <View style={styles.endPadding} />
           </ScrollView>
         </View>
 
@@ -150,17 +168,43 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   header: {
-    padding: 20,
-    paddingBottom: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
   },
-  welcomeText: {
-    fontSize: 14,
-    fontWeight: '400',
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginLeft: 4,
   },
-  nameText: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginTop: 2,
+  logo: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'white',
+    overflow: 'hidden',
+  },
+  buyText: {
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  afterPreviewText: {
+    fontSize: 16,
+    fontWeight: '500',
+    opacity: 0.8,
+  },
+  searchButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   section: {
     paddingHorizontal: 20,
@@ -185,6 +229,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   categoriesContent: {
+    paddingHorizontal: 1,
+  },
+  productsContent: {
     paddingHorizontal: 1,
   },
   endPadding: {
