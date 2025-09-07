@@ -1,6 +1,17 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut, 
+  onAuthStateChanged,
+  User as FirebaseUser,
+  updateProfile,
+  GoogleAuthProvider,
+  signInWithCredential
+} from 'firebase/auth';
+import { auth } from '../firebaseConfig';
 
 interface User {
   id: string;
@@ -14,6 +25,7 @@ interface AuthContextType {
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   isLoading: boolean;
 }
@@ -34,85 +46,83 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadStoredAuth();
-  }, []);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        // Get the ID token for API calls
+        const token = await firebaseUser.getIdToken();
+        
+        const user: User = {
+          id: firebaseUser.uid,
+          email: firebaseUser.email || "",
+          name: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "",
+          role: "customer" // Default role, can be customized
+        };
 
-  const loadStoredAuth = async () => {
-    try {
-      const storedToken = await SecureStore.getItemAsync('token');
-      const storedUser = await SecureStore.getItemAsync('user');
-      
-      if (storedToken && storedUser) {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
+        setUser(user);
+        setToken(token);
+        
+        // Store for offline access
+        await SecureStore.setItemAsync("token", token);
+        await SecureStore.setItemAsync("user", JSON.stringify(user));
+      } else {
+        setUser(null);
+        setToken(null);
+        await SecureStore.deleteItemAsync("token");
+        await SecureStore.deleteItemAsync("user");
       }
-    } catch (error) {
-      console.error('Error loading stored auth:', error);
-    } finally {
       setIsLoading(false);
-    }
-  };
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const login = async (email: string, password: string) => {
     try {
-      // Simulate API call - replace with actual backend integration
-      const mockUser = {
-        id: '1',
-        email,
-        name: 'John Doe',
-        role: email.includes('admin') ? 'admin' : 'customer',
-      };
-      const mockToken = 'mock-jwt-token-' + Date.now();
-
-      await SecureStore.setItemAsync('token', mockToken);
-      await SecureStore.setItemAsync('user', JSON.stringify(mockUser));
-      
-      setToken(mockToken);
-      setUser(mockUser);
-      
+      await signInWithEmailAndPassword(auth, email, password);
       router.replace('/(tabs)');
-    } catch (error) {
-      throw new Error('Login failed');
+    } catch (error: any) {
+      console.error('Login error:', error);
+      throw new Error(error.message || 'Login failed');
     }
   };
 
   const register = async (email: string, password: string, name: string) => {
     try {
-      // Simulate API call - replace with actual backend integration
-      const mockUser = {
-        id: '1',
-        email,
-        name,
-        role: 'customer',
-      };
-      const mockToken = 'mock-jwt-token-' + Date.now();
-
-      await SecureStore.setItemAsync('token', mockToken);
-      await SecureStore.setItemAsync('user', JSON.stringify(mockUser));
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       
-      setToken(mockToken);
-      setUser(mockUser);
+      // Update the user's display name
+      await updateProfile(userCredential.user, {
+        displayName: name
+      });
       
       router.replace('/(tabs)');
-    } catch (error) {
-      throw new Error('Registration failed');
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      throw new Error(error.message || 'Registration failed');
+    }
+  };
+
+  const loginWithGoogle = async () => {
+    try {
+      // For Expo Go, we need to use web-based auth
+      throw new Error('Google Sign-In requires a development build. Use expo run:ios or expo run:android to test Google Sign-In.');
+    } catch (error: any) {
+      console.error('Google login error:', error);
+      throw error;
     }
   };
 
   const logout = async () => {
     try {
-      await SecureStore.deleteItemAsync('token');
-      await SecureStore.deleteItemAsync('user');
-      setToken(null);
-      setUser(null);
+      await signOut(auth);
       router.replace('/auth');
     } catch (error) {
-      console.error('Error during logout:', error);
+      console.error('Logout error:', error);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, token, login, register, loginWithGoogle, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

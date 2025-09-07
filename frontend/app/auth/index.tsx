@@ -11,7 +11,7 @@ const { height } = Dimensions.get('window');
 
 export default function AuthIndex() {
   const { theme } = useTheme();
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, loginWithGoogle } = useAuth();
 
   useEffect(() => {
     if (!isLoading && user) {
@@ -74,7 +74,19 @@ export default function AuthIndex() {
                 <View style={styles.buttonIcon} />
               </TouchableOpacity>
             </View>
-            
+
+            {/* Google Sign-In Button */}
+            <TouchableOpacity
+              style={[styles.button, styles.googleButton]}
+              onPress={loginWithGoogle}
+              activeOpacity={0.9}
+            >
+              <Text style={[styles.googleButtonText, { color: theme.colors.text }]}>
+                Continue with Google
+              </Text>
+              <ArrowRight size={20} color={theme.colors.text} style={styles.buttonIcon} />
+            </TouchableOpacity>
+
             <View style={styles.footer}>
               <Text style={styles.footerText}>
                 By continuing, you agree to our Terms of Service and Privacy Policy
@@ -182,5 +194,14 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     textAlign: 'center',
+  },
+  googleButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  googleButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
