@@ -74,12 +74,18 @@ export default function ProfileScreen() {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+    <SafeAreaView 
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      edges={['bottom']}  
+    >
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingTop: 0 }}  
+      >
         {/* Header */}
         <LinearGradient
           colors={[theme.colors.gradient.start, theme.colors.gradient.end]}
-          style={styles.header}
+          style={[styles.header, { paddingTop: 0 }]}  
         >
           <View style={styles.profileSection}>
             <View style={styles.avatarContainer}>
@@ -181,38 +187,33 @@ export default function ProfileScreen() {
           />
         </View>
 
-        {/* Admin Panel */}
-        {user?.role === 'admin' && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Admin Panel</Text>
-            
-            <ProfileOption
-              icon={Settings}
-              title="Manage Products"
-              subtitle="Add, edit, delete products"
-              onPress={() => router.push('/admin')}
+        {/* Theme Toggle */}
+        <View style={[styles.section, { marginBottom: 24 }]}>
+          <View style={[styles.optionContainer, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+            <View style={styles.optionLeft}>
+              <View style={[styles.iconContainer, { backgroundColor: theme.colors.background }]}>
+                {isDark ? (
+                  <Sun size={20} color={theme.colors.primary} />
+                ) : (
+                  <Moon size={20} color={theme.colors.primary} />
+                )}
+              </View>
+              <View>
+                <Text style={[styles.optionTitle, { color: theme.colors.text }]}>
+                  {isDark ? 'Light Mode' : 'Dark Mode'}
+                </Text>
+                <Text style={[styles.optionSubtitle, { color: theme.colors.textSecondary }]}>
+                  {isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+                </Text>
+              </View>
+            </View>
+            <Switch
+              value={isDark}
+              onValueChange={toggleTheme}
+              thumbColor={theme.colors.primary}
+              trackColor={{ false: theme.colors.border, true: theme.colors.primary + '80' }}
             />
           </View>
-        )}
-
-        {/* App Settings */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>App Settings</Text>
-          
-          <ProfileOption
-            icon={isDark ? Moon : Sun}
-            title="Dark Mode"
-            subtitle={isDark ? 'Dark theme enabled' : 'Light theme enabled'}
-            showArrow={false}
-            rightElement={
-              <Switch
-                value={isDark}
-                onValueChange={toggleTheme}
-                trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
-                thumbColor={isDark ? '#fff' : theme.colors.background}
-              />
-            }
-          />
         </View>
 
         {/* Logout */}
@@ -235,7 +236,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingTop: 20,
     paddingBottom: 30,
     paddingHorizontal: 20,
   },
@@ -244,6 +244,7 @@ const styles = StyleSheet.create({
   },
   avatarContainer: {
     marginBottom: 16,
+    marginTop: 20,
   },
   avatar: {
     width: 80,

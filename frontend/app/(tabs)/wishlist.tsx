@@ -48,23 +48,19 @@ export default function WishlistScreen() {
   if (items.length === 0) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.colors.text }]}>Wishlist</Text>
-        </View>
-        
         <View style={styles.emptyContainer}>
-          <Heart size={80} color={theme.colors.textSecondary} />
-          <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>
+          <Heart size={64} color={theme.colors.textSecondary} />
+          <Text style={[styles.emptyText, { color: theme.colors.text }]}>
             Your wishlist is empty
           </Text>
-          <Text style={[styles.emptySubtitle, { color: theme.colors.textSecondary }]}>
+          <Text style={[styles.emptySubtext, { color: theme.colors.textSecondary }]}>
             Save items you love to your wishlist
           </Text>
           <TouchableOpacity
-            style={[styles.shopButton, { backgroundColor: theme.colors.primary }]}
-            onPress={() => router.push('/search')}
+            style={[styles.continueShoppingButton, { backgroundColor: theme.colors.primary }]}
+            onPress={() => router.push('/(tabs)/')}
           >
-            <Text style={styles.shopButtonText}>Explore Products</Text>
+            <Text style={styles.continueShoppingText}>Browse Products</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -73,25 +69,18 @@ export default function WishlistScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.colors.text }]}>Wishlist</Text>
-        <Text style={[styles.itemCount, { color: theme.colors.textSecondary }]}>
-          {items.length} {items.length === 1 ? 'item' : 'items'}
-        </Text>
-      </View>
-
       <FlatList
         data={items}
         renderItem={({ item }) => (
           <WishlistItem
             item={item}
-            onRemove={handleRemoveFromWishlist}
-            onAddToCart={handleAddToCart}
+            onRemove={() => handleRemoveFromWishlist(item.id)}
+            onAddToCart={() => handleAddToCart(item)}
           />
         )}
         keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContainer}
       />
     </SafeAreaView>
   );
@@ -101,47 +90,35 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    padding: 20,
-    paddingBottom: 10,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  itemCount: {
-    fontSize: 14,
-  },
-  listContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 40,
   },
-  emptyTitle: {
+  emptyText: {
     fontSize: 24,
     fontWeight: '700',
     marginTop: 20,
     marginBottom: 8,
   },
-  emptySubtitle: {
+  emptySubtext: {
     fontSize: 16,
     textAlign: 'center',
     marginBottom: 32,
   },
-  shopButton: {
+  continueShoppingButton: {
     paddingHorizontal: 32,
     paddingVertical: 16,
     borderRadius: 12,
   },
-  shopButtonText: {
+  continueShoppingText: {
     fontSize: 16,
     fontWeight: '700',
     color: '#fff',
+  },
+  listContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
 });

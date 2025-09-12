@@ -51,26 +51,6 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Image 
-              source={logo} 
-              style={styles.logo} 
-              resizeMode="contain"
-            />
-            <Text style={[styles.buyText, { color: theme.colors.primary, fontSize: 24, fontWeight: '800', letterSpacing: 1, marginLeft: 8 }]}>
-              HomeFit
-            </Text>
-          </View>
-          <TouchableOpacity 
-            style={[styles.searchButton, { backgroundColor: theme.colors.surface }]}
-            onPress={() => router.push('/search')}
-          >
-            <Bell size={20} color={theme.colors.text} />
-          </TouchableOpacity>
-        </View>
-
         {/* Hero Banner */}
         <HeroBanner />
 
@@ -135,20 +115,6 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </LinearGradient>
         </View>
-
-        {/* Admin Quick Access */}
-        {user.role === 'admin' && (
-          <View style={styles.section}>
-            <TouchableOpacity
-              style={[styles.adminButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
-              onPress={() => router.push('/admin')}
-            >
-              <Text style={[styles.adminButtonText, { color: theme.colors.primary }]}>
-                Admin Panel
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -166,45 +132,6 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     fontWeight: '500',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.05)',
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginLeft: 4,
-  },
-  logo: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'white',
-    overflow: 'hidden',
-  },
-  buyText: {
-    fontSize: 22,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  afterPreviewText: {
-    fontSize: 16,
-    fontWeight: '500',
-    opacity: 0.8,
-  },
-  searchButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   section: {
     paddingHorizontal: 20,
@@ -266,15 +193,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#000',
-  },
-  adminButton: {
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    alignItems: 'center',
-  },
-  adminButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
   },
 });

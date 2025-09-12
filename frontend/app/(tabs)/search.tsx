@@ -2,11 +2,16 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TextInput,
-  ScrollView,
   TouchableOpacity,
+  StyleSheet,
+  ScrollView,
   FlatList,
+  Animated,
+  Keyboard,
+  Platform,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Search, Filter, X } from 'lucide-react-native';
@@ -22,9 +27,29 @@ export default function SearchScreen() {
   const { products, categories, searchQuery, selectedCategory, selectedTags } = useSelector(
     (state: RootState) => state.products
   );
-  
+
   const [showFilters, setShowFilters] = useState(false);
   const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
+  const [fadeAnim] = useState(new Animated.Value(1));
+  const [isFocused, setIsFocused] = useState(false);
+
+  const handleFocus = () => {
+    setIsFocused(true);
+    Animated.timing(fadeAnim, {
+      toValue: 0.9,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  };
 
   // Filter products based on search query, category, and tags
   const filteredProducts = products.filter((product) => {
@@ -63,133 +88,170 @@ export default function SearchScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.colors.text }]}>Search Products</Text>
-        
-        {/* Search Bar */}
-        <View style={[styles.searchContainer, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-          <Search size={20} color={theme.colors.textSecondary} />
-          <TextInput
-            style={[styles.searchInput, { color: theme.colors.text }]}
-            placeholder="Search for products..."
-            placeholderTextColor={theme.colors.textSecondary}
-            value={localSearchQuery}
-            onChangeText={handleSearch}
-          />
-          {localSearchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => handleSearch('')}>
-              <X size={20} color={theme.colors.textSecondary} />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Filter Toggle */}
-        <TouchableOpacity
-          style={[styles.filterButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
-          onPress={() => setShowFilters(!showFilters)}
-        >
-          <Filter size={20} color={theme.colors.text} />
-          <Text style={[styles.filterButtonText, { color: theme.colors.text }]}>Filters</Text>
-          {(selectedCategory || selectedTags.length > 0) && (
-            <View style={[styles.filterBadge, { backgroundColor: theme.colors.accent }]} />
-          )}
-        </TouchableOpacity>
-      </View>
-
-      {/* Filters */}
-      {showFilters && (
-        <View style={[styles.filtersContainer, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-          <View style={styles.filtersHeader}>
-            <Text style={[styles.filtersTitle, { color: theme.colors.text }]}>Filters</Text>
-            <TouchableOpacity onPress={clearFilters}>
-              <Text style={[styles.clearFiltersText, { color: theme.colors.primary }]}>Clear All</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Categories */}
-          <View style={styles.filterSection}>
-            <Text style={[styles.filterSectionTitle, { color: theme.colors.text }]}>Categories</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
-              {categories.map((category) => (
-                <TouchableOpacity
-                  key={category}
-                  style={[
-                    styles.filterChip,
-                    {
-                      backgroundColor: selectedCategory === category ? theme.colors.primary : theme.colors.background,
-                      borderColor: theme.colors.border,
-                    },
-                  ]}
-                  onPress={() => handleCategoryPress(category)}
-                >
-                  <Text
-                    style={[
-                      styles.filterChipText,
-                      {
-                        color: selectedCategory === category ? '#fff' : theme.colors.text,
-                      },
-                    ]}
-                  >
-                    {category}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-
-          {/* Tags */}
-          <View style={styles.filterSection}>
-            <Text style={[styles.filterSectionTitle, { color: theme.colors.text }]}>Tags</Text>
-            <View style={styles.tagsContainer}>
-              {allTags.map((tag) => (
-                <TouchableOpacity
-                  key={tag}
-                  style={[
-                    styles.filterChip,
-                    {
-                      backgroundColor: selectedTags.includes(tag) ? theme.colors.accent : theme.colors.background,
-                      borderColor: theme.colors.border,
-                      marginBottom: 8,
-                    },
-                  ]}
-                  onPress={() => handleTagPress(tag)}
-                >
-                  <Text
-                    style={[
-                      styles.filterChipText,
-                      {
-                        color: selectedTags.includes(tag) ? '#fff' : theme.colors.text,
-                      },
-                    ]}
-                  >
-                    {tag}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+    <KeyboardAvoidingView 
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+          {/* Enhanced Search Bar */}
+          <Animated.View 
+            style={[
+              styles.searchContainer, 
+              { 
+                backgroundColor: theme.colors.surface,
+                shadowColor: theme.colors.primary,
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: isFocused ? 0.2 : 0.1,
+                shadowRadius: isFocused ? 8 : 4,
+                elevation: isFocused ? 6 : 2,
+                transform: [{ scale: fadeAnim }]
+              }
+            ]}
+          >
+            <View style={styles.searchIconContainer}>
+              <Search 
+                size={20} 
+                color={isFocused ? theme.colors.primary : theme.colors.textSecondary} 
+              />
             </View>
-          </View>
-        </View>
-      )}
+            <TextInput
+              style={[
+                styles.searchInput, 
+                { 
+                  color: theme.colors.text,
+                  paddingLeft: 12,
+                  fontSize: 16,
+                }
+              ]}
+              placeholder="Search products..."
+              placeholderTextColor={theme.colors.textSecondary}
+              value={localSearchQuery}
+              onChangeText={handleSearch}
+              onSubmitEditing={() => dispatch(setSearchQuery(localSearchQuery))}
+              onFocus={handleFocus}
+              onBlur={handleBlur}
+              returnKeyType="search"
+              autoCorrect={false}
+              autoCapitalize="none"
+            />
+            {localSearchQuery.length > 0 && (
+              <TouchableOpacity 
+                style={styles.clearButton}
+                onPress={() => {
+                  setLocalSearchQuery('');
+                  dispatch(setSearchQuery(''));
+                  Keyboard.dismiss();
+                }}
+              >
+                <X 
+                  size={20} 
+                  color={theme.colors.textSecondary} 
+                />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity 
+              style={[styles.filterButton, { backgroundColor: theme.colors.primary }]}
+              onPress={() => setShowFilters(!showFilters)}
+            >
+              <Filter size={16} color="#fff" />
+            </TouchableOpacity>
+          </Animated.View>
 
-      {/* Results */}
-      <View style={styles.resultsContainer}>
-        <Text style={[styles.resultsText, { color: theme.colors.textSecondary }]}>
-          {filteredProducts.length} products found
-        </Text>
-        
-        <FlatList
-          data={filteredProducts}
-          renderItem={({ item }) => <ProductCard product={item} showAddToCart />}
-          keyExtractor={(item) => item.id}
-          numColumns={2}
-          columnWrapperStyle={styles.row}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.productsContainer}
-        />
-      </View>
-    </SafeAreaView>
+          {/* Filters */}
+          {showFilters && (
+            <View style={[styles.filtersContainer, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+              <View style={styles.filtersHeader}>
+                <Text style={[styles.filtersTitle, { color: theme.colors.text }]}>Filters</Text>
+                <TouchableOpacity onPress={clearFilters}>
+                  <Text style={[styles.clearFiltersText, { color: theme.colors.primary }]}>Clear All</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Categories */}
+              <View style={styles.filterSection}>
+                <Text style={[styles.filterSectionTitle, { color: theme.colors.text }]}>Categories</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+                  {categories.map((category) => (
+                    <TouchableOpacity
+                      key={category}
+                      style={[
+                        styles.filterChip,
+                        {
+                          backgroundColor: selectedCategory === category ? theme.colors.primary : theme.colors.background,
+                          borderColor: theme.colors.border,
+                        },
+                      ]}
+                      onPress={() => handleCategoryPress(category)}
+                    >
+                      <Text
+                        style={[
+                          styles.filterChipText,
+                          {
+                            color: selectedCategory === category ? '#fff' : theme.colors.text,
+                          },
+                        ]}
+                      >
+                        {category}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+
+              {/* Tags */}
+              <View style={styles.filterSection}>
+                <Text style={[styles.filterSectionTitle, { color: theme.colors.text }]}>Tags</Text>
+                <View style={styles.tagsContainer}>
+                  {allTags.map((tag) => (
+                    <TouchableOpacity
+                      key={tag}
+                      style={[
+                        styles.filterChip,
+                        {
+                          backgroundColor: selectedTags.includes(tag) ? theme.colors.accent : theme.colors.background,
+                          borderColor: theme.colors.border,
+                          marginBottom: 8,
+                        },
+                      ]}
+                      onPress={() => handleTagPress(tag)}
+                    >
+                      <Text
+                        style={[
+                          styles.filterChipText,
+                          {
+                            color: selectedTags.includes(tag) ? '#fff' : theme.colors.text,
+                          },
+                        ]}
+                      >
+                        {tag}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* Results */}
+          <View style={styles.resultsContainer}>
+            <Text style={[styles.resultsText, { color: theme.colors.textSecondary }]}>
+              {filteredProducts.length} products found
+            </Text>
+            
+            <FlatList
+              data={filteredProducts}
+              renderItem={({ item }) => <ProductCard product={item} showAddToCart />}
+              keyExtractor={(item) => item.id}
+              numColumns={2}
+              columnWrapperStyle={styles.row}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.productsContainer}
+            />
+          </View>
+        </SafeAreaView>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -197,27 +259,32 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    padding: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 20,
-  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
+    backgroundColor: '#fff',
     borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 16,
-    gap: 12,
+    margin: 16,
+    paddingHorizontal: 12,
+    height: 52,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  searchIconContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    height: '100%',
+    fontFamily: 'Inter-Regular',
+  },
+  clearButton: {
+    padding: 8,
+    marginRight: -8,
   },
   filterButton: {
     flexDirection: 'row',

@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { Redirect } from 'expo-router';
 import AdminDrawer from '@/components/AdminDrawer';
+import { View } from 'react-native';
 
 export default function AdminLayout() {
   const { user } = useAuth();
@@ -12,28 +13,35 @@ export default function AdminLayout() {
   }
 
   return (
-    <AdminDrawer>
+    <View style={{ flex: 1 }}>
       <Stack.Screen
-        name="index"
         options={{
           headerShown: false,
-          title: 'Dashboard',
         }}
       />
-      <Stack.Screen
-        name="seller-requests"
-        options={{
-          headerShown: false,
-          title: 'Seller Requests',
-        }}
-      />
-      <Stack.Screen
-        name="revenue"
-        options={{
-          headerShown: false,
-          title: 'Revenue Streams',
-        }}
-      />
-    </AdminDrawer>
+      <AdminDrawer>
+        <Stack.Screen
+          name="index"
+          options={{
+            headerShown: false,
+            title: 'Dashboard',
+          }}
+        />
+        <Stack.Screen
+          name="seller-requests"
+          options={{
+            headerShown: false,
+            title: 'Seller Requests',
+          }}
+        />
+        <Stack.Screen
+          name="revenue"
+          options={{
+            headerShown: false,
+            title: 'Revenue Streams',
+          }}
+        />
+      </AdminDrawer>
+    </View>
   );
 }
