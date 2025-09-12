@@ -1,9 +1,11 @@
 import { Tabs } from 'expo-router';
-import { Home, Search, ShoppingCart, Heart, User } from 'lucide-react-native';
+import { Home, Search, ShoppingCart, Heart, User, Menu } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'expo-router';
 
 function TabBarBadge({ count }: { count: number }) {
   const { theme } = useTheme();
@@ -21,13 +23,42 @@ function TabBarBadge({ count }: { count: number }) {
 
 export default function TabLayout() {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const cartItemCount = useSelector((state: RootState) => state.cart.itemCount);
   const wishlistItemCount = useSelector((state: RootState) => state.wishlist.items.length);
+  const router = useRouter();
+
+  // Add header right component for admin
+  const headerRight = () => {
+    if (user?.role === 'admin') {
+      return (
+        <TouchableOpacity 
+          onPress={() => router.push('/admin')}
+          style={{ marginRight: 16 }}
+        >
+          <Menu size={24} color={theme.colors.primary} />
+        </TouchableOpacity>
+      );
+    }
+    return null;
+  };
 
   return (
     <Tabs
       screenOptions={{
-        headerShown: false,
+        headerShown: true,
+        headerStyle: {
+          backgroundColor: theme.colors.surface,
+          elevation: 0,
+          shadowOpacity: 0,
+          borderBottomWidth: 1,
+          borderBottomColor: theme.colors.border,
+        },
+        headerTintColor: theme.colors.text,
+        headerTitleStyle: {
+          fontWeight: '600',
+        },
+        headerRight,
         tabBarStyle: {
           backgroundColor: theme.colors.surface,
           borderTopColor: theme.colors.border,

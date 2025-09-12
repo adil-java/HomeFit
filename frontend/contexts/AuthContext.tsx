@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
@@ -45,6 +47,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  WebBrowser.maybeCompleteAuthSession();
+
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    expoClientId: 'YOUR_EXPO_CLIENT_ID', // Replace with your actual Expo client ID
+    iosClientId: 'YOUR_IOS_CLIENT_ID',   // Replace with your actual iOS client ID
+    androidClientId: 'YOUR_ANDROID_CLIENT_ID', // Replace with your actual Android client ID
+    webClientId: 'YOUR_WEB_CLIENT_ID',   // Replace with your actual web client ID
+  });
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
@@ -55,7 +66,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           id: firebaseUser.uid,
           email: firebaseUser.email || "",
           name: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "",
-          role: "customer" // Default role, can be customized
+          role: firebaseUser.email?.includes('admin') ? 'admin' : 'customer' // Set role based on email
         };
 
         setUser(user);
@@ -73,8 +84,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
     });
 
+    if (response?.type === 'success') {
+      const { id_token } = response.params;
+      const credential = GoogleAuthProvider.credential(id_token);
+      signInWithCredential(auth, credential);
+    }
+
     return () => unsubscribe();
-  }, []);
+  }, [response]);
 
   const login = async (email: string, password: string) => {
     try {
@@ -104,8 +121,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginWithGoogle = async () => {
     try {
-      // For Expo Go, we need to use web-based auth
-      throw new Error('Google Sign-In requires a development build. Use expo run:ios or expo run:android to test Google Sign-In.');
+      await promptAsync();
     } catch (error: any) {
       console.error('Google login error:', error);
       throw error;
