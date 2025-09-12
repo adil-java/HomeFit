@@ -315,6 +315,7 @@ export default function SellerRequestsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingTop: 50
   },
   loadingContainer: {
     flex: 1,

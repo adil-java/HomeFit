@@ -1,9 +1,10 @@
 import { Tabs } from 'expo-router';
 import { Home, Search, ShoppingCart, Heart, User, LayoutDashboard, Bell } from 'lucide-react-native';
+import { BarChart2, Package, ShoppingBag, Users, BarChart, PackagePlus, Tag, LayoutTemplate, Settings, Shield, LogOut } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Modal, Pressable } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Modal, Pressable, ScrollView } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -52,18 +53,45 @@ export default function TabLayout() {
               style={styles.modalOverlay} 
               onPress={() => setShowAdminMenu(false)}
             >
-              <View style={[styles.adminMenu, { backgroundColor: theme.colors.surface }]}>
+              <ScrollView style={[styles.adminMenu, { backgroundColor: theme.colors.surface }]}>
+                {/* Dashboard */}
                 <TouchableOpacity 
                   style={styles.menuItem}
                   onPress={() => {
-                    router.push('/admin');
+                    router.push('/admin/dashboard');
                     setShowAdminMenu(false);
                   }}
                 >
-                  <Text style={[styles.menuText, { color: theme.colors.text }]}>
-                    Dashboard
-                  </Text>
+                  <BarChart2 size={20} color={theme.colors.primary} style={styles.menuIcon} />
+                  <View style={styles.menuTextContainer}>
+                    <Text style={[styles.menuText, { color: theme.colors.text }]}>
+                      Dashboard
+                    </Text>
+                    <Text style={[styles.menuSubtext, { color: theme.colors.textSecondary }]}>
+                      Overview & Analytics
+                    </Text>
+                  </View>
                 </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={styles.menuItem}
+                  onPress={() => {
+                    router.push('/admin/seller-requests');
+                    setShowAdminMenu(false);
+                  }}
+                >
+                  <Users size={20} color={theme.colors.primary} style={styles.menuIcon} />
+                  <View style={styles.menuTextContainer}>
+                    <Text style={[styles.menuText, { color: theme.colors.text }]}>
+                      Users
+                    </Text>
+                    <Text style={[styles.menuSubtext, { color: theme.colors.textSecondary }]}>
+                      Manage users, sellers management
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Product Management */}
                 <TouchableOpacity 
                   style={styles.menuItem}
                   onPress={() => {
@@ -71,10 +99,18 @@ export default function TabLayout() {
                     setShowAdminMenu(false);
                   }}
                 >
-                  <Text style={[styles.menuText, { color: theme.colors.text }]}>
-                    Manage Products
-                  </Text>
+                  <Package size={20} color={theme.colors.primary} style={styles.menuIcon} />
+                  <View style={styles.menuTextContainer}>
+                    <Text style={[styles.menuText, { color: theme.colors.text }]}>
+                      Products
+                    </Text>
+                    <Text style={[styles.menuSubtext, { color: theme.colors.textSecondary }]}>
+                      Manage inventory & listings
+                    </Text>
+                  </View>
                 </TouchableOpacity>
+
+                {/* Order Management */}
                 <TouchableOpacity 
                   style={styles.menuItem}
                   onPress={() => {
@@ -82,34 +118,108 @@ export default function TabLayout() {
                     setShowAdminMenu(false);
                   }}
                 >
-                  <Text style={[styles.menuText, { color: theme.colors.text }]}>
-                    View Orders
-                  </Text>
+                  <ShoppingBag size={20} color={theme.colors.primary} style={styles.menuIcon} />
+                  <View style={styles.menuTextContainer}>
+                    <Text style={[styles.menuText, { color: theme.colors.text }]}>
+                      Orders
+                    </Text>
+                    <Text style={[styles.menuSubtext, { color: theme.colors.textSecondary }]}>
+                      Process & track orders
+                    </Text>
+                  </View>
                 </TouchableOpacity>
+
+                {/* Promotions & Discounts */}
                 <TouchableOpacity 
                   style={styles.menuItem}
                   onPress={() => {
-                    router.push('/admin/users');
+                    router.push('/admin/promotions');
                     setShowAdminMenu(false);
                   }}
                 >
-                  <Text style={[styles.menuText, { color: theme.colors.text }]}>
-                    User Management
-                  </Text>
+                  <Tag size={20} color={theme.colors.primary} style={styles.menuIcon} />
+                  <View style={styles.menuTextContainer}>
+                    <Text style={[styles.menuText, { color: theme.colors.text }]}>
+                      Promotions
+                    </Text>
+                    <Text style={[styles.menuSubtext, { color: theme.colors.textSecondary }]}>
+                      Manage discounts & offers
+                    </Text>
+                  </View>
                 </TouchableOpacity>
-                <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+
+                {/* Content Management */}
                 <TouchableOpacity 
                   style={styles.menuItem}
+                  onPress={() => {
+                    router.push('/admin/content');
+                    setShowAdminMenu(false);
+                  }}
+                >
+                  <LayoutTemplate size={20} color={theme.colors.primary} style={styles.menuIcon} />
+                  <View style={styles.menuTextContainer}>
+                    <Text style={[styles.menuText, { color: theme.colors.text }]}>
+                      Content
+                    </Text>
+                    <Text style={[styles.menuSubtext, { color: theme.colors.textSecondary }]}>
+                      Banners & categories
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Notification Center */}
+                <TouchableOpacity 
+                  style={styles.menuItem}
+                  onPress={() => {
+                    router.push('/admin/notifications');
+                    setShowAdminMenu(false);
+                  }}
+                >
+                  <Bell size={20} color={theme.colors.primary} style={styles.menuIcon} />
+                  <View style={styles.menuTextContainer}>
+                    <Text style={[styles.menuText, { color: theme.colors.text }]}>
+                      Notifications
+                    </Text>
+                    <Text style={[styles.menuSubtext, { color: theme.colors.textSecondary }]}>
+                      Send announcements
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Settings */}
+                <TouchableOpacity 
+                  style={styles.menuItem}
+                  onPress={() => {
+                    router.push('/admin/settings');
+                    setShowAdminMenu(false);
+                  }}
+                >
+                  <Settings size={20} color={theme.colors.primary} style={styles.menuIcon} />
+                  <View style={styles.menuTextContainer}>
+                    <Text style={[styles.menuText, { color: theme.colors.text }]}>
+                      Settings
+                    </Text>
+                    <Text style={[styles.menuSubtext, { color: theme.colors.textSecondary }]}>
+                      App configuration
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+
+                {/* Logout */}
+                <TouchableOpacity 
+                  style={[styles.menuItem, { borderTopWidth: 1, borderTopColor: theme.colors.border, marginTop: 8, paddingTop: 12 }]}
                   onPress={() => {
                     logout();
                     setShowAdminMenu(false);
                   }}
                 >
+                  <LogOut size={20} color={theme.colors.error} style={styles.menuIcon} />
                   <Text style={[styles.menuText, { color: theme.colors.error }]}>
                     Logout
                   </Text>
                 </TouchableOpacity>
-              </View>
+              </ScrollView>
             </Pressable>
           </Modal>
         </View>
@@ -301,37 +411,51 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   dashboardButton: {
-    padding: 4,
+    padding: 8,
     borderRadius: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
   },
   modalOverlay: {
     flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-start',
     alignItems: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     paddingTop: 60,
-    paddingRight: 16,
   },
   adminMenu: {
-    width: 200,
-    borderRadius: 8,
-    padding: 8,
+    width: 300,
+    maxHeight: '80%',
+    borderRadius: 12,
+    marginRight: 12,
+    padding: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
-    shadowRadius: 4,
+    shadowRadius: 8,
     elevation: 5,
   },
   menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    marginBottom: 4,
+  },
+  menuIcon: {
+    width: 36,
+    marginRight: 8,
+  },
+  menuTextContainer: {
+    flex: 1,
   },
   menuText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '500',
+    marginBottom: 2,
   },
-  divider: {
-    height: 1,
-    marginVertical: 4,
+  menuSubtext: {
+    fontSize: 12,
+    opacity: 0.8,
   },
 });
