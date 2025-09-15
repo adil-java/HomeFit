@@ -53,7 +53,7 @@ const DrawerContent = (props: any) => {
     { 
       label: 'Orders', 
       icon: ShoppingCart, 
-      onPress: () => router.push('/admin/orders'),
+      onPress: () => router.push('/admin/orders/'),
       roles: ['admin', 'seller']
     },
     { 
