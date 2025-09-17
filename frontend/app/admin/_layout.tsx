@@ -41,6 +41,20 @@ export default function AdminLayout() {
             title: 'Revenue Streams',
           }}
         />
+        <Stack.Screen
+          name="orders/index"
+          options={{
+            headerShown: false,
+            title: 'Orders',
+          }}
+        />
+        <Stack.Screen
+          name="orders/[id]"
+          options={{
+            headerShown: false,
+            title: 'Order Details',
+          }}
+        />
       </AdminDrawer>
     </View>
   );
