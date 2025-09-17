@@ -48,12 +48,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   WebBrowser.maybeCompleteAuthSession();
-
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    expoClientId: 'YOUR_EXPO_CLIENT_ID', // Replace with your actual Expo client ID
-    iosClientId: 'YOUR_IOS_CLIENT_ID',   // Replace with your actual iOS client ID
-    androidClientId: 'YOUR_ANDROID_CLIENT_ID', // Replace with your actual Android client ID
-    webClientId: 'YOUR_WEB_CLIENT_ID',   // Replace with your actual web client ID
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
+    clientId: "1066517448696-6snmnbvgh3km9l20hs9dqdhrb6uie4m3.apps.googleusercontent.com",
+    offlineAccess: true,
   });
 
   useEffect(() => {

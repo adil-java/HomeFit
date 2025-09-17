@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "1066517448696-piki86kqcpod87h921n6umfkba8usnr3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "om.yourcompany.boltecommerce",
+            "certificate_hash": "61caef3988103ad7c1a3893e611206a8a8078810"
+          }
+        },
+        {
           "client_id": "1066517448696-6snmnbvgh3km9l20hs9dqdhrb6uie4m3.apps.googleusercontent.com",
           "client_type": 3
         }
