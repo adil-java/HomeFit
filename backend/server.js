@@ -16,18 +16,20 @@ app.use(cors());
 // Routes
 app.use("/api/users", userRoutes);
 
-app.get("/", (req, res) => {
-  res.send("Welcome to the e-commerce API");
-});
-
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-// Test database connection PRISMA+AIVNCLOUD MYSQL
-// prisma.$connect().then(async () => {
-//   const user = await prisma.user.create(
-//     {data: { email: "test@example.com", name: "Test User", password: "password" }}
-//   );
-//   console.log("Database connected and test user created:", user);
-// }).catch((err) => {
-//   console.error("Database connection error:", err);
-// });
+
+async function startServer() {
+  try {
+    await prisma.$connect();
+    console.log("Database connected");
+
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  } catch (err) {
+    console.error("Database connection error:", err);
+    process.exit(1); // stop the app if DB connection fails
+  }
+}
+
+startServer();

@@ -1,6 +1,7 @@
 node_modules/
 npm-debug.log
 .env
+config.env
 .DS_Store
 .vscode/ # Ignore VSCode settings
 package-lock.json
