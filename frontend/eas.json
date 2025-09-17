@@ -1,10 +1,6 @@
 {
   "cli": {
-<<<<<<< HEAD
-    "version": ">= 16.19.3",
-=======
     "version": ">= 16.19.1",
->>>>>>> origin/main
     "appVersionSource": "remote"
   },
   "build": {
