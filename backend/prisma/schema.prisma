@@ -14,17 +14,229 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// User Authentication
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String?
-  password  String
-  type      UserType @default(Buyer)
+  id            String        @id @default(uuid())
+  firebaseUid   String        @unique
+  email         String        @unique
+  emailVerified Boolean       @default(false)
+  name          String?
+  phoneNumber   String?
+  photoURL      String?
+  role          Role          @default(CUSTOMER)
+  addresses     Address[]
+  orders        Order[]
+  reviews       Review[]
+  cart          Cart?
+  wishlist      Wishlist?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+enum Role {
+  ADMIN
+  CUSTOMER
+  SELLER
+}
+
+// Address Management
+model Address {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  type        String   // 'SHIPPING' or 'BILLING'
+  street      String
+  city        String
+  state       String?
+  postalCode  String
+  country     String
+  isDefault   Boolean  @default(false)
+  phone       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Product Catalog
+model Product {
+  id            String     @id @default(uuid())
+  name          String
+  slug          String     @unique
+  description   String
+  price         Float
+  comparePrice  Float?
+  cost          Float?
+  sku           String?    @unique
+  barcode       String?
+  quantity      Int        @default(0)
+  isActive      Boolean    @default(true)
+  isFeatured    Boolean    @default(false)
+  images        Json       // Array of image URLs stored as JSON
+  ARModelUrl    String?
+  categories    Category[] @relation("ProductCategories")
+  variants      Variant[]
+  reviews       Review[]
+  orderItems    OrderItem[]
+  cartItems     CartItem[]  // Added reverse relation for CartItem
+  wishlistItems WishlistItem[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+// Categories
+model Category {
+  id          String    @id @default(uuid())
+  name        String
+  slug        String    @unique
+  description String?
+  image       String?
+  parentId    String?
+  parent      Category? @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
+  products    Product[]  @relation("ProductCategories")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// Product Variants
+model Variant {
+  id          String   @id @default(uuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  name        String   // e.g., "Color", "Size"
+  options     Json     // Array of options stored as JSON
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Shopping Cart
+model Cart {
+  id        String    @id @default(uuid())
+  userId    String    @unique
+  user      User      @relation(fields: [userId], references: [id])
+  items     CartItem[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  cartId    String
+  cart      Cart     @relation(fields: [cartId], references: [id])
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  quantity  Int      @default(1)
+  price     Float
+  options   Json?    // Store selected variants
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-enum UserType {
-  Seller
-  Buyer
+// Wishlist
+model Wishlist {
+  id        String         @id @default(uuid())
+  userId    String         @unique
+  user      User           @relation(fields: [userId], references: [id])
+  items     WishlistItem[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+}
+
+model WishlistItem {
+  id         String   @id @default(uuid())
+  wishlistId String
+  wishlist   Wishlist @relation(fields: [wishlistId], references: [id])
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// Orders
+model Order {
+  id              String      @id @default(uuid())
+  orderNumber     String      @unique
+  userId          String
+  user            User        @relation(fields: [userId], references: [id])
+  items           OrderItem[]
+  subtotal        Float
+  tax             Float
+  shipping        Float
+  discount        Float       @default(0)
+  total           Float
+  status          OrderStatus @default(PENDING)
+  paymentStatus   PaymentStatus
+  paymentMethod   String
+  paymentId       String?
+  shippingAddress Json
+  billingAddress  Json?
+  notes           OrderNote[]
+  statusHistory   OrderStatusHistory[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model OrderItem {
+  id          String   @id @default(uuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id])
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  productName String
+  price       Float
+  quantity    Int
+  options     Json?    // Store selected variants
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model OrderNote {
+  id        String   @id @default(uuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id])
+  author    String
+  content   String
+  isPublic  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model OrderStatusHistory {
+  id        String     @id @default(uuid())
+  orderId   String
+  order     Order      @relation(fields: [orderId], references: [id])
+  status    OrderStatus
+  createdAt DateTime   @default(now())
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+// Reviews & Ratings
+model Review {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  rating    Int
+  title     String?
+  comment   String?
+  images    Json     // Array of image URLs stored as JSON
+  isApproved Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
