@@ -1,5 +1,4 @@
-import admin from "../utils/firebaseAdmin.js";
-import { getAuth } from 'firebase-admin/auth';
+import firebaseService from '../services/firebase.service.js';
 
 const verifyFirebaseToken = async (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1]; // "Bearer <token>"
@@ -9,24 +8,15 @@ const verifyFirebaseToken = async (req, res, next) => {
   }
 
   try {
-    const decodedToken = await admin.auth().verifyIdToken(token);
-    req.user = decodedToken;
+    const user = await firebaseService.verifyToken(token);
+    req.user = user;
     next();
   } catch (error) {
+    console.error('Token verification error:', error);
     return res.status(401).json({ error: "Unauthorized: Invalid token" });
   }
 };
 
-// Initialize Firebase Admin if not already initialized
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
-  });
-}
 
 // Middleware to protect routes
 const protect = async (req, res, next) => {
@@ -48,12 +38,15 @@ const protect = async (req, res, next) => {
     }
 
     try {
-      const decodedToken = await getAuth().verifyIdToken(token);
+      const user = await firebaseService.verifyToken(token);
       
       req.user = {
-        uid: decodedToken.uid,
-        email: decodedToken.email,
-        role: decodedToken.role || 'user',
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        phoneNumber: user.phoneNumber,
+        role: user.email?.includes('admin') ? 'admin' : 'customer',
       };
 
       next();

@@ -1,9 +1,15 @@
 import express from "express";
-import { getProfile } from "../controllers/userController.js";
-import verifyFirebaseToken from "../middlewares/authMiddleware.js";
+import { getProfile, verifyToken, login, register } from "../controllers/userController.js";
+import { protect } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
-router.get("/profile", verifyFirebaseToken, getProfile);
+// Auth routes
+router.post("/login", protect, login);
+router.post("/register", protect, register);
+router.post("/verify-token", protect, verifyToken);
+
+// Profile routes
+router.get("/profile", protect, getProfile);
 
 export default router;

@@ -14,6 +14,7 @@ import {
   signInWithCredential
 } from 'firebase/auth';
 import { auth } from '../firebaseConfig';
+import { apiService } from '../services/api';
 
 interface User {
   id: string;
@@ -56,22 +57,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // Get the ID token for API calls
-        const token = await firebaseUser.getIdToken();
-        
-        const user: User = {
-          id: firebaseUser.uid,
-          email: firebaseUser.email || "",
-          name: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "",
-          role: firebaseUser.email?.includes('admin') ? 'admin' : 'customer' // Set role based on email
-        };
+        try {
+          // Get the ID token for API calls
+          const token = await firebaseUser.getIdToken();
+          
+          // Verify token with backend and get user info
+          const backendResponse = await apiService.verifyToken();
+          
+          const user: User = {
+            id: backendResponse.user.uid,
+            email: backendResponse.user.email || "",
+            name: backendResponse.user.displayName || firebaseUser.email?.split("@")[0] || "",
+            role: backendResponse.user.role || 'customer'
+          };
 
-        setUser(user);
-        setToken(token);
-        
-        // Store for offline access
-        await SecureStore.setItemAsync("token", token);
-        await SecureStore.setItemAsync("user", JSON.stringify(user));
+          setUser(user);
+          setToken(token);
+          
+          // Store for offline access
+          await SecureStore.setItemAsync("token", token);
+          await SecureStore.setItemAsync("user", JSON.stringify(user));
+        } catch (error) {
+          console.error('Backend verification failed:', error);
+          // Fallback to Firebase user data if backend fails
+          const user: User = {
+            id: firebaseUser.uid,
+            email: firebaseUser.email || "",
+            name: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "",
+            role: firebaseUser.email?.includes('admin') ? 'admin' : 'customer'
+          };
+          
+          const token = await firebaseUser.getIdToken();
+          setUser(user);
+          setToken(token);
+          
+          await SecureStore.setItemAsync("token", token);
+          await SecureStore.setItemAsync("user", JSON.stringify(user));
+        }
       } else {
         setUser(null);
         setToken(null);
@@ -96,6 +118,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      
+      // Call backend login endpoint to verify token
+      try {
+        await apiService.login();
+      } catch (backendError) {
+        console.error('Backend login verification failed:', backendError);
+        // Continue with frontend login even if backend fails
+      }
+      
       router.replace('/(tabs)');
     } catch (error: any) {
       console.error('Login error:', error);
@@ -111,6 +142,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await updateProfile(userCredential.user, {
         displayName: name
       });
+      
+      // Call backend register endpoint to verify token
+      try {
+        await apiService.register();
+      } catch (backendError) {
+        console.error('Backend registration verification failed:', backendError);
+        // Continue with frontend registration even if backend fails
+      }
       
       router.replace('/(tabs)');
     } catch (error: any) {
