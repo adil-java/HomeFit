@@ -8,3 +8,8 @@ package-lock.json
 /generated/prisma
 # Uploads
 /uploads/
+# Firebase service account files
+firebase-service-account.json
+serviceAccountKey.json
+**/firebase-service-account.json
+**/serviceAccountKey.json

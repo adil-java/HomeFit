@@ -50,7 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   WebBrowser.maybeCompleteAuthSession();
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
     clientId: "1066517448696-6snmnbvgh3km9l20hs9dqdhrb6uie4m3.apps.googleusercontent.com",
-    offlineAccess: true,
+    
   });
 
   useEffect(() => {
@@ -85,6 +85,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { id_token } = response.params;
       const credential = GoogleAuthProvider.credential(id_token);
       signInWithCredential(auth, credential);
+    }
+    else{
+      console.log("Google login failed");
     }
 
     return () => unsubscribe();

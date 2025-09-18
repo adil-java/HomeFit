@@ -24,8 +24,10 @@ const loginSchema = Yup.object().shape({
 });
 
 export default function LoginScreen() {
+
   const { theme } = useTheme();
-  const { login } = useAuth();
+  const { login,token} = useAuth();
+
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
