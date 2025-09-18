@@ -6,3 +6,5 @@ config.env
 .vscode/ # Ignore VSCode settings
 package-lock.json
 /generated/prisma
+# Uploads
+/uploads/
