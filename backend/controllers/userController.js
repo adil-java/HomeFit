@@ -151,3 +151,42 @@ export const register = async (req, res) => {
     });
   }
 };
+
+// Get current user details (me endpoint)
+export const getMe = async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { firebaseUid: req.user.uid },
+      select: {
+        id: true,
+        firebaseUid: true,
+        email: true,
+        name: true,
+        phoneNumber: true,
+        photoURL: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: "User not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "User details fetched successfully",
+      data: user
+    });
+  } catch (error) {
+    console.error('Get me error:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch user details"
+    });
+  }
+};

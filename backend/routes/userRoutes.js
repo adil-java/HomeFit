@@ -1,5 +1,5 @@
 import express from "express";
-import { getProfile, verifyToken, login, register } from "../controllers/userController.js";
+import { getProfile, verifyToken, login, register, getMe } from "../controllers/userController.js";
 import { protect } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
@@ -11,5 +11,6 @@ router.post("/verify-token", protect, verifyToken);
 
 // Profile routes
 router.get("/profile", protect, getProfile);
+router.get("/me", protect, getMe);
 
 export default router;
