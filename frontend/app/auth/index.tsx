@@ -81,10 +81,10 @@ export default function AuthIndex() {
               onPress={loginWithGoogle}
               activeOpacity={0.9}
             >
-              <Text style={[styles.googleButtonText, { color: theme.colors.text }]}>
+              <Text style={[styles.googleButtonText, { color: '#333' }]}>
                 Continue with Google
               </Text>
-              <ArrowRight size={20} color={theme.colors.text} style={styles.buttonIcon} />
+              <ArrowRight size={20} color="#333" style={styles.buttonIcon} />
             </TouchableOpacity>
 
             <View style={styles.footer}>

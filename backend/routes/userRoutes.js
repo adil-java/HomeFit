@@ -5,9 +5,9 @@ import { protect } from "../middlewares/authMiddleware.js";
 const router = express.Router();
 
 // Auth routes
-router.post("/login", protect, login);
-router.post("/register", protect, register);
-router.post("/verify-token", protect, verifyToken);
+router.post("/login", login);
+router.post("/register", register);
+router.post("/verify-token", verifyToken);
 
 // Profile routes
 router.get("/profile", protect, getProfile);
