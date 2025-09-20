@@ -117,11 +117,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const token = await userCredential.user.getIdToken();
+      console.log('Firebase ID Token:', token);
       
       // Call backend login endpoint to verify token
       try {
-        await apiService.login();
+        const backendResponse = await apiService.login();
+        if (backendResponse && backendResponse.token) {
+          console.log('Backend JWT Token:', backendResponse.token);
+          setToken(backendResponse.token);
+        }
       } catch (backendError) {
         console.error('Backend login verification failed:', backendError);
         // Continue with frontend login even if backend fails
