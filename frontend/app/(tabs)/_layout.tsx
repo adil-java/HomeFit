@@ -73,7 +73,7 @@ export default function TabLayout() {
                   </View>
                 </TouchableOpacity>
 
-                <TouchableOpacity 
+                {/* <TouchableOpacity 
                   style={styles.menuItem}
                   onPress={() => {
                     router.push('/admin/seller-requests');
@@ -89,7 +89,7 @@ export default function TabLayout() {
                       Manage users, sellers management
                     </Text>
                   </View>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
 
                 {/* Product Management */}
                 <TouchableOpacity 
@@ -130,7 +130,7 @@ export default function TabLayout() {
                 </TouchableOpacity>
 
                 {/* Promotions & Discounts */}
-                <TouchableOpacity 
+                {/* <TouchableOpacity 
                   style={styles.menuItem}
                   onPress={() => {
                     router.push('/admin/promotions');
@@ -146,10 +146,10 @@ export default function TabLayout() {
                       Manage discounts & offers
                     </Text>
                   </View>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
 
                 {/* Content Management */}
-                <TouchableOpacity 
+                {/* <TouchableOpacity 
                   style={styles.menuItem}
                   onPress={() => {
                     router.push('/admin/content');
@@ -165,7 +165,7 @@ export default function TabLayout() {
                       Banners & categories
                     </Text>
                   </View>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
 
                 {/* Notification Center */}
                 <TouchableOpacity 
@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
   },
   adminMenu: {
     width: 300,
-    maxHeight: '80%',
+    maxHeight: '55%',
     borderRadius: 12,
     marginRight: 12,
     padding: 12,

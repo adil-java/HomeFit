@@ -32,12 +32,12 @@ const DrawerContent = (props: any) => {
       onPress: () => router.push('/admin'),
       roles: ['admin']
     },
-    { 
-      label: 'Seller Requests', 
-      icon: UserCheck, 
-      onPress: () => router.push('/admin/seller-requests'),
-      roles: ['admin']
-    },
+    // { 
+    //   label: 'Seller Requests', 
+    //   icon: UserCheck, 
+    //   onPress: () => router.push('/admin/seller-requests'),
+    //   roles: ['admin']
+    // },
     { 
       label: 'Revenue Streams', 
       icon: BarChart2, 

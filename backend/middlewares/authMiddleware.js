@@ -78,5 +78,16 @@ const checkAdmin = (req, res, next) => {
   }
 };
 
-export { protect, checkAdmin };
+const checkSeller = (req, res, next) => {
+  if(req.user && req.user.role == 'seller'){
+    next()
+  } else{
+    res.status(403).json({
+      success: false,
+      error: 'Not authorized as a seller'
+    })
+  }
+}
+
+export { protect, checkAdmin, checkSeller };
 export default verifyFirebaseToken;

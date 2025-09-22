@@ -105,13 +105,13 @@ export default function HomeScreen() {
             end={{ x: 1, y: 1 }}
             style={styles.dealsBanner}
           >
-            <Text style={styles.dealsBannerTitle}>Flash Sale</Text>
-            <Text style={styles.dealsBannerSubtitle}>Up to 50% off on selected items</Text>
+            <Text style={styles.dealsBannerTitle}>Become a Seller</Text>
+            <Text style={styles.dealsBannerSubtitle}>List your products and earn money</Text>
             <TouchableOpacity
               style={styles.dealsButton}
               onPress={() => router.push('/search')}
             >
-              <Text style={styles.dealsButtonText}>Shop Now</Text>
+              <Text style={styles.dealsButtonText}>Register</Text>
             </TouchableOpacity>
           </LinearGradient>
         </View>

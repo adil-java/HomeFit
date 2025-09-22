@@ -27,13 +27,13 @@ export default function AdminLayout() {
             title: 'Dashboard',
           }}
         />
-        <Stack.Screen
+        {/* <Stack.Screen
           name="seller-requests"
           options={{
             headerShown: false,
             title: 'Seller Requests',
           }}
-        />
+        /> */}
         <Stack.Screen
           name="revenue"
           options={{

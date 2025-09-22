@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, StyleSheet, Dimensions } from 'react-native';
+import { View, ScrollView, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Text, Card, ActivityIndicator } from 'react-native-paper';
 import { LineChart, BarChart, PieChart } from 'react-native-chart-kit';
@@ -9,7 +9,13 @@ import {
   DollarSign, 
   TrendingUp,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  CreditCard,
+  Package,
+  Clock,
+  CheckCircle,
+  Truck,
+  RefreshCw
 } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { router } from 'expo-router';
@@ -39,7 +45,69 @@ const statsData = {
         strokeWidth: 2
       }
     ]
-  }
+  },
+  topProducts: [
+    { id: '1', name: 'Wireless Earbuds Pro', revenue: 3200, orders: 45, stock: 28 },
+    { id: '2', name: 'Smart Watch X', revenue: 2800, orders: 32, stock: 15 },
+    { id: '3', name: 'Bluetooth Speaker', revenue: 1850, orders: 27, stock: 12 },
+  ],
+  trendingProducts: [
+    {
+      id: '1',
+      name: 'Wireless Earbuds Pro',
+      category: 'Electronics',
+      price: 129.99,
+      sales: 1280,
+      revenue: 166387.20,
+      growth: 24.5,
+      stock: 42,
+      rating: 4.8
+    },
+    {
+      id: '2',
+      name: 'Smart Watch X',
+      category: 'Wearables',
+      price: 199.99,
+      sales: 845,
+      revenue: 168991.55,
+      growth: 18.2,
+      stock: 36,
+      rating: 4.7
+    },
+    {
+      id: '3',
+      name: 'Bluetooth Speaker',
+      category: 'Audio',
+      price: 79.99,
+      sales: 1560,
+      revenue: 124784.40,
+      growth: 32.1,
+      stock: 28,
+      rating: 4.6
+    },
+    {
+      id: '4',
+      name: 'Fitness Tracker',
+      category: 'Wearables',
+      price: 59.99,
+      sales: 2100,
+      revenue: 125979.00,
+      growth: 41.3,
+      stock: 15,
+      rating: 4.5
+    },
+    {
+      id: '5',
+      name: 'Wireless Charger',
+      category: 'Accessories',
+      price: 29.99,
+      sales: 3250,
+      revenue: 97467.50,
+      growth: 28.7,
+      stock: 64,
+      rating: 4.4
+    }
+  ]
 };
 
 export default function DashboardScreen() {
@@ -119,21 +187,21 @@ export default function DashboardScreen() {
       
       <View style={styles.statsContainer}>
         <StatCard 
-          title="Total Users" 
-          value={stats.totalUsers} 
-          icon={Users} 
-          change={8.2} 
-        />
-        <StatCard 
-          title="Active Users" 
-          value={stats.activeUsers} 
-          icon={Users} 
-          change={12.5} 
-        />
-        <StatCard 
           title="Total Revenue" 
           value={stats.totalRevenue} 
           icon={DollarSign} 
+          change={8.2} 
+        />
+        <StatCard 
+          title="Conversion Rate" 
+          value={stats.totalOrders} 
+          icon={TrendingUp} 
+          change={12.5} 
+        />
+        <StatCard 
+          title="Avg. Order Value" 
+          value={stats.totalRevenue} 
+          icon={CreditCard} 
           change={stats.monthlyGrowth} 
           isCurrency
         />
@@ -182,6 +250,65 @@ export default function DashboardScreen() {
           </Card.Content>
         </Card>
       </View>
+
+      {/* Top Trending Products Section */}
+      <Card style={[styles.trendingCard, { backgroundColor: theme.colors.surface }]}>
+        <Card.Content>
+          <View style={styles.sectionHeader}>
+            <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.colors.text }]}>
+              Top Trending Products
+            </Text>
+            <TouchableOpacity onPress={() => router.push('/admin/products')}>
+              <Text style={{ color: theme.colors.primary, fontSize: 12, fontWeight: '500' }}>View All</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.productsList}>
+            {stats.trendingProducts.map((product, index) => (
+              <TouchableOpacity 
+                key={product.id}
+                style={[styles.productItem, index !== stats.trendingProducts.length - 1 && styles.productItemBorder]}
+                onPress={() => router.push(`/admin/products/${product.id}`)}
+              >
+                <View style={styles.productImage}>
+                  <Package size={20} color={theme.colors.primary} />
+                </View>
+                <View style={styles.productInfo}>
+                  <View style={styles.productHeader}>
+                    <Text style={[styles.productName, { color: theme.colors.text }]} numberOfLines={1}>
+                      {product.name}
+                    </Text>
+                    <View style={styles.productMeta}>
+                      <Text style={[styles.productCategory, { color: theme.colors.textSecondary }]}>{product.category}</Text>
+                      <View style={styles.ratingContainer}>
+                        <Text style={[styles.ratingText, { color: '#F59E0B' }]}>{product.rating}</Text>
+                        <Text style={[styles.ratingIcon, { color: '#F59E0B' }]}>★</Text>
+                      </View>
+                    </View>
+                  </View>
+                  <View style={styles.productStats}>
+                    <View style={styles.statItem}>
+                      <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Sales</Text>
+                      <Text style={[styles.statValue, { color: theme.colors.primary }]}>{product.sales.toLocaleString()}</Text>
+                    </View>
+                    <View style={styles.statItem}>
+                      <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Revenue</Text>
+                      <Text style={[styles.statValue, { color: theme.colors.primary }]}>${(product.revenue / 1000).toFixed(1)}K</Text>
+                    </View>
+                    <View style={styles.statItem}>
+                      <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Growth</Text>
+                      <View style={styles.growthBadge}>
+                        <ArrowUpRight size={12} color="#10B981" />
+                        <Text style={[styles.growthText, { color: '#10B981' }]}>{product.growth}%</Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </Card.Content>
+      </Card>
     </ScrollView>
   );
 }
@@ -264,5 +391,112 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: 'row',
+  },
+  trendingCard: {
+    marginBottom: 16,
+    borderRadius: 12,
+    marginTop: 12,
+    elevation: 2,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontWeight: '600',
+  },
+  productsList: {
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  productItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+  },
+  productItemBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  productImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  productInfo: {
+    flex: 1,
+  },
+  productHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  productName: {
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
+    marginRight: 8,
+  },
+  productMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  productCategory: {
+    fontSize: 11,
+    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  ratingText: {
+    fontSize: 11,
+    fontWeight: '600',
+    marginRight: 2,
+  },
+  ratingIcon: {
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  productStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  statItem: {
+    flex: 1,
+  },
+  statLabel: {
+    fontSize: 10,
+    marginBottom: 2,
+  },
+  statValue: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  growthBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+    alignSelf: 'flex-start',
+  },
+  growthText: {
+    fontSize: 11,
+    fontWeight: '600',
+    marginLeft: 2,
   },
 });

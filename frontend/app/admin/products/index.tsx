@@ -63,6 +63,14 @@ export default function ProductsScreen() {
     maxPrice: '',
     inStock: false,
   });
+  
+  const navigateToAddProduct = () => {
+    router.push('/admin/products/new');
+  };
+  
+  const navigateToEditProduct = (productId: string) => {
+    router.push(`/admin/products/${productId}`);
+  };
 
   const categories = [...new Set(products.map(p => p.category))];
   const statuses = ['published', 'draft', 'archived'];
@@ -181,7 +189,7 @@ export default function ProductsScreen() {
         </TouchableOpacity>
         <TouchableOpacity 
           style={[styles.actionButton, { backgroundColor: `${theme.colors.primary}10` }]}
-          onPress={() => router.push(`/admin/products/edit/${item.id}`)}
+          onPress={() => navigateToEditProduct(item.id)}
         >
           <Edit size={18} color={theme.colors.primary} />
         </TouchableOpacity>
@@ -207,19 +215,29 @@ export default function ProductsScreen() {
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
       <View style={styles.header}>
-        <View>
-          <Text style={[styles.title, { color: theme.colors.text }]}>Products</Text>
-          <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
-            {filteredProducts.length} products found
-          </Text>
+        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
+          Products
+        </Text>
+        <View style={styles.headerActions}>
+          <TouchableOpacity 
+            style={[styles.actionButton, { backgroundColor: theme.colors.card, marginRight: 8 }]}
+            onPress={() => setShowFilters(!showFilters)}
+          >
+            <Filter size={18} color={theme.colors.text} />
+            <Text style={[styles.actionButtonText, { color: theme.colors.text }]}>
+              {showFilters ? 'Hide Filters' : 'Filter'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.actionButton, { backgroundColor: theme.colors.primary }]}
+            onPress={navigateToAddProduct}
+          >
+            <Plus size={18} color="white" />
+            <Text style={[styles.actionButtonText, { color: 'white' }]}>
+              Add Product
+            </Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity 
-          style={[styles.addButton, { backgroundColor: theme.colors.primary }]}
-          onPress={() => router.push('/admin/products/add')}
-        >
-          <Plus size={18} color="#fff" />
-          <Text style={styles.addButtonText}>Add Product</Text>
-        </TouchableOpacity>
       </View>
 
       {/* Search and Filter */}
@@ -250,128 +268,128 @@ export default function ProductsScreen() {
       {/* Filters Panel */}
       {showFilters && (
         <View style={[styles.filtersPanel, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-          <View style={styles.filterSection}>
-            <Text style={[styles.filterLabel, { color: theme.colors.text }]}>Category</Text>
-            <View style={styles.filterOptions}>
+        <View style={styles.filterSection}>
+          <Text style={[styles.filterLabel, { color: theme.colors.text }]}>Category</Text>
+          <View style={styles.filterOptions}>
+            <TouchableOpacity 
+              style={[styles.filterOption, !filters.category && { backgroundColor: theme.colors.primary }]}
+              onPress={() => setFilters({...filters, category: ''})}
+            >
+              <Text style={[styles.filterOptionText, !filters.category && { color: '#fff' }]}>All</Text>
+            </TouchableOpacity>
+            {categories.map(category => (
               <TouchableOpacity 
-                style={[styles.filterOption, !filters.category && { backgroundColor: theme.colors.primary }]}
-                onPress={() => setFilters({...filters, category: ''})}
+                key={category}
+                style={[
+                  styles.filterOption, 
+                  filters.category === category && { backgroundColor: theme.colors.primary }
+                ]}
+                onPress={() => setFilters({...filters, category})}
               >
-                <Text style={[styles.filterOptionText, !filters.category && { color: '#fff' }]}>All</Text>
+                <Text style={[styles.filterOptionText, filters.category === category && { color: '#fff' }]}>
+                  {category}
+                </Text>
               </TouchableOpacity>
-              {categories.map(category => (
-                <TouchableOpacity 
-                  key={category}
-                  style={[
-                    styles.filterOption, 
-                    filters.category === category && { backgroundColor: theme.colors.primary }
-                  ]}
-                  onPress={() => setFilters({...filters, category})}
-                >
-                  <Text style={[styles.filterOptionText, filters.category === category && { color: '#fff' }]}>
-                    {category}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          <View style={styles.filterSection}>
-            <Text style={[styles.filterLabel, { color: theme.colors.text }]}>Status</Text>
-            <View style={styles.filterOptions}>
-              <TouchableOpacity 
-                style={[styles.filterOption, !filters.status && { backgroundColor: theme.colors.primary }]}
-                onPress={() => setFilters({...filters, status: ''})}
-              >
-                <Text style={[styles.filterOptionText, !filters.status && { color: '#fff' }]}>All</Text>
-              </TouchableOpacity>
-              {statuses.map(status => (
-                <TouchableOpacity 
-                  key={status}
-                  style={[
-                    styles.filterOption, 
-                    filters.status === status && { backgroundColor: theme.colors.primary }
-                  ]}
-                  onPress={() => setFilters({...filters, status})}
-                >
-                  <Text style={[styles.filterOptionText, filters.status === status && { color: '#fff' }]}>
-                    {status.charAt(0).toUpperCase() + status.slice(1)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          <View style={styles.filterSection}>
-            <Text style={[styles.filterLabel, { color: theme.colors.text }]}>Price Range</Text>
-            <View style={styles.priceRangeContainer}>
-              <View style={[styles.priceInputContainer, { borderColor: theme.colors.border }]}>
-                <Text style={[styles.currencySymbol, { color: theme.colors.text }]}>$</Text>
-                <TextInput
-                  style={[styles.priceInput, { color: theme.colors.text }]}
-                  placeholder="Min"
-                  placeholderTextColor={theme.colors.textSecondary}
-                  keyboardType="numeric"
-                  value={filters.minPrice}
-                  onChangeText={text => setFilters({...filters, minPrice: text})}
-                />
-              </View>
-              <Text style={[styles.priceRangeSeparator, { color: theme.colors.textSecondary }]}>to</Text>
-              <View style={[styles.priceInputContainer, { borderColor: theme.colors.border }]}>
-                <Text style={[styles.currencySymbol, { color: theme.colors.text }]}>$</Text>
-                <TextInput
-                  style={[styles.priceInput, { color: theme.colors.text }]}
-                  placeholder="Max"
-                  placeholderTextColor={theme.colors.textSecondary}
-                  keyboardType="numeric"
-                  value={filters.maxPrice}
-                  onChangeText={text => setFilters({...filters, maxPrice: text})}
-                />
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.filterSection}>
-            <TouchableOpacity 
-              style={styles.stockFilter}
-              onPress={() => setFilters({...filters, inStock: !filters.inStock})}
-            >
-              <View style={[
-                styles.checkbox, 
-                { 
-                  backgroundColor: filters.inStock ? theme.colors.primary : 'transparent',
-                  borderColor: theme.colors.border,
-                }
-              ]}>
-                {filters.inStock && <CheckSquare size={14} color="#fff" />}
-              </View>
-              <Text style={[styles.stockFilterText, { color: theme.colors.text }]}>
-                In Stock Only
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.filterActions}>
-            <TouchableOpacity 
-              style={[styles.filterButton, { borderColor: theme.colors.border }]}
-              onPress={() => setFilters({
-                category: '',
-                status: '',
-                minPrice: '',
-                maxPrice: '',
-                inStock: false,
-              })}
-            >
-              <Text style={[styles.filterButtonText, { color: theme.colors.text }]}>Reset Filters</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.filterButton, { backgroundColor: theme.colors.primary }]}
-              onPress={() => setShowFilters(false)}
-            >
-              <Text style={[styles.filterButtonText, { color: '#fff' }]}>Apply Filters</Text>
-            </TouchableOpacity>
+            ))}
           </View>
         </View>
+
+        <View style={styles.filterSection}>
+          <Text style={[styles.filterLabel, { color: theme.colors.text }]}>Status</Text>
+          <View style={styles.filterOptions}>
+            <TouchableOpacity 
+              style={[styles.filterOption, !filters.status && { backgroundColor: theme.colors.primary }]}
+              onPress={() => setFilters({...filters, status: ''})}
+            >
+              <Text style={[styles.filterOptionText, !filters.status && { color: '#fff' }]}>All</Text>
+            </TouchableOpacity>
+            {statuses.map(status => (
+              <TouchableOpacity 
+                key={status}
+                style={[
+                  styles.filterOption, 
+                  filters.status === status && { backgroundColor: theme.colors.primary }
+                ]}
+                onPress={() => setFilters({...filters, status})}
+              >
+                <Text style={[styles.filterOptionText, filters.status === status && { color: '#fff' }]}>
+                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.filterSection}>
+          <Text style={[styles.filterLabel, { color: theme.colors.text }]}>Price Range</Text>
+          <View style={styles.priceRangeContainer}>
+            <View style={[styles.priceInputContainer, { borderColor: theme.colors.border }]}>
+              <Text style={[styles.currencySymbol, { color: theme.colors.text }]}>$</Text>
+              <TextInput
+                style={[styles.priceInput, { color: theme.colors.text }]}
+                placeholder="Min"
+                placeholderTextColor={theme.colors.textSecondary}
+                keyboardType="numeric"
+                value={filters.minPrice}
+                onChangeText={text => setFilters({...filters, minPrice: text})}
+              />
+            </View>
+            <Text style={[styles.priceRangeSeparator, { color: theme.colors.textSecondary }]}>to</Text>
+            <View style={[styles.priceInputContainer, { borderColor: theme.colors.border }]}>
+              <Text style={[styles.currencySymbol, { color: theme.colors.text }]}>$</Text>
+              <TextInput
+                style={[styles.priceInput, { color: theme.colors.text }]}
+                placeholder="Max"
+                placeholderTextColor={theme.colors.textSecondary}
+                keyboardType="numeric"
+                value={filters.maxPrice}
+                onChangeText={text => setFilters({...filters, maxPrice: text})}
+              />
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.filterSection}>
+          <TouchableOpacity 
+            style={styles.stockFilter}
+            onPress={() => setFilters({...filters, inStock: !filters.inStock})}
+          >
+            <View style={[
+              styles.checkbox, 
+              { 
+                backgroundColor: filters.inStock ? theme.colors.primary : 'transparent',
+                borderColor: theme.colors.border,
+              }
+            ]}>
+              {filters.inStock && <CheckSquare size={14} color="#fff" />}
+            </View>
+            <Text style={[styles.stockFilterText, { color: theme.colors.text }]}>
+              In Stock Only
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.filterActions}>
+          <TouchableOpacity 
+            style={[styles.filterButton, { borderColor: theme.colors.border }]}
+            onPress={() => setFilters({
+              category: '',
+              status: '',
+              minPrice: '',
+              maxPrice: '',
+              inStock: false,
+            })}
+          >
+            <Text style={[styles.filterButtonText, { color: theme.colors.text }]}>Reset Filters</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.filterButton, { backgroundColor: theme.colors.primary }]}
+            onPress={() => setShowFilters(false)}
+          >
+            <Text style={[styles.filterButtonText, { color: '#fff' }]}>Apply Filters</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
       )}
 
       {/* Products List */}
@@ -453,25 +471,24 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.1)',
   },
-  title: {
+  headerTitle: {
     fontSize: 24,
     fontWeight: '700',
     marginBottom: 4,
   },
-  subtitle: {
-    fontSize: 14,
-    opacity: 0.8,
+  headerActions: {
+    flexDirection: 'row',
   },
-  addButton: {
+  actionButton: {
+    padding: 8,
+    borderRadius: 8,
+    marginLeft: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
   },
-  addButtonText: {
-    color: '#fff',
-    marginLeft: 8,
+  actionButtonText: {
+    marginLeft: 6,
+    fontSize: 14,
     fontWeight: '500',
   },
   searchContainer: {
