@@ -1,6 +1,6 @@
 import { auth } from '../firebaseConfig';
 
-const API_BASE_URL = 'http://localhost:8080/api'; // Backend server URL
+const API_BASE_URL = 'http://192.168.0.112:8080/api'; // Backend server URL
 
 class ApiService {
   private async getAuthHeaders(): Promise<Record<string, string>> {

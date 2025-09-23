@@ -158,7 +158,7 @@ export const searchProducts = async (req, res) => {
 export const createProduct = async (req, res) => {
   try {
     await uploadFiles(req, res)
-    const userId = req.user?.id;
+    const userId = req.user?.uid;
     
     if (!userId) {
       return res.status(401).json({
@@ -186,7 +186,7 @@ export const updateProduct = async (req, res) => {
   try {
     await uploadFiles(req,res);
     const { id } = req.params;
-    const userId = req.user?.id;
+    const userId = req.user?.uid;
     
     if (!userId) {
       return res.status(401).json({
