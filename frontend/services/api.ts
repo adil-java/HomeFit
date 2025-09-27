@@ -1,6 +1,9 @@
 import { auth } from '../firebaseConfig';
 
-const API_BASE_URL = 'http://192.168.0.112:8080/api'; // Backend server URL
+// Prefer environment variable set via Expo (e.g., EXPO_PUBLIC_API_BASE_URL)
+// Fallback to previous hardcoded value to avoid breaking existing setups
+const API_BASE_URL =
+  (process.env.EXPO_PUBLIC_API_BASE_URL as string) || 'http://192.168.0.112:8080/api';
 
 class ApiService {
   private async getAuthHeaders(): Promise<Record<string, string>> {
@@ -25,11 +28,13 @@ class ApiService {
         headers,
       });
       
+      const json = await response.json().catch(() => ({ success: false }));
       if (!response.ok) {
-        throw new Error('Token verification failed');
+        const message = (json as any)?.error || 'Token verification failed';
+        throw new Error(message);
       }
       
-      return await response.json();
+      return json;
     } catch (error) {
       console.error('Token verification error:', error);
       throw error;
@@ -44,11 +49,13 @@ class ApiService {
         headers,
       });
       
+      const json = await response.json().catch(() => ({ success: false }));
       if (!response.ok) {
-        throw new Error('Backend login failed');
+        const message = (json as any)?.error || 'Backend login failed';
+        throw new Error(message);
       }
       
-      return await response.json();
+      return json;
     } catch (error) {
       console.error('Backend login error:', error);
       throw error;
@@ -63,11 +70,13 @@ class ApiService {
         headers,
       });
       
+      const json = await response.json().catch(() => ({ success: false }));
       if (!response.ok) {
-        throw new Error('Backend registration failed');
+        const message = (json as any)?.error || 'Backend registration failed';
+        throw new Error(message);
       }
       
-      return await response.json();
+      return json;
     } catch (error) {
       console.error('Backend registration error:', error);
       throw error;
@@ -82,11 +91,13 @@ class ApiService {
         headers,
       });
       
+      const json = await response.json().catch(() => ({ success: false }));
       if (!response.ok) {
-        throw new Error('Failed to fetch profile');
+        const message = (json as any)?.error || 'Failed to fetch profile';
+        throw new Error(message);
       }
       
-      return await response.json();
+      return json;
     } catch (error) {
       console.error('Profile fetch error:', error);
       throw error;

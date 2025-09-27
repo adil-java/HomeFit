@@ -118,21 +118,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      // Immediately use Firebase token so UI can proceed without waiting on backend
       const token = await userCredential.user.getIdToken();
-      console.log('Firebase ID Token:', token);
-      
-      // Call backend login endpoint to verify token
-      try {
-        const backendResponse = await apiService.login();
-        if (backendResponse && backendResponse.token) {
-          console.log('Backend JWT Token:', backendResponse.token);
-          setToken(backendResponse.token);
-        }
-      } catch (backendError) {
-        console.error('Backend login verification failed:', backendError);
-        // Continue with frontend login even if backend fails
-      }
-      
+      setToken(token);
+
+      // Optimistically set minimal user; full user will be set by onAuthStateChanged + verifyToken
+      const optimisticUser = {
+        id: userCredential.user.uid,
+        email: userCredential.user.email || '',
+        name: userCredential.user.displayName || (userCredential.user.email?.split('@')[0] || ''),
+        role: userCredential.user.email?.includes('admin') ? 'admin' : 'customer',
+      };
+      setUser(optimisticUser);
+      await SecureStore.setItemAsync('token', token);
+      await SecureStore.setItemAsync('user', JSON.stringify(optimisticUser));
+
+      // Best-effort: notify backend to create/update user based on Firebase token
+      // Any error here should not block the UI
+      apiService
+        .login()
+        .catch((backendError) => console.error('Backend login verification failed:', backendError));
+
       router.replace('/(tabs)');
     } catch (error: any) {
       console.error('Login error:', error);
@@ -143,20 +149,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (email: string, password: string, name: string) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      
+
       // Update the user's display name
       await updateProfile(userCredential.user, {
-        displayName: name
+        displayName: name,
       });
-      
-      // Call backend register endpoint to verify token
-      try {
-        await apiService.register();
-      } catch (backendError) {
-        console.error('Backend registration verification failed:', backendError);
-        // Continue with frontend registration even if backend fails
-      }
-      
+
+      // Immediately use Firebase token so UI can proceed
+      const token = await userCredential.user.getIdToken();
+      setToken(token);
+
+      const optimisticUser = {
+        id: userCredential.user.uid,
+        email: userCredential.user.email || '',
+        name: name || userCredential.user.displayName || (userCredential.user.email?.split('@')[0] || ''),
+        role: userCredential.user.email?.includes('admin') ? 'admin' : 'customer',
+      };
+      setUser(optimisticUser);
+      await SecureStore.setItemAsync('token', token);
+      await SecureStore.setItemAsync('user', JSON.stringify(optimisticUser));
+
+      // Best-effort: notify backend to create user entry
+      apiService
+        .register()
+        .catch((backendError) => console.error('Backend registration verification failed:', backendError));
+
       router.replace('/(tabs)');
     } catch (error: any) {
       console.error('Registration error:', error);

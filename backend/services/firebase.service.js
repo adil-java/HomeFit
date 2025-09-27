@@ -29,7 +29,7 @@ class FirebaseServices {
     // Example: List all users
     this.listUsers = async () => {
       const users = [];
-      const listUsersResult = await this.auth.listUsers();
+      let listUsersResult = await this.auth.listUsers();
       do {
         users.push(...listUsersResult.users);
         listUsersResult = await listUsersResult.nextPage();
@@ -70,3 +70,4 @@ class FirebaseServices {
 }
 
 export default new FirebaseServices();
+
