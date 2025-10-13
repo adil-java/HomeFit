@@ -1,6 +1,6 @@
 import prisma from '../config/db.js';
 import { Role } from '@prisma/client';
-import { hashPassword } from '../utils/hash.js';
+import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { generateToken,verifyToken } from '../utils/jwtHelper.js';
 // Get all users (admin only)
@@ -104,7 +104,7 @@ try {
     }
 
     // Check password
-    const isMatch = await hashPassword.compare(password, user.password);
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
         return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
@@ -132,4 +132,5 @@ try {
     return res.status(500).json({ success: false, message: 'Server Error' });
 }
 
-};  
+};
+  

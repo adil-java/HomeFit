@@ -67,6 +67,7 @@ const protect = async (req, res, next) => {
 };
 
 // Middleware to check if user is admin
+
 const checkAdmin = (req, res, next) => {
   if (req.user && req.user.role === 'admin') {
     next();
@@ -77,7 +78,7 @@ const checkAdmin = (req, res, next) => {
     });
   }
 };
-
+// Middleware to check if user is seller
 const checkSeller = (req, res, next) => {
   if(req.user && req.user.role == 'seller'){
     next()
