@@ -25,6 +25,10 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/wishlist", wishlistRoutes);
 
+//Admin routes
+import adminRoutes from "./routes/admin.router.js";
+app.use("/api/admin", adminRoutes);
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
