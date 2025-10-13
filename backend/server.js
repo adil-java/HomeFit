@@ -62,6 +62,7 @@ async function startServer() {
 
     app.listen(PORT,"0.0.0.0", () => {
       console.log(`Server running on port ${PORT}`);
+      // console.log(hashPassword("admin123"))
       console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
     });
   } catch (err) {

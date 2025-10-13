@@ -6,11 +6,11 @@ import {
   updateUserRole,
   deleteUser
 } from '../controllers/admin.controller.js';
-import { protect, checkAdmin } from '../middlewares/authMiddleware.js';
+// import {  checkAdmin } from '../middlewares/authMiddleware.js';
 const router = express.Router();
 
-router.use(protect);
-router.use(checkAdmin);
+
+
 
 router.route('/login').post(adminLogin); // Placeholder for admin login if needed
 router.route('/users').get(getAllUsers);

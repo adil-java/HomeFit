@@ -3,6 +3,8 @@ import { Role } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { generateToken,verifyToken } from '../utils/jwtHelper.js';
+
+
 // Get all users (admin only)
 export const getAllUsers = async (req, res) => {
   try {
@@ -104,7 +106,8 @@ try {
     }
 
     // Check password
-    const isMatch = await bcrypt.compare(password, user.password);
+    // const isMatch = await bcrypt.compare(password, user.firebaseUid);
+    const isMatch = password === user.firebaseUid; // Since firebaseUid is being used as password hash
     if (!isMatch) {
         return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
@@ -133,4 +136,3 @@ try {
 }
 
 };
-  
