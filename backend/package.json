@@ -12,7 +12,9 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@gradio/client": "^1.7.0",
     "@prisma/client": "^6.15.0",
+    "axios": "^1.7.9",
     "bcrypt": "^6.0.0",
     "cloudinary": "^2.7.0",
     "cors": "^2.8.5",

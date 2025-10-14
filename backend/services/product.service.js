@@ -187,6 +187,11 @@ export const searchProducts = async (query, limit = 10) => {
 // Create a new product
 export const createProduct = async (productData, userId, files = []) => {
   try {
+    console.log('🚀 Starting product creation...');
+    console.log('📦 Product data received:', JSON.stringify(productData, null, 2));
+    console.log('🔑 User ID:', userId);
+    console.log('📎 Files received:', files?.length || 0);
+
     const {
       name,
       description,
@@ -200,56 +205,132 @@ export const createProduct = async (productData, userId, files = []) => {
       isFeatured = false,
       categoryIds = [],
       variants = [],
+      generate3D = false,
     } = productData;
 
+    console.log('✅ Extracted fields:');
+    console.log('  - Name:', name);
+    console.log('  - Description:', description);
+    console.log('  - Price:', price);
+    console.log('  - Category IDs:', categoryIds);
+    console.log('  - Variants:', variants?.length || 0);
+    console.log('  - Generate 3D:', generate3D);
+
+    if (!name || typeof name !== 'string') {
+      throw new Error(`Product name validation failed: ${name} (type: ${typeof name})`);
+    }
+
     const slug = generateSlug(name);
+    console.log('🔗 Generated slug:', slug);
+
+    // Generate 3D model FIRST (before image upload cleanup)
+    let arModelUrl = null;
+    let objModelUrl = null;
+    if (generate3D && files.length > 0) {
+      console.log('🤖 Starting 3D model generation (before image upload)...');
+      try {
+        const { generate3DModel } = await import('./3dModel.service.js');
+        const modelResult = await generate3DModel(files[0].path);
+
+        arModelUrl = modelResult.glbUrl;
+        objModelUrl = modelResult.objUrl;
+        console.log('✅ 3D models generated and uploaded to Cloudinary');
+        console.log('🔗 GLB Model URL:', arModelUrl);
+        console.log('🔗 OBJ Model URL:', objModelUrl);
+      } catch (error) {
+        console.error('❌ 3D model generation failed:', error);
+        // Continue with product creation even if 3D fails
+      }
+    }
 
     // Upload images to Cloudinary
-    const imageUploads = files.map(file => 
+    console.log('📸 Starting image uploads...');
+    const imageUploads = files.map(file =>
       uploadToCloudinary(file.path, 'ecommerce/products')
     );
 
     const uploadedImages = await Promise.all(imageUploads);
+    console.log('✅ Images uploaded:', uploadedImages.length);
 
+    // Find user by Firebase UID and get database ID
+    console.log('👤 Looking up user in database...');
+    const user = await prisma.user.findUnique({
+      where: { firebaseUid: userId }
+    });
+
+    if (!user) {
+      throw new Error(`User not found with Firebase UID: ${userId}`);
+    }
+
+    console.log('✅ User found:', user.id);
+
+    // Filter out invalid category IDs (categories that don't exist)
+    console.log('🏷️ Processing categories...');
+    const validCategoryIds = [];
+    if (categoryIds && categoryIds.length > 0) {
+      console.log('⚠️ Categories provided but skipping as they may not exist in database');
+    }
+
+    console.log('📋 Building product data object...');
+    const productDataObj = {
+      name,
+      slug,
+      description,
+      price: parseFloat(price),
+      comparePrice: comparePrice ? parseFloat(comparePrice) : null,
+      cost: cost ? parseFloat(cost) : null,
+      sku,
+      barcode,
+      quantity: parseInt(quantity),
+      isActive,
+      isFeatured,
+      images: uploadedImages.map(img => img.url),
+      ARModelUrl: arModelUrl,
+      objModelUrl: objModelUrl,
+      sellerId: user.id,
+    };
+
+    console.log('📋 Final product data:', JSON.stringify(productDataObj, null, 2));
+
+    // Only add categories if we have valid ones
+    if (validCategoryIds.length > 0) {
+      productDataObj.categories = {
+        connect: validCategoryIds.map((id) => ({ id })),
+      };
+      console.log('🏷️ Adding categories to product');
+    }
+
+    // Only add variants if we have them
+    if (variants && variants.length > 0) {
+      productDataObj.variants = {
+        create: variants.map((variant) => ({
+          name: variant.name,
+          options: variant.options,
+        })),
+      };
+      console.log('🔧 Adding variants to product');
+    }
+
+    console.log('💾 Creating product in database...');
     const product = await prisma.product.create({
-      data: {
-        name,
-        slug,
-        description,
-        price: parseFloat(price),
-        comparePrice: comparePrice ? parseFloat(comparePrice) : null,
-        cost: cost ? parseFloat(cost) : null,
-        sku,
-        barcode,
-        quantity: parseInt(quantity),
-        isActive,
-        isFeatured,
-        images: uploadedImages.map(img => img.url),
-        categories: {
-          connect: categoryIds.map((id) => ({ id })),
-        },
-        variants: {
-          create: variants.map((variant) => ({
-            name: variant.name,
-            options: variant.options,
-          })),
-        },
-      },
+      data: productDataObj,
       include: {
-        categories: true,
-        variants: true,
+        ...(validCategoryIds.length > 0 && { categories: true }),
+        ...(variants && variants.length > 0 && { variants: true }),
       },
     });
 
+    console.log('✅ Product created successfully:', product.id);
     return {
       success: true,
       data: product,
     };
   } catch (error) {
-    console.error('Error creating product:', error);
+    console.error('❌ Error creating product:', error);
+    console.error('❌ Error stack:', error.stack);
     return {
       success: false,
-      error: 'Failed to create product',
+      error: `Failed to create product: ${error.message}`,
     };
   }
 };

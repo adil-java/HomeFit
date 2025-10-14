@@ -12,6 +12,7 @@ import multer from 'multer'
 import path from 'path'
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { generate3DModel } from '../services/3dModel.service.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -41,7 +42,37 @@ const upload = multer({
       cb(new Error('Only images are allowed (jpeg, jpg, png, webp)'));
     }
   }
-}).array('images', 5); // 'images' is the field name, max 5 files
+}).array('files', 5); // Changed from 'images' to 'files' to match frontend
+
+// Multer for 3D model generation (single image)
+const uploadSingle = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    const filetypes = /jpeg|jpg|png|webp/;
+    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = filetypes.test(file.mimetype);
+    
+    if (extname && mimetype) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only images are allowed (jpeg, jpg, png, webp)'));
+    }
+  }
+}).single('image'); // 'image' is the field name for 3D generation
+
+// Wrapper for async/await with multer (for 3D generation)
+const uploadSingleFile = (req, res) => {
+  return new Promise((resolve, reject) => {
+    uploadSingle(req, res, (err) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
+};
 
 // Wrapper for async/await with multer
 const uploadFiles = (req, res) => {
@@ -63,6 +94,31 @@ const handleError = (res, error, statusCode = 500) => {
     success: false,
     error: error.message || 'Server Error',
   });
+};
+
+// @desc    Generate 3D model from image
+// @route   POST /api/products/generate-3d
+// @access  Private
+export const generate3DModelEndpoint = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: 'No image file provided',
+      });
+    }
+
+    const result = await generate3DModel(req.file.path);
+
+    res.json({
+      success: true,
+      message: '3D model generated and uploaded to Cloudinary successfully!',
+      model: result,
+    });
+  } catch (error) {
+    console.error('3D model generation error:', error);
+    handleError(res, error);
+  }
 };
 
 // @desc    Get all products
@@ -157,25 +213,45 @@ export const searchProducts = async (req, res) => {
 // @access  Private/Admin
 export const createProduct = async (req, res) => {
   try {
-    await uploadFiles(req, res)
+    // Handle the nested data structure from frontend
+    let productData = req.body;
+
+    // If data is nested in productData field (from frontend), parse it
+    if (req.body.productData && typeof req.body.productData === 'string') {
+      try {
+        productData = JSON.parse(req.body.productData);
+        console.log('Parsed product data:', productData);
+      } catch (error) {
+        console.error('Error parsing productData JSON:', error);
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid product data format',
+        });
+      }
+    }
+
     const userId = req.user?.uid;
-    
+
     if (!userId) {
       return res.status(401).json({
         success: false,
         error: 'Not authorized to perform this action',
       });
     }
-    
-    const result = await createProductService(req.body, userId, req.files);
-    
+
+    const result = await createProductService(productData, userId, req.files);
+
     if (!result.success) {
       return res.status(400).json(result);
     }
-    
+
     res.status(201).json(result);
   } catch (error) {
-    handleError(res, error);
+    console.error('Error creating product:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to create product',
+    });
   }
 };
 

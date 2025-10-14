@@ -1,4 +1,5 @@
 import firebaseService from '../services/firebase.service.js';
+import prisma from '../config/db.js';
 
 const verifyFirebaseToken = async (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1]; // "Bearer <token>"
@@ -22,7 +23,7 @@ const verifyFirebaseToken = async (req, res, next) => {
 const protect = async (req, res, next) => {
   try {
     let token;
-    
+
     if (
       req.headers.authorization &&
       req.headers.authorization.startsWith('Bearer')
@@ -38,15 +39,20 @@ const protect = async (req, res, next) => {
     }
 
     try {
-      const user = await firebaseService.verifyToken(token);
-      
+      const firebaseUser = await firebaseService.verifyToken(token);
+
+      // Get user from database to get proper role
+      const dbUser = await prisma.user.findUnique({
+        where: { firebaseUid: firebaseUser.uid }
+      });
+
       req.user = {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-        phoneNumber: user.phoneNumber,
-        role: user.email?.includes('admin') ? 'admin' : 'customer',
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        displayName: firebaseUser.displayName,
+        photoURL: firebaseUser.photoURL,
+        phoneNumber: firebaseUser.phoneNumber,
+        role: dbUser?.role || 'customer', // Default to customer if not found
       };
 
       next();
@@ -67,9 +73,8 @@ const protect = async (req, res, next) => {
 };
 
 // Middleware to check if user is admin
-
 const checkAdmin = (req, res, next) => {
-if (req.user && req.user.role === 'admin') {
+  if (req.user && req.user.role === 'ADMIN') {
     next();
   } else {
     res.status(403).json({
@@ -78,17 +83,18 @@ if (req.user && req.user.role === 'admin') {
     });
   }
 };
+
 // Middleware to check if user is seller
 const checkSeller = (req, res, next) => {
-  if(req.user && req.user.role == 'seller'){
-    next()
-  } else{
+  if (req.user && (req.user.role === 'SELLER' || req.user.role === 'ADMIN')) {
+    next();
+  } else {
     res.status(403).json({
       success: false,
-      error: 'Not authorized as a seller'
-    })
+      error: 'Not authorized as a seller',
+    });
   }
-}
+};
 
 export { protect, checkAdmin, checkSeller };
 export default verifyFirebaseToken;

@@ -74,6 +74,7 @@ model Product {
   isFeatured    Boolean    @default(false)
   images        Json       // Array of image URLs stored as JSON
   ARModelUrl    String?
+  objModelUrl   String?    // OBJ 3D model URL for backup format
   sellerId      String?
   seller        User?       @relation("SellerProducts", fields: [sellerId], references: [id])
   categories    Category[] @relation("ProductCategories")
