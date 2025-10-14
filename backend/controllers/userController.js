@@ -190,3 +190,247 @@ export const getMe = async (req, res) => {
     });
   }
 };
+
+// Apply for seller
+// Apply for seller
+export const applyForSeller = async (req, res) => {
+  try {
+    const firebaseUid = req.user.uid; // Firebase UID from token
+
+    // Find or create user in the database
+    let user = await prisma.user.findUnique({
+      where: { firebaseUid: firebaseUid },
+    });
+
+    if (!user) {
+      // Optional: auto-create the user if not found
+     return res.status(404).json({
+        success: false,
+        error: "User not found"
+      });
+    }
+
+    const {
+      businessName,
+      businessType,
+      description,
+      phone,
+      address,
+      website,
+      taxId,
+      businessLicense,
+    } = req.body;
+
+    // Check if user already has a pending or approved application
+    const existingApplication = await prisma.sellerApplication.findFirst({
+      where: {
+        userId: user.id,
+        status: { in: ["PENDING", "APPROVED"] },
+      },
+    });
+
+    if (existingApplication) {
+      return res.status(400).json({
+        success: false,
+        error: "You already have a pending or approved seller application",
+      });
+    }
+
+    // Create new seller application
+    const application = await prisma.sellerApplication.create({
+      data: {
+        userId: user.id, // ✅ ensure correct foreign key
+        businessName,
+        businessType,
+        description,
+        phone,
+        address,
+        website,
+        taxId,
+        businessLicense,
+        status: "PENDING",
+      },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "Seller application submitted successfully",
+      application,
+    });
+  } catch (error) {
+    console.error("Apply for seller error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to submit seller application",
+    });
+  }
+};
+
+
+// Get all seller applications (Admin only)
+export const getAllSellerApplications = async (req, res) => {
+  try {
+    const applications = await prisma.sellerApplication.findMany({
+      where: {
+        status: {
+          in: ['PENDING', 'APPROVED', 'REJECTED']
+        }
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            firebaseUid: true
+          }
+        }
+      },
+      orderBy: {
+        submittedAt: 'desc'
+      }
+    });
+
+    res.json({
+      success: true,
+      applications: applications
+    });
+  } catch (error) {
+    console.error('Get all seller applications error:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch seller applications"
+    });
+  }
+};
+
+// Accept seller application (Admin only)
+export const acceptSellerApplication = async (req, res) => {
+  try {
+    const { applicationId } = req.params;
+    const { adminNotes } = req.body;
+
+    // Find the application
+    const application = await prisma.sellerApplication.findUnique({
+      where: { id: applicationId },
+      include: { user: true }
+    });
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        error: "Application not found"
+      });
+    }
+
+    if (application.status !== 'PENDING') {
+      return res.status(400).json({
+        success: false,
+        error: "Application has already been reviewed"
+      });
+    }
+
+    // Update application status
+    const updatedApplication = await prisma.sellerApplication.update({
+      where: { id: applicationId },
+      data: {
+        status: 'APPROVED',
+        reviewedBy: req.user.uid,
+        reviewedAt: new Date(),
+        adminNotes: adminNotes || null
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
+      }
+    });
+
+    // Update user role to SELLER
+    await prisma.user.update({
+      where: { id: application.userId },
+      data: { role: 'SELLER' }
+    });
+
+    res.json({
+      success: true,
+      message: "Seller application approved successfully",
+      application: updatedApplication
+    });
+  } catch (error) {
+    console.error('Accept seller application error:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to approve seller application"
+    });
+  }
+};
+
+// Reject seller application (Admin only)
+export const rejectSellerApplication = async (req, res) => {
+  try {
+    const { applicationId } = req.params;
+    const { adminNotes } = req.body;
+
+    // Find the application
+    const application = await prisma.sellerApplication.findUnique({
+      where: { id: applicationId },
+      include: { user: true }
+    });
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        error: "Application not found"
+      });
+    }
+
+    if (application.status !== 'PENDING') {
+      return res.status(400).json({
+        success: false,
+        error: "Application has already been reviewed"
+      });
+    }
+
+    // Update application status
+    const updatedApplication = await prisma.sellerApplication.update({
+      where: { id: applicationId },
+      data: {
+        status: 'REJECTED',
+        reviewedBy: req.user.uid,
+        reviewedAt: new Date(),
+        adminNotes: adminNotes || null
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
+      }
+    });
+
+    res.json({
+      success: true,
+      message: "Seller application rejected",
+      application: updatedApplication
+    });
+  } catch (error) {
+    console.error('Reject seller application error:', error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to reject seller application"
+    });
+  }
+};

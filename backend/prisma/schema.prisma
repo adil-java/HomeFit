@@ -30,6 +30,7 @@ model User {
   cart          Cart?
   wishlist      Wishlist?
   products      Product[]     @relation("SellerProducts") // Added: Seller's products
+  sellerApplication SellerApplication?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 }
@@ -242,4 +243,31 @@ model Review {
   isApproved Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// Seller Applications
+model SellerApplication {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id])
+  businessName  String
+  businessType  String
+  description   String
+  phone         String?
+  address       String?
+  website       String?
+  taxId         String?
+  businessLicense String?
+  status        ApplicationStatus @default(PENDING)
+  adminNotes    String?
+  reviewedBy    String?  // Admin user ID who reviewed
+  reviewedAt    DateTime?
+  submittedAt   DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }

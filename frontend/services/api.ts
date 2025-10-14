@@ -103,6 +103,58 @@ class ApiService {
       throw error;
     }
   }
+
+  async applyForSeller(data: {
+    businessName: string;
+    businessType: string;
+    description: string;
+    phone?: string;
+    address?: string;
+    website?: string;
+    taxId?: string;
+    businessLicense?: string;
+  }) {
+    try {
+      const headers = await this.getAuthHeaders();
+      const response = await fetch(`${API_BASE_URL}/users/apply-seller`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(data),
+      });
+
+      const json = await response.json().catch(() => ({ success: false }));
+      if (!response.ok) {
+        const message = (json as any)?.error || 'Failed to submit seller application';
+        throw new Error(message);
+      }
+
+      return json;
+    } catch (error) {
+      console.error('Apply for seller error:', error);
+      throw error;
+    }
+  }
+
+  async getSellerApplicationStatus() {
+    try {
+      const headers = await this.getAuthHeaders();
+      const response = await fetch(`${API_BASE_URL}/users/seller-application-status`, {
+        method: 'GET',
+        headers,
+      });
+
+      const json = await response.json().catch(() => ({ success: false }));
+      if (!response.ok) {
+        const message = (json as any)?.error || 'Failed to fetch application status';
+        throw new Error(message);
+      }
+
+      return json;
+    } catch (error) {
+      console.error('Get seller application status error:', error);
+      throw error;
+    }
+  }
 }
 
 export const apiService = new ApiService();

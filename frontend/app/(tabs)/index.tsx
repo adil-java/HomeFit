@@ -109,9 +109,9 @@ export default function HomeScreen() {
             <Text style={styles.dealsBannerSubtitle}>List your products and earn money</Text>
             <TouchableOpacity
               style={styles.dealsButton}
-              onPress={() => router.push('/search')}
+              onPress={() => router.push('/seller-application')}
             >
-              <Text style={styles.dealsButtonText}>Register</Text>
+              <Text style={styles.dealsButtonText}>Apply Now</Text>
             </TouchableOpacity>
           </LinearGradient>
         </View>
