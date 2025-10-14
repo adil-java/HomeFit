@@ -13,6 +13,11 @@ import {
   updateProduct,
   deleteProduct,
   generate3DModelEndpoint,
+  getProductsByCategory,
+  getProductsBySeller,
+  getRelatedProducts,
+  toggleProductStatus,
+  getProductStats,
 } from '../controllers/product.controller.js';
 import { protect, checkSeller } from '../middlewares/authMiddleware.js';
 
@@ -79,5 +84,12 @@ router.post('/generate-3d', uploadSingle, generate3DModelEndpoint);
 router.post('/', upload, protect, checkSeller, createProduct);
 router.put('/:id', upload, protect, checkSeller, updateProduct);
 router.delete('/:id', protect, checkSeller, deleteProduct);
+
+// Additional useful routes for e-commerce
+router.get('/category/:categoryId', getProductsByCategory);
+router.get('/seller/:sellerId', getProductsBySeller);
+router.get('/related/:productId', getRelatedProducts);
+router.patch('/:id/status', protect, checkSeller, toggleProductStatus);
+router.get('/admin/stats', protect, checkSeller, getProductStats);
 
 export default router;

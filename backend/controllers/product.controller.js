@@ -6,7 +6,12 @@ import {
   searchProducts as searchProductsService,
   createProduct as createProductService,
   updateProduct as updateProductService,
-  deleteProduct as deleteProductService,
+  deleteProductService,
+  getProductsByCategory as getProductsByCategoryService,
+  getProductsBySeller as getProductsBySellerService,
+  getRelatedProducts as getRelatedProductsService,
+  toggleProductStatus as toggleProductStatusService,
+  getProductStats as getProductStatsService,
 } from '../services/product.service.js';
 import multer from 'multer'
 import path from 'path'
@@ -108,6 +113,7 @@ export const generate3DModelEndpoint = async (req, res) => {
       });
     }
 
+    const { generate3DModel } = await import('../services/3dModel.service.js');
     const result = await generate3DModel(req.file.path);
 
     res.json({
@@ -260,52 +266,146 @@ export const createProduct = async (req, res) => {
 // @access  Private/Admin
 export const updateProduct = async (req, res) => {
   try {
-    await uploadFiles(req,res);
     const { id } = req.params;
     const userId = req.user?.uid;
-    
+
     if (!userId) {
       return res.status(401).json({
         success: false,
         error: 'Not authorized to perform this action',
       });
     }
-    
+
     const result = await updateProductService(id, req.body, req.files);
-    
+
     if (!result.success) {
       return res.status(400).json(result);
     }
-    
+
     res.status(200).json(result);
   } catch (error) {
     handleError(res, error);
   }
 };
 
-// @desc    Delete a product
-// @route   DELETE /api/products/:id
-// @access  Private/Admin
-export const deleteProduct = async (req, res) => {
+// @desc    Get products by category
+// @route   GET /api/products/category/:categoryId
+// @access  Public
+export const getProductsByCategory = async (req, res) => {
   try {
-    const { id } = req.params;
-    const userId = req.user?.id;
-    
-    if (!userId) {
-      return res.status(401).json({
-        success: false,
-        error: 'Not authorized to perform this action',
-      });
-    }
-    
-    const result = await deleteProductService(id);
-    
+    const { categoryId } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+
+    const result = await getProductsByCategoryService(categoryId, { page, limit });
+
     if (!result.success) {
-      return res.status(400).json(result);
+      return res.status(404).json(result);
     }
-    
+
     res.status(200).json(result);
   } catch (error) {
     handleError(res, error);
   }
 };
+
+// @desc    Get products by seller
+// @route   GET /api/products/seller/:sellerId
+// @access  Public
+export const getProductsBySeller = async (req, res) => {
+  try {
+    const { sellerId } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+
+    const result = await getProductsBySellerService(sellerId, { page, limit });
+
+    if (!result.success) {
+      return res.status(404).json(result);
+    }
+
+    res.status(200).json(result);
+  } catch (error) {
+    handleError(res, error);
+  }
+};
+
+// @desc    Get related products
+// @route   GET /api/products/related/:productId
+// @access  Public
+export const getRelatedProducts = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const { limit = 4 } = req.query;
+
+    const result = await getRelatedProductsService(productId, limit);
+
+    if (!result.success) {
+      return res.status(404).json(result);
+    }
+
+    res.status(200).json(result);
+  } catch (error) {
+    handleError(res, error);
+  }
+};
+
+// @desc    Toggle product status (active/featured)
+// @route   PATCH /api/products/:id/status
+// @access  Private/Seller
+export const toggleProductStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { field, value } = req.body; // field: 'isActive' or 'isFeatured', value: boolean
+
+    if (!['isActive', 'isFeatured'].includes(field)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid field. Must be "isActive" or "isFeatured"',
+      });
+    }
+
+    const result = await toggleProductStatusService(id, field, value);
+
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    res.status(200).json(result);
+  } catch (error) {
+    handleError(res, error);
+  }
+};
+
+// @desc    Get product statistics for admin dashboard
+// @route   GET /api/products/admin/stats
+// @access  Private/Seller
+export const getProductStats = async (req, res) => {
+  try {
+    const sellerId = req.user?.role === 'ADMIN' ? null : req.user?.id; // Admin sees all, sellers see their own
+
+    const result = await getProductStatsService(sellerId);
+
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    res.status(200).json(result);
+  } catch (error) {
+    handleError(res, error);
+  }
+};
+
+export const deleteProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await deleteProductService(id);
+
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    res.status(200).json(result);
+  } catch (error) {
+    handleError(res, error);
+  }
+};
+  

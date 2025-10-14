@@ -335,8 +335,27 @@ export const createProduct = async (productData, userId, files = []) => {
   }
 };
 
+export const deleteProductService = async (id) => {
+  try {
+    const product = await prisma.product.delete({
+      where: { id },
+    });
+    return {
+      success: true,
+      data: product,
+    };
+  } catch (error) {
+    console.error('❌ Error deleting product:', error);
+    console.error('❌ Error stack:', error.stack);
+    return {
+      success: false,
+      error: `Failed to delete product: ${error.message}`,
+    };
+  }
+};
+
 // Update a product
-export const updateProduct = async (id, productData, files=[]) => {
+export const updateProduct = async (id, productData, files = []) => {
   const {
     name,
     description,
@@ -356,14 +375,11 @@ export const updateProduct = async (id, productData, files=[]) => {
   const updateData = { ...productData };
 
   if (files && files.length > 0) {
-    const imageUploads = files.map(file => 
+    const imageUploads = files.map(file =>
       uploadToCloudinary(file.path, 'ecommerce/products')
     );
     const uploadedImages = await Promise.all(imageUploads);
-    updateData.images = [
-      ...(existingProduct.images || []),
-      ...uploadedImages.map(img => img.url)
-    ];
+    updateData.images = uploadedImages.map(img => img.url);
   }
   
   // Remove fields that shouldn't be updated directly
@@ -450,44 +466,200 @@ export const updateProduct = async (id, productData, files=[]) => {
   }
 };
 
-// Delete a product
-export const deleteProduct = async (id) => {
+// Get products by category
+export const getProductsByCategory = async (categoryId, queryParams) => {
+  const { page = 1, limit = 10 } = queryParams;
+  const skip = (page - 1) * limit;
+
+  const [products, total] = await Promise.all([
+    prisma.product.findMany({
+      where: {
+        categories: {
+          some: {
+            id: categoryId
+          }
+        },
+        isActive: true,
+      },
+      include: {
+        categories: true,
+        variants: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: parseInt(limit),
+    }),
+    prisma.product.count({
+      where: {
+        categories: {
+          some: {
+            id: categoryId
+          }
+        },
+        isActive: true,
+      },
+    }),
+  ]);
+
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    success: true,
+    data: products,
+    pagination: {
+      total,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      totalPages,
+    },
+  };
+};
+
+// Get products by seller
+export const getProductsBySeller = async (sellerId, queryParams) => {
+  const { page = 1, limit = 10 } = queryParams;
+  const skip = (page - 1) * limit;
+
+  const [products, total] = await Promise.all([
+    prisma.product.findMany({
+      where: { sellerId },
+      include: {
+        categories: true,
+        variants: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: parseInt(limit),
+    }),
+    prisma.product.count({ where: { sellerId } }),
+  ]);
+
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    success: true,
+    data: products,
+    pagination: {
+      total,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      totalPages,
+    },
+  };
+};
+
+// Get related products (same category, different product)
+export const getRelatedProducts = async (productId, limit = 4) => {
+  const product = await prisma.product.findUnique({
+    where: { id: productId },
+    include: { categories: true },
+  });
+
+  if (!product || !product.categories.length) {
+    return {
+      success: false,
+      error: 'Product not found or has no categories',
+    };
+  }
+
+  const categoryIds = product.categories.map(cat => cat.id);
+
+  const relatedProducts = await prisma.product.findMany({
+    where: {
+      id: { not: productId },
+      categories: {
+        some: {
+          id: { in: categoryIds }
+        }
+      },
+      isActive: true,
+    },
+    include: {
+      categories: true,
+      variants: true,
+    },
+    take: parseInt(limit),
+    orderBy: { createdAt: 'desc' },
+  });
+
+  return {
+    success: true,
+    data: relatedProducts,
+  };
+};
+
+// Toggle product status (active/featured)
+export const toggleProductStatus = async (id, field, value) => {
   try {
-    // First, check if the product exists
-    const product = await prisma.product.findUnique({
+    const updateData = { [field]: value };
+
+    const product = await prisma.product.update({
       where: { id },
-    });
-
-    if (!product) {
-      return {
-        success: false,
-        error: 'Product not found',
-      };
-    }
-
-     // Delete images from Cloudinary
-     if (product.images && product.images.length > 0) {
-      const deletePromises = product.images
-        .filter(img => img.public_id) // Only if we stored public_id
-        .map(img => deleteFromCloudinary(img.public_id));
-      
-      await Promise.all(deletePromises);
-    }
-
-    // Delete the product (Prisma's cascading deletes will handle related records)
-    await prisma.product.delete({
-      where: { id },
+      data: updateData,
+      include: {
+        categories: true,
+        variants: true,
+      },
     });
 
     return {
       success: true,
-      data: { id },
+      data: product,
     };
   } catch (error) {
-    console.error('Error deleting product:', error);
+    console.error('Error toggling product status:', error);
     return {
       success: false,
-      error: 'Failed to delete product',
+      error: 'Failed to update product status',
+    };
+  }
+};
+
+// Get product statistics for dashboard
+export const getProductStats = async (sellerId = null) => {
+  try {
+    const where = sellerId ? { sellerId } : {};
+
+    const [
+      totalProducts,
+      activeProducts,
+      featuredProducts,
+      outOfStock,
+      recentProducts,
+    ] = await Promise.all([
+      prisma.product.count({ where }),
+      prisma.product.count({ where: { ...where, isActive: true } }),
+      prisma.product.count({ where: { ...where, isFeatured: true } }),
+      prisma.product.count({ where: { ...where, quantity: { lte: 0 } } }),
+      prisma.product.findMany({
+        where: { ...where, createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        include: { categories: true },
+      }),
+    ]);
+
+    return {
+      success: true,
+      data: {
+        totalProducts,
+        activeProducts,
+        featuredProducts,
+        outOfStock,
+        recentProducts,
+        status: {
+          active: activeProducts,
+          inactive: totalProducts - activeProducts,
+          featured: featuredProducts,
+          outOfStock,
+        },
+      },
+    };
+  } catch (error) {
+    console.error('Error getting product stats:', error);
+    return {
+      success: false,
+      error: 'Failed to get product statistics',
     };
   }
 };
