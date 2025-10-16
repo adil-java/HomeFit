@@ -60,39 +60,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           // Get the ID token for API calls
           const token = await firebaseUser.getIdToken();
-          
-          // Verify token with backend and get user info
-          const backendResponse = await apiService.verifyToken();
-          
-          const user: User = {
-            id: backendResponse.user.uid,
-            email: backendResponse.user.email || "",
-            name: backendResponse.user.displayName || firebaseUser.email?.split("@")[0] || "",
-            role: backendResponse.user.role || 'customer'
-          };
 
-          setUser(user);
-          setToken(token);
-          
-          // Store for offline access
-          await SecureStore.setItemAsync("token", token);
-          await SecureStore.setItemAsync("user", JSON.stringify(user));
+          // Try to verify token with backend but don't block if it fails
+          try {
+            const backendResponse = await apiService.verifyToken();
+
+            const user: User = {
+              id: backendResponse.user.uid,
+              email: backendResponse.user.email || "",
+              name: backendResponse.user.displayName || firebaseUser.email?.split("@")[0] || "",
+              role: backendResponse.user.role || 'seller'
+            };
+
+            setUser(user);
+            setToken(token);
+
+            // Store for offline access
+            await SecureStore.setItemAsync("token", token);
+            await SecureStore.setItemAsync("user", JSON.stringify(user));
+          } catch (backendError) {
+            // Backend verification failed, use fallback logic
+            console.warn('Backend verification failed, using Firebase data:', backendError);
+            const user: User = {
+              id: firebaseUser.uid,
+              email: firebaseUser.email || "",
+              name: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "",
+              role: firebaseUser.email?.includes('seller') ? 'seller' : 'customer'
+            };
+
+            setUser(user);
+            setToken(token);
+
+            await SecureStore.setItemAsync("token", token);
+            await SecureStore.setItemAsync("user", JSON.stringify(user));
+          }
         } catch (error) {
-          console.error('Backend verification failed:', error);
-          // Fallback to Firebase user data if backend fails
-          const user: User = {
-            id: firebaseUser.uid,
-            email: firebaseUser.email || "",
-            name: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "",
-            role: firebaseUser.email?.includes('seller') ? 'seller' : 'customer'
-          };
-          
-          const token = await firebaseUser.getIdToken();
-          setUser(user);
-          setToken(token);
-          
-          await SecureStore.setItemAsync("token", token);
-          await SecureStore.setItemAsync("user", JSON.stringify(user));
+          console.error('Firebase authentication error:', error);
+          setUser(null);
+          setToken(null);
         }
       } else {
         setUser(null);
@@ -137,7 +142,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Any error here should not block the UI
       apiService
         .login()
-        .catch((backendError) => console.error('Backend login verification failed:', backendError));
+        .then(() => console.log('Backend login verification successful'))
+        .catch((backendError) => console.warn('Backend login verification failed:', backendError));
 
       router.replace('/(tabs)');
     } catch (error: any) {
@@ -172,7 +178,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Best-effort: notify backend to create user entry
       apiService
         .register()
-        .catch((backendError) => console.error('Backend registration verification failed:', backendError));
+        .then(() => console.log('Backend registration verification successful'))
+        .catch((backendError) => console.warn('Backend registration verification failed:', backendError));
 
       router.replace('/(tabs)');
     } catch (error: any) {

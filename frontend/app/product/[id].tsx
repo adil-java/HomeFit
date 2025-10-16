@@ -24,9 +24,8 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store/store';
 import { addToCart } from '@/store/slices/cartSlice';
-import { addToWishlist, removeFromWishlist } from '@/store/slices/wishlistSlice';
+import { ARPreviewButton } from '@/components/ARPreviewButton';
 import Toast from 'react-native-toast-message';
-
 const { width } = Dimensions.get('window');
 
 export default function ProductDetailScreen() {
@@ -164,14 +163,16 @@ export default function ProductDetailScreen() {
             </View>
           )}
 
-          {/* Discount Badge */}
-          {product.originalPrice && (
-            <View style={[styles.discountBadge, { backgroundColor: theme.colors.accent }]}>
-              <Text style={styles.discountText}>
-                {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
-              </Text>
-            </View>
-          )}
+          {/* 3D Preview Button */}
+          <View style={styles.previewButtonContainer}>
+            <ARPreviewButton
+              onPress={() => {
+                // For now, using a placeholder model URL. In production, use product.modelUrl
+                const modelUrl = 'ccrynqbf0tkelb1lbco7.glb'; // Replace with actual model URL from product
+                router.push(`/product/ar?modelUrl=${encodeURIComponent(modelUrl)}`);
+              }}
+            />
+          </View>
         </View>
 
         {/* Product Info */}
@@ -389,13 +390,11 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
   },
-  discountBadge: {
+  previewButtonContainer: {
     position: 'absolute',
-    top: 16,
-    left: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    bottom: 16,
+    right: 16,
+    zIndex: 10,
   },
   discountText: {
     fontSize: 12,

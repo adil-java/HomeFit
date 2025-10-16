@@ -14,7 +14,7 @@ export const ARPreviewButton = ({ onPress }: { onPress: () => void }) => {
     >
       <View style={styles.buttonContent}>
         <Ionicons name="cube-outline" size={20} color="white" />
-        <Text style={styles.buttonText}>View in AR</Text>
+        <Text style={styles.buttonText}>Preview in 3D</Text>
       </View>
     </TouchableOpacity>
   );

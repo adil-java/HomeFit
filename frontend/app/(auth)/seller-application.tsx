@@ -168,6 +168,29 @@ export default function SellerApplicationScreen() {
     );
   }
 
+  if (user?.role === 'seller') {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <View style={styles.centered}>
+          <Text style={[styles.title, { color: theme.colors.text }]}>
+            You are already a seller!
+          </Text>
+          <Text style={[styles.subtitle, { color: theme.colors.text, opacity: 0.7 }]}>
+            You can access your seller dashboard from the menu.
+          </Text>
+          <TouchableOpacity
+            style={[styles.backButton, { backgroundColor: theme.colors.primary }]}
+            onPress={() => router.replace('/(tabs)')}
+          >
+            <Text style={[styles.backButtonText, { color: '#fff' }]}>
+              Back to Home
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
