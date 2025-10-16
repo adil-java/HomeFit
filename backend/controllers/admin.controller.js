@@ -37,13 +37,13 @@ export const updateUserRole = async (req, res) => {
 
   try {
     const user = await prisma.user.update({
-      where: { id: parseInt(id) },
+      where: { id: id},
       data: { role }
     });
     res.status(200).json({ success: true, data: user });
   } catch (error) {
     console.error('Update user role error:', error);
-    res.status(500).json({ success: false, message: 'Server Error' });
+    res.status(500).json({ success: false, message: 'cant update role Server Error' });
   }
 };
 
@@ -53,7 +53,7 @@ export const deleteUser = async (req, res) => {
 
   try {
     await prisma.user.delete({
-      where: { id: parseInt(id) }
+      where: { id: id}
     });
     res.status(200).json({ success: true, message: 'User deleted' });
   } catch (error) {
@@ -65,10 +65,10 @@ export const deleteUser = async (req, res) => {
 // Get user by ID (admin only)
 export const getUserById = async (req, res) => {
   const { id } = req.params;
-
+ console.log("📥 Received ID:", id);
   try {
     const user = await prisma.user.findUnique({
-      where: { id: parseInt(id) },
+      where: { id:id },
       select: {
         id: true,
         firebaseUid: true,
@@ -85,11 +85,13 @@ export const getUserById = async (req, res) => {
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
-
+    console.log("👤 Retrieved User:", user);
     res.status(200).json({ success: true, data: user });
+
   } catch (error) {
     console.error('Get user by ID error:', error);
-    res.status(500).json({ success: false, message: 'Server Error' });
+    console.log("Received ID:", id);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
   }
 };
 
@@ -117,6 +119,7 @@ try {
         return res.status(403).json({ success: false, message: 'Access denied: Not an admin' });
     }
 
+  
     // Generate token
     const token = generateToken({ id: user.id, role: user.role });
 
@@ -136,3 +139,25 @@ try {
 }
 
 };
+export const allSellers = async (req, res) => {
+  try {
+    const sellers = await prisma.user.findMany({
+      where: { role: Role.SELLER }, // ✅ Correct role
+      select: {
+        id: true,
+        firebaseUid: true,
+        email: true,
+        name: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    });
+
+    res.status(200).json({ success: true, data: sellers });
+  } catch (error) {
+    console.error('Get all sellers error:', error);
+    res.status(500).json({ success: false, message: 'Cannot get all sellers. Server Error.' });
+  }
+};
+
