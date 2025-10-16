@@ -166,7 +166,7 @@ export default function LoginScreen() {
               Customer: customer@example.com / password
             </Text>
             <Text style={[styles.demoText, { color: theme.colors.textSecondary }]}>
-              Admin: admin@example.com / password
+              Seller: seller@example.com / password
             </Text>
           </View> */}
         </ScrollView>

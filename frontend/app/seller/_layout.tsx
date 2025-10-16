@@ -1,14 +1,14 @@
 import { Stack } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { Redirect } from 'expo-router';
-import AdminDrawer from '@/components/AdminDrawer';
+import SellerDrawer from '@/components/SellerDrawer';
 import { View } from 'react-native';
 
-export default function AdminLayout() {
+export default function SellerLayout() {
   const { user } = useAuth();
 
-  // Redirect to home if user is not an admin
-  if (user?.role !== 'admin') {
+  // Redirect to home if user is not an seller
+  if (user?.role !== 'seller') {
     return <Redirect href="/(tabs)" />;
   }
 
@@ -19,7 +19,7 @@ export default function AdminLayout() {
           headerShown: false,
         }}
       />
-      <AdminDrawer>
+      <SellerDrawer>
         <Stack.Screen
           name="index"
           options={{
@@ -55,7 +55,7 @@ export default function AdminLayout() {
             title: 'Order Details',
           }}
         />
-      </AdminDrawer>
+      </SellerDrawer>
     </View>
   );
 }

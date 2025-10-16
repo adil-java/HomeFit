@@ -22,7 +22,7 @@ export default function RootLayout() {
               <Stack.Screen name="auth" options={{ headerShown: false }} />
               <Stack.Screen name="product" options={{ headerShown: false }} />
               <Stack.Screen name="checkout" options={{ headerShown: false }} />
-              <Stack.Screen name="admin" options={{ headerShown: false }} />
+              <Stack.Screen name="seller" options={{ headerShown: false }} />
               <Stack.Screen name="+not-found" />
             </Stack>
             <StatusBar style="auto" />

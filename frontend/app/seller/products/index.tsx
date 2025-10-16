@@ -65,11 +65,11 @@ export default function ProductsScreen() {
   });
   
   const navigateToAddProduct = () => {
-    router.push('/admin/products/new');
+    router.push('/seller/products/new');
   };
   
   const navigateToEditProduct = (productId: string) => {
-    router.push(`/admin/products/${productId}`);
+    router.push(`/seller/products/${productId}`);
   };
 
   const categories = [...new Set(products.map(p => p.category))];
@@ -183,7 +183,7 @@ export default function ProductsScreen() {
       <View style={styles.productActions}>
         <TouchableOpacity 
           style={[styles.actionButton, { backgroundColor: `${theme.colors.primary}10` }]}
-          onPress={() => router.push(`/admin/products/${item.id}`)}
+          onPress={() => router.push(`/seller/products/${item.id}`)}
         >
           <Eye size={18} color={theme.colors.primary} />
         </TouchableOpacity>

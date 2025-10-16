@@ -84,7 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             id: firebaseUser.uid,
             email: firebaseUser.email || "",
             name: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "",
-            role: firebaseUser.email?.includes('admin') ? 'admin' : 'customer'
+            role: firebaseUser.email?.includes('seller') ? 'seller' : 'customer'
           };
           
           const token = await firebaseUser.getIdToken();
@@ -127,7 +127,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: userCredential.user.uid,
         email: userCredential.user.email || '',
         name: userCredential.user.displayName || (userCredential.user.email?.split('@')[0] || ''),
-        role: userCredential.user.email?.includes('admin') ? 'admin' : 'customer',
+        role: userCredential.user.email?.includes('seller') ? 'seller' : 'customer',
       };
       setUser(optimisticUser);
       await SecureStore.setItemAsync('token', token);
@@ -163,7 +163,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: userCredential.user.uid,
         email: userCredential.user.email || '',
         name: name || userCredential.user.displayName || (userCredential.user.email?.split('@')[0] || ''),
-        role: userCredential.user.email?.includes('admin') ? 'admin' : 'customer',
+        role: userCredential.user.email?.includes('seller') ? 'seller' : 'customer',
       };
       setUser(optimisticUser);
       await SecureStore.setItemAsync('token', token);

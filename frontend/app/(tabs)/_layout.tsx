@@ -29,15 +29,15 @@ export default function TabLayout() {
   const cartItemCount = useSelector((state: RootState) => state.cart.itemCount);
   const wishlistItemCount = useSelector((state: RootState) => state.wishlist.items.length);
   const router = useRouter();
-  const [showAdminMenu, setShowAdminMenu] = useState(false);
+  const [showSellerMenu, setShowSellerMenu] = useState(false);
 
-  // Add header right component for admin
+  // Add header right component for seller
   const headerRight = () => {
-    if (user?.role === 'admin') {
+    if (user?.role === 'seller') {
       return (
         <View style={styles.headerRightContainer}>
           <TouchableOpacity 
-            onPress={() => setShowAdminMenu(!showAdminMenu)}
+            onPress={() => setShowSellerMenu(!showSellerMenu)}
             style={styles.dashboardButton}
           >
             <LayoutDashboard size={24} color={theme.colors.primary} />
@@ -46,20 +46,20 @@ export default function TabLayout() {
           <Modal
             animationType="fade"
             transparent={true}
-            visible={showAdminMenu}
-            onRequestClose={() => setShowAdminMenu(false)}
+            visible={showSellerMenu}
+            onRequestClose={() => setShowSellerMenu(false)}
           >
             <Pressable 
               style={styles.modalOverlay} 
-              onPress={() => setShowAdminMenu(false)}
+              onPress={() => setShowSellerMenu(false)}
             >
-              <ScrollView style={[styles.adminMenu, { backgroundColor: theme.colors.surface }]}>
+              <ScrollView style={[styles.sellerMenu, { backgroundColor: theme.colors.surface }]}>
                 {/* Dashboard */}
                 <TouchableOpacity 
                   style={styles.menuItem}
                   onPress={() => {
-                    router.push('/admin/dashboard');
-                    setShowAdminMenu(false);
+                    router.push('/seller/dashboard');
+                    setShowSellerMenu(false);
                   }}
                 >
                   <BarChart2 size={20} color={theme.colors.primary} style={styles.menuIcon} />
@@ -76,8 +76,8 @@ export default function TabLayout() {
                 {/* <TouchableOpacity 
                   style={styles.menuItem}
                   onPress={() => {
-                    router.push('/admin/seller-requests');
-                    setShowAdminMenu(false);
+                    router.push('/seller/seller-requests');
+                    setShowSellerMenu(false);
                   }}
                 >
                   <Users size={20} color={theme.colors.primary} style={styles.menuIcon} />
@@ -95,8 +95,8 @@ export default function TabLayout() {
                 <TouchableOpacity 
                   style={styles.menuItem}
                   onPress={() => {
-                    router.push('/admin/products');
-                    setShowAdminMenu(false);
+                    router.push('/seller/products');
+                    setShowSellerMenu(false);
                   }}
                 >
                   <Package size={20} color={theme.colors.primary} style={styles.menuIcon} />
@@ -114,8 +114,8 @@ export default function TabLayout() {
                 <TouchableOpacity 
                   style={styles.menuItem}
                   onPress={() => {
-                    router.push('/admin/orders');
-                    setShowAdminMenu(false);
+                    router.push('/seller/orders');
+                    setShowSellerMenu(false);
                   }}
                 >
                   <ShoppingBag size={20} color={theme.colors.primary} style={styles.menuIcon} />
@@ -133,8 +133,8 @@ export default function TabLayout() {
                 {/* <TouchableOpacity 
                   style={styles.menuItem}
                   onPress={() => {
-                    router.push('/admin/promotions');
-                    setShowAdminMenu(false);
+                    router.push('/seller/promotions');
+                    setShowSellerMenu(false);
                   }}
                 >
                   <Tag size={20} color={theme.colors.primary} style={styles.menuIcon} />
@@ -152,8 +152,8 @@ export default function TabLayout() {
                 {/* <TouchableOpacity 
                   style={styles.menuItem}
                   onPress={() => {
-                    router.push('/admin/content');
-                    setShowAdminMenu(false);
+                    router.push('/seller/content');
+                    setShowSellerMenu(false);
                   }}
                 >
                   <LayoutTemplate size={20} color={theme.colors.primary} style={styles.menuIcon} />
@@ -171,8 +171,8 @@ export default function TabLayout() {
                 <TouchableOpacity 
                   style={styles.menuItem}
                   onPress={() => {
-                    router.push('/admin/notifications');
-                    setShowAdminMenu(false);
+                    router.push('/seller/notifications');
+                    setShowSellerMenu(false);
                   }}
                 >
                   <Bell size={20} color={theme.colors.primary} style={styles.menuIcon} />
@@ -190,8 +190,8 @@ export default function TabLayout() {
                 <TouchableOpacity 
                   style={styles.menuItem}
                   onPress={() => {
-                    router.push('/admin/settings');
-                    setShowAdminMenu(false);
+                    router.push('/seller/settings');
+                    setShowSellerMenu(false);
                   }}
                 >
                   <Settings size={20} color={theme.colors.primary} style={styles.menuIcon} />
@@ -211,7 +211,7 @@ export default function TabLayout() {
                   style={[styles.menuItem, { borderTopWidth: 1, borderTopColor: theme.colors.border, marginTop: 8, paddingTop: 12 }]}
                   onPress={() => {
                     logout();
-                    setShowAdminMenu(false);
+                    setShowSellerMenu(false);
                   }}
                 >
                   <LogOut size={20} color={theme.colors.error} style={styles.menuIcon} />
@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     paddingTop: 60,
   },
-  adminMenu: {
+  sellerMenu: {
     width: 300,
     maxHeight: '55%',
     borderRadius: 12,

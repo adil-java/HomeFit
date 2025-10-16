@@ -95,10 +95,10 @@ export default function ProfileScreen() {
             </View>
             <Text style={styles.userName}>{user?.name || 'User'}</Text>
             <Text style={styles.userEmail}>{user?.email || 'user@example.com'}</Text>
-            {user?.role === 'admin' && (
-              <View style={styles.adminBadge}>
+            {user?.role === 'seller' && (
+              <View style={styles.sellerBadge}>
                 <Shield size={12} color="#fff" />
-                <Text style={styles.adminBadgeText}>Admin</Text>
+                <Text style={styles.sellerBadgeText}>Seller</Text>
               </View>
             )}
           </View>
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     opacity: 0.9,
   },
-  adminBadge: {
+  sellerBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     gap: 4,
   },
-  adminBadgeText: {
+  sellerBadgeText: {
     fontSize: 12,
     fontWeight: '600',
     color: '#fff',

@@ -77,7 +77,7 @@
 //     setLoading(true);
 //     try {
 //       // Replace with actual API call
-//       // const response = await fetch(`/api/admin/revenue?range=${range}`);
+//       // const response = await fetch(`/api/seller/revenue?range=${range}`);
 //       // const result = await response.json();
 //       // setData(result);
       

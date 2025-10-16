@@ -29,44 +29,44 @@ const DrawerContent = (props: any) => {
     { 
       label: 'Dashboard', 
       icon: LayoutDashboard, 
-      onPress: () => router.push('/admin'),
-      roles: ['admin']
+      onPress: () => router.push('/seller'),
+      roles: ['seller']
     },
     // { 
     //   label: 'Seller Requests', 
     //   icon: UserCheck, 
-    //   onPress: () => router.push('/admin/seller-requests'),
-    //   roles: ['admin']
+    //   onPress: () => router.push('/seller/seller-requests'),
+    //   roles: ['seller']
     // },
     { 
       label: 'Revenue Streams', 
       icon: BarChart2, 
-      onPress: () => router.push('/admin/revenue'),
-      roles: ['admin']
+      onPress: () => router.push('/seller/revenue'),
+      roles: ['seller']
     },
     { 
       label: 'Products', 
       icon: Package, 
-      onPress: () => router.push('/admin/products'),
-      roles: ['admin', 'seller']
+      onPress: () => router.push('/seller/products'),
+      roles: ['seller', 'seller']
     },
     { 
       label: 'Orders', 
       icon: ShoppingCart, 
-      onPress: () => router.push('/admin/orders/'),
-      roles: ['admin', 'seller']
+      onPress: () => router.push('/seller/orders/'),
+      roles: ['seller', 'seller']
     },
     { 
       label: 'Sellers', 
       icon: Store, 
-      onPress: () => router.push('/admin/sellers'),
-      roles: ['admin']
+      onPress: () => router.push('/seller/sellers'),
+      roles: ['seller']
     },
     { 
       label: 'Settings', 
       icon: Settings, 
-      onPress: () => router.push('/admin/settings'),
-      roles: ['admin', 'seller']
+      onPress: () => router.push('/seller/settings'),
+      roles: ['seller', 'seller']
     },
   ];
 
@@ -90,7 +90,7 @@ const DrawerContent = (props: any) => {
           style={styles.logo}
         />
         <Text variant="titleLarge" style={[styles.headerTitle, { color: theme.colors.primary }]}>
-          Admin Panel
+          seller Panel
         </Text>
       </View>
 
@@ -128,7 +128,7 @@ const DrawerContent = (props: any) => {
   );
 };
 
-export default function AdminDrawer({ children }: { children: React.ReactNode }) {
+export default function sellerDrawer({ children }: { children: React.ReactNode }) {
   return (
     <Drawer
       drawerContent={(props) => <DrawerContent {...props} />}

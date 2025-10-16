@@ -48,7 +48,7 @@ export default function OrdersScreen() {
 
     return (
       <TouchableOpacity
-        onPress={() => router.push(`/admin/orders/${order.id}`)}
+        onPress={() => router.push(`/seller/orders/${order.id}`)}
         style={[styles.orderCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
       >
         <View style={styles.orderHeader}>
@@ -84,7 +84,7 @@ export default function OrdersScreen() {
             </View>
           )}
         </View>
-        <View style={styles.adminActions}>
+        <View style={styles.sellerActions}>
           <TouchableOpacity 
             style={[styles.actionButton, { borderColor: theme.colors.border }]}
             onPress={(e) => {
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
   },
-  adminActions: {
+  sellerActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',

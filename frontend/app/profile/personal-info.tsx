@@ -165,7 +165,7 @@ export default function PersonalInfoScreen() {
                 Account Type
               </Text>
               <Text style={[styles.infoValue, { color: theme.colors.text }]}>
-                {user?.role === 'admin' ? 'Administrator' : 'Customer'}
+                {user?.role === 'seller' ? 'Seller' : 'Customer'}
               </Text>
             </View>
             

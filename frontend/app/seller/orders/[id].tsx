@@ -217,7 +217,7 @@ export default function OrderDetailScreen() {
             </View>
           </View>
           
-          <View style={styles.adminStatusActions}>
+          <View style={styles.sellerStatusActions}>
             <TouchableOpacity 
               style={[styles.statusActionButton, { backgroundColor: theme.colors.primary }]}
               onPress={() => {}}
@@ -686,7 +686,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  adminStatusActions: {
+  sellerStatusActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',

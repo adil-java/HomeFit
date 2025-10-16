@@ -258,7 +258,7 @@ export default function DashboardScreen() {
             <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.colors.text }]}>
               Top Trending Products
             </Text>
-            <TouchableOpacity onPress={() => router.push('/admin/products')}>
+            <TouchableOpacity onPress={() => router.push('/seller/products')}>
               <Text style={{ color: theme.colors.primary, fontSize: 12, fontWeight: '500' }}>View All</Text>
             </TouchableOpacity>
           </View>
@@ -268,7 +268,7 @@ export default function DashboardScreen() {
               <TouchableOpacity 
                 key={product.id}
                 style={[styles.productItem, index !== stats.trendingProducts.length - 1 && styles.productItemBorder]}
-                onPress={() => router.push(`/admin/products/${product.id}`)}
+                onPress={() => router.push(`/seller/products/${product.id}`)}
               >
                 <View style={styles.productImage}>
                   <Package size={20} color={theme.colors.primary} />
