@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
+import { makeRedirectUri } from 'expo-auth-session';
 import * as Google from 'expo-auth-session/providers/google';
 import { 
   signInWithEmailAndPassword, 
@@ -49,11 +50,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   WebBrowser.maybeCompleteAuthSession();
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    clientId: "1066517448696-6snmnbvgh3km9l20hs9dqdhrb6uie4m3.apps.googleusercontent.com",
-    
-  });
-
+  const redirectUri = (makeRedirectUri as any)({ useProxy: true });
+  const googleConfig: any = {
+    clientId: "1066517448696-tgpl2cf5snd5auej7brq4hjb6sg1ugv9.apps.googleusercontent.com",
+    androidClientId: "1066517448696-k90lkfdsea2geec1nof73k3fh96ioij7.apps.googleusercontent.com",
+    redirectUri,
+  };
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest(googleConfig as any);
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
@@ -190,7 +193,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginWithGoogle = async () => {
     try {
-      await promptAsync();
+      await (promptAsync as any)({ useProxy: true });
     } catch (error: any) {
       console.error('Google login error:', error);
       throw error;
