@@ -1,0 +1,63 @@
+{
+  "project_info": {
+    "project_number": "1066517448696",
+    "project_id": "fir-auth01-10f58",
+    "storage_bucket": "fir-auth01-10f58.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1066517448696:android:3e947ef25aa2a370d7380d",
+        "android_client_info": {
+          "package_name": "om.yourcompany.boltecommerce"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1066517448696-9uikbea34ee9vv5bislkb5ok3kt2j5j1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "om.yourcompany.boltecommerce",
+            "certificate_hash": "e6c5f1c0caf2249bb0375b7075ed9454145da385"
+          }
+        },
+        {
+          "client_id": "1066517448696-nej56gt5c72efbv58ohbfsc5adm39dli.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "om.yourcompany.boltecommerce",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "1066517448696-piki86kqcpod87h921n6umfkba8usnr3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "om.yourcompany.boltecommerce",
+            "certificate_hash": "61caef3988103ad7c1a3893e611206a8a8078810"
+          }
+        },
+        {
+          "client_id": "1066517448696-6snmnbvgh3km9l20hs9dqdhrb6uie4m3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyArPIfHsQrahEVK47iIZdlpy4gjxyDXtY8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1066517448696-6snmnbvgh3km9l20hs9dqdhrb6uie4m3.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
