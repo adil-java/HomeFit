@@ -3,6 +3,7 @@
 node_modules/
 
 # expo
+frontend/.expo/
 dist/
 web-build/
 expo-env.d.ts

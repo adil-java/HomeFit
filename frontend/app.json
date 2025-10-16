@@ -11,35 +11,21 @@
     "splash": {
       "image": "./assets/images/splash.png",
       "resizeMode": "cover",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#2563eb"
     },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourcompany.boltecommerce",
-      "splash": {
-        "image": "./assets/images/splash.png",
-        "resizeMode": "cover",
-        "backgroundColor": "#ffffff"
-      }
+      "bundleIdentifier": "com.yourcompany.boltecommerce"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/logo-square.png",
         "backgroundColor": "#2563eb"
       },
-      "package": "com.yourcompany.boltecommerce",
-      "splash": {
-        "mdpi": "./assets/images/splash.png",
-        "hdpi": "./assets/images/splash.png",
-        "xhdpi": "./assets/images/splash.png",
-        "xxhdpi": "./assets/images/splash.png",
-        "xxxhdpi": "./assets/images/splash.png",
-        "resizeMode": "cover",
-        "backgroundColor": "#ffffff"
-      }
+      "package": "com.yourcompany.boltecommerce"
     },
     "web": {
       "bundler": "metro",
@@ -55,7 +41,7 @@
         {
           "image": "./assets/images/splash.png",
           "resizeMode": "cover",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#2563eb"
         }
       ],
       "expo-secure-store"
@@ -65,11 +51,9 @@
     },
     "extra": {
       "router": {},
-
       "eas": {
-  "projectId": "b87d57da-7325-457c-aec2-ad595da68ad1"
-}
-
+        "projectId": "b87d57da-7325-457c-aec2-ad595da68ad1"
+      }
     }
   }
 }

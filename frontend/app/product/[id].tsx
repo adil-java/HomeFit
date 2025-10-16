@@ -24,6 +24,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store/store';
 import { addToCart } from '@/store/slices/cartSlice';
+import { addToWishlist, removeFromWishlist } from '@/store/slices/wishlistSlice';
 import { ARPreviewButton } from '@/components/ARPreviewButton';
 import Toast from 'react-native-toast-message';
 const { width } = Dimensions.get('window');
@@ -168,7 +169,7 @@ export default function ProductDetailScreen() {
             <ARPreviewButton
               onPress={() => {
                 // For now, using a placeholder model URL. In production, use product.modelUrl
-                const modelUrl = 'ccrynqbf0tkelb1lbco7.glb'; // Replace with actual model URL from product
+                const modelUrl = 'https://res.cloudinary.com/dmpinsiam/image/upload/v1760470451/ecommerce/3d-models/ccrynqbf0tkelb1lbco7.glb'; // Replace with actual model URL from product
                 router.push(`/product/ar?modelUrl=${encodeURIComponent(modelUrl)}`);
               }}
             />
