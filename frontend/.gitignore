@@ -1,8 +1,8 @@
+.expo/
 # dependencies
 node_modules/
 
 # expo
-.expo/
 dist/
 web-build/
 expo-env.d.ts

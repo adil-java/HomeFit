@@ -10,10 +10,8 @@
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff",
-      "imageWidth": "80%",
-      "imageHeight": "40%"
+      "resizeMode": "cover",
+      "backgroundColor": "#ffffff"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -23,13 +21,13 @@
       "bundleIdentifier": "com.yourcompany.boltecommerce",
       "splash": {
         "image": "./assets/images/splash.png",
-        "resizeMode": "contain",
+        "resizeMode": "cover",
         "backgroundColor": "#ffffff"
       }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#2563eb"
       },
       "package": "com.yourcompany.boltecommerce",
@@ -39,7 +37,7 @@
         "xhdpi": "./assets/images/splash.png",
         "xxhdpi": "./assets/images/splash.png",
         "xxxhdpi": "./assets/images/splash.png",
-        "resizeMode": "contain",
+        "resizeMode": "cover",
         "backgroundColor": "#ffffff"
       }
     },
@@ -56,7 +54,7 @@
         "expo-splash-screen",
         {
           "image": "./assets/images/splash.png",
-          "resizeMode": "contain",
+          "resizeMode": "cover",
           "backgroundColor": "#ffffff"
         }
       ],
