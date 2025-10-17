@@ -16,13 +16,13 @@ import { useTheme } from '@/contexts/ThemeContext';
 
 interface PaymentMethod {
   id: string;
-  type: 'card' | 'jazzcash' | 'bank' | 'wallet';
+  type: 'card' | 'bank' | 'wallet';
   name: string;
   details: string;
   isDefault: boolean;
   lastFour?: string;
   expiryDate?: string;
-  cardType?: 'visa' | 'mastercard' | 'amex';
+  cardType?: 'visa' | 'mastercard' | 'amex' | 'discover' | 'unknown';
 }
 
 const mockPaymentMethods: PaymentMethod[] = [
@@ -36,13 +36,7 @@ const mockPaymentMethods: PaymentMethod[] = [
     cardType: 'visa',
     isDefault: true,
   },
-  {
-    id: '2',
-    type: 'jazzcash',
-    name: 'JazzCash',
-    details: '+92 300 1234567',
-    isDefault: false,
-  },
+  
 ];
 
 export default function PaymentMethodsScreen() {
@@ -50,20 +44,40 @@ export default function PaymentMethodsScreen() {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>(mockPaymentMethods);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingMethod, setEditingMethod] = useState<PaymentMethod | null>(null);
-  const [selectedType, setSelectedType] = useState<'card' | 'jazzcash' | 'bank' | 'wallet'>('card');
+  const [selectedType, setSelectedType] = useState<'card' | 'bank' | 'wallet'>('card');
   const [formData, setFormData] = useState({
     cardNumber: '',
     expiryDate: '',
     cvv: '',
     cardholderName: '',
+    // Billing Address Fields
+    addressLine1: '',
+    addressLine2: '',
+    city: '',
+    state: '',
+    postalCode: '',
+    country: '',
+    // Card type detection
+    cardType: '',
+    // Other payment types
     phoneNumber: '',
     accountNumber: '',
     bankName: '',
   });
 
+  const getCardType = (cardNumber: string): 'visa' | 'mastercard' | 'amex' | 'discover' | 'unknown' => {
+    const cleanedNumber = cardNumber.replace(/\s+/g, '');
+
+    if (/^4/.test(cleanedNumber)) return 'visa';
+    if (/^5[1-5]/.test(cleanedNumber) || /^2[2-7]/.test(cleanedNumber)) return 'mastercard';
+    if (/^3[47]/.test(cleanedNumber)) return 'amex';
+    if (/^6(?:011|5)/.test(cleanedNumber)) return 'discover';
+
+    return 'unknown';
+  };
+
   const paymentTypes = [
     { key: 'card', label: 'Credit/Debit Card', icon: CreditCard },
-    { key: 'jazzcash', label: 'JazzCash', icon: Smartphone },
     { key: 'bank', label: 'Bank Account', icon: Building },
     { key: 'wallet', label: 'Digital Wallet', icon: Wallet },
   ];
@@ -74,20 +88,33 @@ export default function PaymentMethodsScreen() {
 
     switch (selectedType) {
       case 'card':
-        if (!formData.cardNumber || !formData.expiryDate || !formData.cvv) {
+        if (!formData.cardNumber || !formData.expiryDate || !formData.cvv || !formData.cardholderName) {
           Alert.alert('Error', 'Please fill in all card details');
           return;
         }
-        name = `Card ending in ${formData.cardNumber.slice(-4)}`;
-        details = `**** **** **** ${formData.cardNumber.slice(-4)}`;
-        break;
-      case 'jazzcash':
-        if (!formData.phoneNumber) {
-          Alert.alert('Error', 'Please enter phone number');
+        if (!formData.addressLine1 || !formData.city || !formData.state || !formData.postalCode || !formData.country) {
+          Alert.alert('Error', 'Please fill in all billing address details');
           return;
         }
-        name = 'JazzCash';
-        details = formData.phoneNumber;
+        // Validate card number format (should be 13-19 digits after removing spaces)
+        const cleanCardNumber = formData.cardNumber.replace(/\s/g, '');
+        if (cleanCardNumber.length < 13 || cleanCardNumber.length > 19) {
+          Alert.alert('Error', 'Please enter a valid card number');
+          return;
+        }
+        // Validate expiry date format (MM/YY)
+        const expiryRegex = /^(0[1-9]|1[0-2])\/([0-9]{2})$/;
+        if (!expiryRegex.test(formData.expiryDate)) {
+          Alert.alert('Error', 'Please enter expiry date in MM/YY format');
+          return;
+        }
+        // Validate CVV (3 or 4 digits)
+        if (formData.cvv.length < 3 || formData.cvv.length > 4) {
+          Alert.alert('Error', 'Please enter a valid CVV');
+          return;
+        }
+        name = `${getCardType(formData.cardNumber)} ending in ${formData.cardNumber.slice(-4)}`;
+        details = `**** **** **** ${formData.cardNumber.slice(-4)}`;
         break;
       case 'bank':
         if (!formData.accountNumber || !formData.bankName) {
@@ -112,6 +139,7 @@ export default function PaymentMethodsScreen() {
       ...(selectedType === 'card' && {
         lastFour: formData.cardNumber.slice(-4),
         expiryDate: formData.expiryDate,
+        cardType: formData.cardType,
       }),
     };
 
@@ -152,6 +180,13 @@ export default function PaymentMethodsScreen() {
       expiryDate: '',
       cvv: '',
       cardholderName: '',
+      addressLine1: '',
+      addressLine2: '',
+      city: '',
+      state: '',
+      postalCode: '',
+      country: '',
+      cardType: '',
       phoneNumber: '',
       accountNumber: '',
       bankName: '',
@@ -163,8 +198,6 @@ export default function PaymentMethodsScreen() {
     switch (type) {
       case 'card':
         return CreditCard;
-      case 'jazzcash':
-        return Smartphone;
       case 'bank':
         return Building;
       case 'wallet':
@@ -239,7 +272,14 @@ export default function PaymentMethodsScreen() {
                 placeholder="1234 5678 9012 3456"
                 placeholderTextColor={theme.colors.textSecondary}
                 value={formData.cardNumber}
-                onChangeText={(text) => setFormData({ ...formData, cardNumber: text })}
+                onChangeText={(text) => {
+                  const formattedText = text.replace(/\s/g, '').replace(/(.{4})/g, '$1 ').trim();
+                  setFormData({
+                    ...formData,
+                    cardNumber: formattedText,
+                    cardType: getCardType(formattedText)
+                  });
+                }}
                 keyboardType="numeric"
                 maxLength={19}
               />
@@ -283,22 +323,80 @@ export default function PaymentMethodsScreen() {
                 onChangeText={(text) => setFormData({ ...formData, cardholderName: text })}
               />
             </View>
-          </>
-        );
 
-      case 'jazzcash':
-        return (
-          <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Phone Number *</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
-              placeholder="+92 300 1234567"
-              placeholderTextColor={theme.colors.textSecondary}
-              value={formData.phoneNumber}
-              onChangeText={(text) => setFormData({ ...formData, phoneNumber: text })}
-              keyboardType="phone-pad"
-            />
-          </View>
+            {/* Billing Address Section */}
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Billing Address</Text>
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Address Line 1 *</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
+                placeholder="123 Main Street"
+                placeholderTextColor={theme.colors.textSecondary}
+                value={formData.addressLine1}
+                onChangeText={(text) => setFormData({ ...formData, addressLine1: text })}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Address Line 2</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
+                placeholder="Apartment, suite, etc. (optional)"
+                placeholderTextColor={theme.colors.textSecondary}
+                value={formData.addressLine2}
+                onChangeText={(text) => setFormData({ ...formData, addressLine2: text })}
+              />
+            </View>
+
+            <View style={styles.row}>
+              <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+                <Text style={[styles.inputLabel, { color: theme.colors.text }]}>City *</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
+                  placeholder="New York"
+                  placeholderTextColor={theme.colors.textSecondary}
+                  value={formData.city}
+                  onChangeText={(text) => setFormData({ ...formData, city: text })}
+                />
+              </View>
+              <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
+                <Text style={[styles.inputLabel, { color: theme.colors.text }]}>State *</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
+                  placeholder="NY"
+                  placeholderTextColor={theme.colors.textSecondary}
+                  value={formData.state}
+                  onChangeText={(text) => setFormData({ ...formData, state: text })}
+                />
+              </View>
+            </View>
+
+            <View style={styles.row}>
+              <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+                <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Postal Code *</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
+                  placeholder="10001"
+                  placeholderTextColor={theme.colors.textSecondary}
+                  value={formData.postalCode}
+                  onChangeText={(text) => setFormData({ ...formData, postalCode: text })}
+                  keyboardType="numeric"
+                  maxLength={10}
+                />
+              </View>
+              <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
+                <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Country *</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.text }]}
+                  placeholder="United States"
+                  placeholderTextColor={theme.colors.textSecondary}
+                  value={formData.country}
+                  onChangeText={(text) => setFormData({ ...formData, country: text })}
+                />
+              </View>
+            </View>
+          </>
         );
 
       case 'bank':
@@ -588,6 +686,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 8,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginTop: 16,
+    marginBottom: 16,
   },
   input: {
     borderWidth: 1,

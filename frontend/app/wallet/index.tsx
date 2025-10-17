@@ -61,7 +61,6 @@ const mockTransactions = [
 
 const topUpMethods = [
   { id: 'card', name: 'Credit/Debit Card', icon: CreditCard },
-  { id: 'jazzcash', name: 'JazzCash', icon: Smartphone },
   { id: 'bank', name: 'Bank Transfer', icon: Building },
 ];
 

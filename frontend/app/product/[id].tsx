@@ -8,6 +8,7 @@ import {
   Image,
   Dimensions,
   FlatList,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
@@ -25,6 +26,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store/store';
 import { addToCart } from '@/store/slices/cartSlice';
 import { addToWishlist, removeFromWishlist } from '@/store/slices/wishlistSlice';
+import { addComment, deleteComment } from '@/store/slices/commentsSlice';
 import { ARPreviewButton } from '@/components/ARPreviewButton';
 import Toast from 'react-native-toast-message';
 const { width } = Dimensions.get('window');
@@ -37,11 +39,17 @@ export default function ProductDetailScreen() {
     state.products.products.find(p => p.id === id)
   );
   const wishlist = useSelector((state: RootState) => state.wishlist.items);
+  const comments = useSelector((state: RootState) =>
+    state.comments.comments.filter(c => c.productId === id)
+  );
   
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [selectedColor, setSelectedColor] = useState('');
   const [selectedSize, setSelectedSize] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const [showCommentForm, setShowCommentForm] = useState(false);
+  const [newComment, setNewComment] = useState('');
+  const [newCommentRating, setNewCommentRating] = useState(5);
   const imageScrollRef = useRef<FlatList>(null);
   
   const isInWishlist = wishlist.some(item => item.id === id);
@@ -86,15 +94,19 @@ export default function ProductDetailScreen() {
   };
 
   const handleAddToCart = () => {
-    dispatch(addToCart({
+    const cartItem = {
       id: product.id,
       name: product.name,
       price: product.price,
       image: product.image,
-      quantity,
       color: selectedColor,
       size: selectedSize,
-    }));
+    };
+
+    for (let i = 0; i < quantity; i++) {
+      dispatch(addToCart(cartItem));
+    }
+
     Toast.show({
       type: 'success',
       text1: 'Added to cart',
@@ -106,6 +118,50 @@ export default function ProductDetailScreen() {
   const renderImageItem = ({ item, index }: { item: string; index: number }) => (
     <Image source={{ uri: item }} style={styles.productImage} />
   );
+
+  const handleAddComment = () => {
+    if (!newComment.trim()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please enter a comment',
+        position: 'bottom',
+      });
+      return;
+    }
+
+    const comment = {
+      id: Date.now().toString(),
+      productId: product.id,
+      userId: 'current_user', // In a real app, this would come from authentication
+      userName: 'You',
+      userAvatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=64&h=64&fit=crop&crop=face',
+      rating: newCommentRating,
+      text: newComment.trim(),
+      date: new Date().toISOString().split('T')[0],
+      helpful: 0,
+    };
+
+    dispatch(addComment(comment));
+    setNewComment('');
+    setNewCommentRating(5);
+    setShowCommentForm(false);
+
+    Toast.show({
+      type: 'success',
+      text1: 'Comment added',
+      position: 'bottom',
+    });
+  };
+
+  const handleDeleteComment = (commentId: string) => {
+    dispatch(deleteComment(commentId));
+    Toast.show({
+      type: 'info',
+      text1: 'Comment deleted',
+      position: 'bottom',
+    });
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -311,6 +367,123 @@ export default function ProductDetailScreen() {
                 </View>
               ))}
             </View>
+          </View>
+
+          {/* Comments Section */}
+          <View style={styles.commentsSection}>
+            <View style={styles.commentsHeader}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+                Reviews & Comments ({comments.length})
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowCommentForm(!showCommentForm)}
+                style={[styles.addCommentButton, { backgroundColor: theme.colors.primary }]}
+              >
+                <Text style={styles.addCommentText}>Write a Review</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Comment Form */}
+            {showCommentForm && (
+              <View style={[styles.commentForm, { backgroundColor: theme.colors.surface }]}>
+                <View style={styles.ratingInput}>
+                  <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Rating</Text>
+                  <View style={styles.starsContainer}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <TouchableOpacity
+                        key={star}
+                        onPress={() => setNewCommentRating(star)}
+                      >
+                        <Star
+                          size={24}
+                          color={star <= newCommentRating ? theme.colors.warning : theme.colors.border}
+                          fill={star <= newCommentRating ? theme.colors.warning : 'transparent'}
+                        />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+
+                <View style={styles.commentInputGroup}>
+                  <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Your Review</Text>
+                  <TextInput
+                    style={[styles.commentInput, { backgroundColor: theme.colors.background, borderColor: theme.colors.border, color: theme.colors.text }]}
+                    placeholder="Share your thoughts about this product..."
+                    placeholderTextColor={theme.colors.textSecondary}
+                    value={newComment}
+                    onChangeText={setNewComment}
+                    multiline
+                    numberOfLines={4}
+                    textAlignVertical="top"
+                  />
+                </View>
+
+                <View style={styles.commentFormActions}>
+                  <TouchableOpacity
+                    onPress={() => setShowCommentForm(false)}
+                    style={[styles.cancelButton, { backgroundColor: theme.colors.border }]}
+                  >
+                    <Text style={[styles.cancelButtonText, { color: theme.colors.text }]}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={handleAddComment}
+                    style={[styles.submitButton, { backgroundColor: theme.colors.primary }]}
+                  >
+                    <Text style={styles.submitButtonText}>Submit Review</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+            {/* Comments List */}
+            {comments.length > 0 ? (
+              <View style={styles.commentsList}>
+                {comments.map((comment) => (
+                  <View key={comment.id} style={[styles.commentCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+                    <View style={styles.commentHeader}>
+                      <View style={styles.commentUser}>
+                        <Image source={{ uri: comment.userAvatar }} style={styles.userAvatar} />
+                        <View>
+                          <Text style={[styles.userName, { color: theme.colors.text }]}>{comment.userName}</Text>
+                          <Text style={[styles.commentDate, { color: theme.colors.textSecondary }]}>{comment.date}</Text>
+                        </View>
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => handleDeleteComment(comment.id)}
+                        style={styles.deleteButton}
+                      >
+                        <Text style={[styles.deleteButtonText, { color: theme.colors.error }]}>Delete</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.commentRating}>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          size={14}
+                          color={star <= comment.rating ? theme.colors.warning : theme.colors.border}
+                          fill={star <= comment.rating ? theme.colors.warning : 'transparent'}
+                        />
+                      ))}
+                    </View>
+
+                    <Text style={[styles.commentText, { color: theme.colors.text }]}>{comment.text}</Text>
+
+                    <TouchableOpacity style={styles.helpfulButton}>
+                      <Text style={[styles.helpfulText, { color: theme.colors.textSecondary }]}>
+                        👍 Helpful ({comment.helpful})
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.noComments}>
+                <Text style={[styles.noCommentsText, { color: theme.colors.textSecondary }]}>
+                  No reviews yet. Be the first to review this product!
+                </Text>
+              </View>
+            )}
           </View>
         </View>
       </ScrollView>
@@ -551,5 +724,144 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#fff',
+  },
+  commentsSection: {
+    marginBottom: 24,
+  },
+  commentsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  addCommentButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  addCommentText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  commentForm: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 20,
+    borderWidth: 1,
+  },
+  ratingInput: {
+    marginBottom: 16,
+  },
+  starsContainer: {
+    flexDirection: 'row',
+    gap: 4,
+    marginTop: 8,
+  },
+  commentInputGroup: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  commentInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    minHeight: 100,
+  },
+  commentFormActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  submitButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  submitButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  commentsList: {
+    gap: 16,
+  },
+  commentCard: {
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  commentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  commentUser: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  userAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  userName: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  commentDate: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  deleteButton: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  deleteButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  commentRating: {
+    flexDirection: 'row',
+    marginBottom: 12,
+    gap: 2,
+  },
+  commentText: {
+    fontSize: 16,
+    lineHeight: 24,
+    marginBottom: 12,
+  },
+  helpfulButton: {
+    alignSelf: 'flex-start',
+  },
+  helpfulText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  noComments: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  noCommentsText: {
+    fontSize: 16,
+    textAlign: 'center',
   },
 });

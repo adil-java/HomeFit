@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { Comment } from './commentsSlice';
 
 export interface Product {
   id: string;
@@ -15,6 +16,7 @@ export interface Product {
   inStock: boolean;
   colors?: string[];
   sizes?: string[];
+  comments?: Comment[];
 }
 
 interface ProductsState {

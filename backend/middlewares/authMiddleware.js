@@ -47,6 +47,7 @@ const protect = async (req, res, next) => {
       });
 
       req.user = {
+        id: dbUser.id,
         uid: firebaseUser.uid,
         email: firebaseUser.email,
         displayName: firebaseUser.displayName,

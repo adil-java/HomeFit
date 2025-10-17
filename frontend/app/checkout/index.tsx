@@ -47,7 +47,6 @@ const mockAddresses = [
 
 const paymentMethods = [
   { id: 'wallet', name: 'Wallet', balance: 250.00, icon: Wallet },
-  { id: 'jazzcash', name: 'JazzCash', icon: CreditCard },
   { id: 'card', name: 'Credit/Debit Card', icon: CreditCard },
 ];
 
