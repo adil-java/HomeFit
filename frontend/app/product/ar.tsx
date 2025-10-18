@@ -14,7 +14,7 @@ import {
 import FloatingBackButton from "@/components/Shared/FloatingBackButton";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { Viro3DPoint } from "@reactvision/react-viro/dist/components/Types/ViroUtils";
-import { View, Text, StyleSheet, Alert, Platform } from "react-native";
+import { View, Text, StyleSheet, Alert, Platform, TouchableOpacity } from "react-native";
 import { useTheme } from "@/contexts/ThemeContext";
 
 ViroMaterials.createMaterials({
@@ -26,8 +26,11 @@ ViroMaterials.createMaterials({
 
 function Scene({ modelUrl }: { modelUrl: string }) {
 	const [position, setPosition] = useState<Viro3DPoint | null>(null);
+	const [rotation, setRotation] = useState<[number, number, number]>([0, 0, 0]);
+	const [scale, setScale] = useState<[number, number, number]>([1, 1, 1]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const [isPositionFixed, setIsPositionFixed] = useState(false);
 
 	useEffect(() => {
 		// Check if model URL is valid
@@ -46,6 +49,25 @@ function Scene({ modelUrl }: { modelUrl: string }) {
 
 		return () => clearTimeout(timer);
 	}, [modelUrl]);
+
+	// Helper functions for model controls
+	const rotateLeft = () => setRotation(prev => [prev[0], prev[1] - 15, prev[2]]);
+	const rotateRight = () => setRotation(prev => [prev[0], prev[1] + 15, prev[2]]);
+	const rotateUp = () => setRotation(prev => [prev[0] - 15, prev[1], prev[2]]);
+	const rotateDown = () => setRotation(prev => [prev[0] + 15, prev[1], prev[2]]);
+	const zoomIn = () => setScale(prev => [prev[0] * 1.2, prev[1] * 1.2, prev[2] * 1.2]);
+	const zoomOut = () => setScale(prev => [Math.max(0.1, prev[0] * 0.8), Math.max(0.1, prev[1] * 0.8), Math.max(0.1, prev[2] * 0.8)]);
+	const moveUp = () => setPosition(prev => prev ? [prev[0], prev[1] + 0.1, prev[2]] : [0, 0.1, 0]);
+	const moveDown = () => setPosition(prev => prev ? [prev[0], prev[1] - 0.1, prev[2]] : [0, -0.1, 0]);
+	const moveLeft = () => setPosition(prev => prev ? [prev[0] - 0.1, prev[1], prev[2]] : [-0.1, 0, 0]);
+	const moveRight = () => setPosition(prev => prev ? [prev[0] + 0.1, prev[1], prev[2]] : [0.1, 0, 0]);
+	const fixPosition = () => setIsPositionFixed(!isPositionFixed);
+	const resetModel = () => {
+		setRotation([0, 0, 0]);
+		setScale([1, 1, 1]);
+		setPosition(null);
+		setIsPositionFixed(false);
+	};
 
 	if (error) {
 		return (
@@ -75,10 +97,15 @@ function Scene({ modelUrl }: { modelUrl: string }) {
 			visible={!!position && !isLoading}
 			source={{ uri: modelUrl }}
 			position={position ?? [0, 0, 0]}
-			scale={[1, 1, 1]}
+			rotation={rotation}
+			scale={scale}
 			type="GLB"
-			dragType="FixedToWorld"
-			onDrag={() => {}}
+			dragType={!isPositionFixed ? "FixedToWorld" : undefined}
+			onDrag={(dragToPos, source) => {
+				if (!isPositionFixed) {
+					setPosition(dragToPos);
+				}
+			}}
 			onLoadStart={() => {
 				console.log('Starting to load 3D model:', modelUrl);
 			}}
@@ -105,6 +132,70 @@ function Scene({ modelUrl }: { modelUrl: string }) {
 					}}
 				/>
 			</ViroARPlane>
+
+			{/* Control Panel Overlay */}
+			<ViroQuad
+				position={[0, -1.5, -2]}
+				width={3}
+				height={1.5}
+				materials={["QuadMaterial"]}
+			>
+				<View style={styles.controlPanel}>
+					{/* Rotation Controls */}
+					<View style={styles.controlRow}>
+						<TouchableOpacity style={styles.controlButton} onPress={rotateLeft}>
+							<Text style={styles.controlButtonText}>↺ Left</Text>
+						</TouchableOpacity>
+						<TouchableOpacity style={styles.controlButton} onPress={rotateRight}>
+							<Text style={styles.controlButtonText}>↻ Right</Text>
+						</TouchableOpacity>
+					</View>
+					<View style={styles.controlRow}>
+						<TouchableOpacity style={styles.controlButton} onPress={rotateUp}>
+							<Text style={styles.controlButtonText}>↑ Up</Text>
+						</TouchableOpacity>
+						<TouchableOpacity style={styles.controlButton} onPress={rotateDown}>
+							<Text style={styles.controlButtonText}>↓ Down</Text>
+						</TouchableOpacity>
+					</View>
+
+					{/* Zoom Controls */}
+					<View style={styles.controlRow}>
+						<TouchableOpacity style={styles.controlButton} onPress={zoomIn}>
+							<Text style={styles.controlButtonText}>+ Zoom In</Text>
+						</TouchableOpacity>
+						<TouchableOpacity style={styles.controlButton} onPress={zoomOut}>
+							<Text style={styles.controlButtonText}>- Zoom Out</Text>
+						</TouchableOpacity>
+					</View>
+
+					{/* Positioning Controls */}
+					<View style={styles.controlRow}>
+						<TouchableOpacity style={styles.controlButton} onPress={moveLeft}>
+							<Text style={styles.controlButtonText}>← Left</Text>
+						</TouchableOpacity>
+						<TouchableOpacity style={styles.controlButton} onPress={moveRight}>
+							<Text style={styles.controlButtonText}>→ Right</Text>
+						</TouchableOpacity>
+						<TouchableOpacity style={styles.controlButton} onPress={moveUp}>
+							<Text style={styles.controlButtonText}>↑ Up</Text>
+						</TouchableOpacity>
+						<TouchableOpacity style={styles.controlButton} onPress={moveDown}>
+							<Text style={styles.controlButtonText}>↓ Down</Text>
+						</TouchableOpacity>
+					</View>
+
+					{/* Fix Position and Reset */}
+					<View style={styles.controlRow}>
+						<TouchableOpacity style={styles.controlButton} onPress={fixPosition}>
+							<Text style={styles.controlButtonText}>{isPositionFixed ? 'Unfix' : 'Fix'}</Text>
+						</TouchableOpacity>
+						<TouchableOpacity style={styles.controlButton} onPress={resetModel}>
+							<Text style={styles.controlButtonText}>Reset</Text>
+						</TouchableOpacity>
+					</View>
+				</View>
+			</ViroQuad>
 		</ViroARScene>
 	);
 }
@@ -201,5 +292,30 @@ const styles = StyleSheet.create({
 		textAlign: 'center',
 		lineHeight: 24,
 		marginBottom: 20,
+	},
+	controlPanel: {
+		flex: 1,
+		justifyContent: 'space-around',
+		alignItems: 'center',
+		padding: 10,
+	},
+	controlRow: {
+		flexDirection: 'row',
+		justifyContent: 'space-around',
+		width: '100%',
+		marginVertical: 5,
+	},
+	controlButton: {
+		backgroundColor: 'rgba(0, 0, 0, 0.7)',
+		paddingVertical: 8,
+		paddingHorizontal: 12,
+		borderRadius: 5,
+		marginHorizontal: 5,
+	},
+	controlButtonText: {
+		color: 'white',
+		fontSize: 12,
+		fontWeight: 'bold',
+		textAlign: 'center',
 	},
 });
