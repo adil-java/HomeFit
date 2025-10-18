@@ -7,6 +7,7 @@ import {
   deleteUser,
   allSellers
 } from '../controllers/admin.controller.js';
+import { adminVerify } from '../middlewares/authMiddleware.js';
 // import {  checkAdmin } from '../middlewares/authMiddleware.js';
 const router = express.Router();
 
@@ -14,10 +15,10 @@ const router = express.Router();
 
 
 router.route('/login').post(adminLogin); // Placeholder for admin login if needed
-router.route('/user/:id').get(getUserById);
-router.route('/users').get(getAllUsers);
-router.route('/users/:id/role').put(updateUserRole);
-router.route('/users/:id').delete(deleteUser);
-router.route("/sellers").get( allSellers);
+router.route('/user/:id',adminVerify).get(getUserById);
+router.route('/users',adminVerify).get(getAllUsers);
+router.route('/users/:id/role',adminVerify).put(updateUserRole);
+router.route('/users/:id',adminVerify).delete(deleteUser);
+router.route("/sellers",adminVerify).get( allSellers);
 
 export default router;

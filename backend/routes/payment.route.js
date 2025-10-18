@@ -1,7 +1,7 @@
 import express from 'express';
 import { createPaymentIntent, getKeys } from '../controllers/stripe.controller.js';
 import { protect } from '../middlewares/authMiddleware.js';
-// import { protect } from '../middlewares/authMiddleware';
+
 
 const router = express.Router();
 

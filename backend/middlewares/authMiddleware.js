@@ -96,6 +96,24 @@ const checkSeller = (req, res, next) => {
     });
   }
 };
-
-export { protect, checkAdmin, checkSeller };
+const adminVerify = async (req, res, next) => {
+  try {
+    await protect(req, res, async () => {
+      if (req.user.role !== 'ADMIN') {
+        return res.status(403).json({
+          success: false,
+          error: 'Not authorized as an admin',
+        });
+      }
+      next();
+    });
+  } catch (error) {
+    console.error('Admin verification error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Server error during admin verification',
+    });
+  }
+}
+export { protect, checkAdmin, checkSeller, adminVerify };
 export default verifyFirebaseToken;

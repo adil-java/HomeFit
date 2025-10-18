@@ -104,14 +104,14 @@ try {
     });
 
     if (!user) {
-        return res.status(401).json({ success: false, message: 'Invalid credentials' });
+        return res.status(401).json({ success: false, message: 'no user found' });
     }
 
     // Check password
     // const isMatch = await bcrypt.compare(password, user.firebaseUid);
     const isMatch = password === user.firebaseUid; // Since firebaseUid is being used as password hash
     if (!isMatch) {
-        return res.status(401).json({ success: false, message: 'Invalid credentials' });
+        return res.status(401).json({ success: false, message: 'Invalid credentials password' });
     }
 
     // Check if user is admin
