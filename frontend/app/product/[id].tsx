@@ -224,8 +224,8 @@ export default function ProductDetailScreen() {
           <View style={styles.previewButtonContainer}>
             <ARPreviewButton
               onPress={() => {
-                // For now, using a placeholder model URL. In production, use product.modelUrl
-                const modelUrl = 'https://res.cloudinary.com/dmpinsiam/image/upload/v1760470451/ecommerce/3d-models/ccrynqbf0tkelb1lbco7.glb'; // Replace with actual model URL from product
+                // Use product.modelUrl if available, otherwise use a default URL
+                const modelUrl = product.modelUrl || 'https://res.cloudinary.com/dmpinsiam/image/upload/v1760470451/ecommerce/3d-models/ccrynqbf0tkelb1lbco7.glb';
                 router.push(`/product/ar?modelUrl=${encodeURIComponent(modelUrl)}`);
               }}
             />

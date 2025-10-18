@@ -23,9 +23,18 @@ export const ARPreviewButton = ({ onPress }: { onPress: () => void }) => {
 
 			// For iOS and Android, check basic requirements
 			if (Platform.OS === 'ios' || Platform.OS === 'android') {
-				// Viro React requires camera permissions and AR capabilities
-				// We'll let the AR screen handle the detailed checks
-				onPress();
+				// Check for camera permission (basic requirement for AR)
+				try {
+					// We'll let the AR screen handle the detailed checks
+					onPress();
+				} catch (error) {
+					console.error('Error initializing AR:', error);
+					Alert.alert(
+						'AR Error',
+						'Unable to initialize AR preview. Please check your device camera permissions and try again.',
+						[{ text: 'OK' }]
+					);
+				}
 			} else {
 				Alert.alert(
 					'AR Not Supported',

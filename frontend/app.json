@@ -65,7 +65,8 @@
           "backgroundColor": "#2563eb"
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "@reactvision/react-viro"
     ],
     "experiments": {
       "typedRoutes": true

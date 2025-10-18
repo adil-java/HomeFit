@@ -12,6 +12,7 @@ import {
 	ViroARPlaneSelector,
 } from "@reactvision/react-viro";
 import FloatingBackButton from "@/components/Shared/FloatingBackButton";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { Viro3DPoint } from "@reactvision/react-viro/dist/components/Types/ViroUtils";
 import { View, Text, StyleSheet, Alert, Platform } from "react-native";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -150,7 +151,7 @@ export default function ProductARScreen() {
 		return <ErrorFallback />;
 	}
 
-	return (
+	const arContent = (
 		<>
 			<FloatingBackButton onPress={router.back} />
 			<ViroARSceneNavigator
@@ -161,6 +162,24 @@ export default function ProductARScreen() {
 				}}
 			/>
 		</>
+	);
+
+	return (
+		<ErrorBoundary
+			fallback={
+				<View style={[styles.errorContainer, { backgroundColor: '#000' }]}>
+					<Text style={[styles.errorTitle, { color: '#fff' }]}>
+						AR Preview Unavailable
+					</Text>
+					<Text style={[styles.errorText, { color: '#ccc' }]}>
+						Unable to load AR preview. Please try again or check your device compatibility.
+					</Text>
+					<FloatingBackButton onPress={router.back} />
+				</View>
+			}
+		>
+			{arContent}
+		</ErrorBoundary>
 	);
 }
 
