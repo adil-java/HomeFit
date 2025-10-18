@@ -48,7 +48,7 @@ const mockProducts: Product[] = [
     tags: ['leather', 'modern', 'living-room'],
     inStock: true,
     colors: ['Black', 'Brown', 'Beige'],
-    modelUrl: 'https://res.cloudinary.com/dmpinsiam/image/upload/v1760470451/ecommerce/3d-models/ccrynqbf0tkelb1lbco7.glb',
+    modelUrl: 'https://res.cloudinary.com/dmpinsiam/image/upload/v1760781979/Cloudinary%203D/models/textured_mesh_pa1sji.glb',
   },
   {
     id: '2',
@@ -66,7 +66,7 @@ const mockProducts: Product[] = [
     tags: ['ergonomic', 'office', 'adjustable'],
     inStock: true,
     colors: ['Black', 'Gray', 'Blue'],
-    modelUrl: 'https://res.cloudinary.com/dmpinsiam/image/upload/v1760470451/ecommerce/3d-models/ccrynqbf0tkelb1lbco7.glb',
+    modelUrl: 'https://res.cloudinary.com/dmpinsiam/image/upload/v1760781979/Cloudinary%203D/models/textured_mesh_pa1sji.glb',
   },
   {
     id: '3',
@@ -85,7 +85,7 @@ const mockProducts: Product[] = [
     tags: ['wooden', 'dining', 'family'],
     inStock: true,
     colors: ['Oak', 'Walnut', 'Mahogany'],
-    modelUrl: 'https://res.cloudinary.com/dmpinsiam/image/upload/v1760470451/ecommerce/3d-models/ccrynqbf0tkelb1lbco7.glb',
+    modelUrl: 'https://res.cloudinary.com/dmpinsiam/image/upload/v1760781979/Cloudinary%203D/models/textured_mesh_pa1sji.glb',
   },
   {
     id: '4',
@@ -103,7 +103,7 @@ const mockProducts: Product[] = [
     tags: ['king-size', 'upholstered', 'bedroom'],
     inStock: true,
     colors: ['Gray', 'Navy', 'Beige'],
-    modelUrl: 'https://res.cloudinary.com/dmpinsiam/image/upload/v1760470451/ecommerce/3d-models/ccrynqbf0tkelb1lbco7.glb',
+    modelUrl: 'https://res.cloudinary.com/dmpinsiam/image/upload/v1760781979/Cloudinary%203D/models/textured_mesh_pa1sji.glb',
   },
   {
     id: '5',
@@ -122,7 +122,7 @@ const mockProducts: Product[] = [
     tags: ['wall-art', 'modern', 'abstract'],
     inStock: true,
     colors: ['Multicolor', 'Black & White', 'Blue & Gold'],
-    modelUrl: 'https://res.cloudinary.com/dmpinsiam/image/upload/v1760470451/ecommerce/3d-models/ccrynqbf0tkelb1lbco7.glb',
+    modelUrl: 'https://res.cloudinary.com/dmpinsiam/image/upload/v1760781979/Cloudinary%203D/models/textured_mesh_pa1sji.glb',
   },
 ];
 
