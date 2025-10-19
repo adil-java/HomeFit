@@ -10,6 +10,7 @@ import {
 	ViroMaterials,
 	ViroQuad,
 	ViroARPlaneSelector,
+	ViroText,
 } from "@reactvision/react-viro";
 import FloatingBackButton from "@/components/Shared/FloatingBackButton";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -153,9 +154,13 @@ function Scene({ modelUrl }: { modelUrl: string }) {
 									rotateLeft();
 								}
 							}}
-						>
-							<Text style={styles.controlButtonText}>↺ Left</Text>
-						</ViroQuad>
+						/>
+						<ViroText
+							position={[-1.2, 0.5, 0.1]}
+							text="↺ Left"
+							scale={[0.5, 0.5, 0.5]}
+							style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
+						/>
 						<ViroQuad
 							position={[0, 0.5, 0]}
 							width={0.6}
@@ -166,9 +171,13 @@ function Scene({ modelUrl }: { modelUrl: string }) {
 									rotateRight();
 								}
 							}}
-						>
-							<Text style={styles.controlButtonText}>↻ Right</Text>
-						</ViroQuad>
+						/>
+						<ViroText
+							position={[0, 0.5, 0.1]}
+							text="↻ Right"
+							scale={[0.5, 0.5, 0.5]}
+							style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
+						/>
 					</View>
 					<View style={styles.controlRow}>
 						<ViroQuad
@@ -181,9 +190,13 @@ function Scene({ modelUrl }: { modelUrl: string }) {
 									rotateUp();
 								}
 							}}
-						>
-							<Text style={styles.controlButtonText}>↑ Up</Text>
-						</ViroQuad>
+						/>
+						<ViroText
+							position={[-0.6, 0, 0.1]}
+							text="↑ Up"
+							scale={[0.5, 0.5, 0.5]}
+							style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
+						/>
 						<ViroQuad
 							position={[0.6, 0, 0]}
 							width={0.6}
@@ -194,9 +207,13 @@ function Scene({ modelUrl }: { modelUrl: string }) {
 									rotateDown();
 								}
 							}}
-						>
-							<Text style={styles.controlButtonText}>↓ Down</Text>
-						</ViroQuad>
+						/>
+						<ViroText
+							position={[0.6, 0, 0.1]}
+							text="↓ Down"
+							scale={[0.5, 0.5, 0.5]}
+							style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
+						/>
 					</View>
 
 					{/* Zoom Controls */}
@@ -211,9 +228,13 @@ function Scene({ modelUrl }: { modelUrl: string }) {
 									zoomIn();
 								}
 							}}
-						>
-							<Text style={styles.controlButtonText}>+ Zoom In</Text>
-						</ViroQuad>
+						/>
+						<ViroText
+							position={[-0.6, -0.5, 0.1]}
+							text="+ Zoom In"
+							scale={[0.5, 0.5, 0.5]}
+							style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
+						/>
 						<ViroQuad
 							position={[0.6, -0.5, 0]}
 							width={0.6}
@@ -224,9 +245,13 @@ function Scene({ modelUrl }: { modelUrl: string }) {
 									zoomOut();
 								}
 							}}
-						>
-							<Text style={styles.controlButtonText}>- Zoom Out</Text>
-						</ViroQuad>
+						/>
+						<ViroText
+							position={[0.6, -0.5, 0.1]}
+							text="- Zoom Out"
+							scale={[0.5, 0.5, 0.5]}
+							style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
+						/>
 					</View>
 
 					{/* Positioning Controls */}
@@ -241,9 +266,13 @@ function Scene({ modelUrl }: { modelUrl: string }) {
 									moveLeft();
 								}
 							}}
-						>
-							<Text style={styles.controlButtonText}>← Left</Text>
-						</ViroQuad>
+						/>
+						<ViroText
+							position={[-1.2, -1, 0.1]}
+							text="← Left"
+							scale={[0.5, 0.5, 0.5]}
+							style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
+						/>
 						<ViroQuad
 							position={[0, -1, 0]}
 							width={0.6}
@@ -254,9 +283,13 @@ function Scene({ modelUrl }: { modelUrl: string }) {
 									moveRight();
 								}
 							}}
-						>
-							<Text style={styles.controlButtonText}>→ Right</Text>
-						</ViroQuad>
+						/>
+						<ViroText
+							position={[0, -1, 0.1]}
+							text="→ Right"
+							scale={[0.5, 0.5, 0.5]}
+							style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
+						/>
 						<ViroQuad
 							position={[1.2, -1, 0]}
 							width={0.6}
@@ -267,9 +300,13 @@ function Scene({ modelUrl }: { modelUrl: string }) {
 									moveUp();
 								}
 							}}
-						>
-							<Text style={styles.controlButtonText}>↑ Up</Text>
-						</ViroQuad>
+						/>
+						<ViroText
+							position={[1.2, -1, 0.1]}
+							text="↑ Up"
+							scale={[0.5, 0.5, 0.5]}
+							style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
+						/>
 						<ViroQuad
 							position={[2.4, -1, 0]}
 							width={0.6}
@@ -280,9 +317,13 @@ function Scene({ modelUrl }: { modelUrl: string }) {
 									moveDown();
 								}
 							}}
-						>
-							<Text style={styles.controlButtonText}>↓ Down</Text>
-						</ViroQuad>
+						/>
+						<ViroText
+							position={[2.4, -1, 0.1]}
+							text="↓ Down"
+							scale={[0.5, 0.5, 0.5]}
+							style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
+						/>
 					</View>
 
 					{/* Fix Position and Reset */}
@@ -297,9 +338,13 @@ function Scene({ modelUrl }: { modelUrl: string }) {
 									fixPosition();
 								}
 							}}
-						>
-							<Text style={styles.controlButtonText}>{isPositionFixed ? 'Unfix' : 'Fix'}</Text>
-						</ViroQuad>
+						/>
+						<ViroText
+							position={[-0.6, -1.5, 0.1]}
+							text={isPositionFixed ? 'Unfix' : 'Fix'}
+							scale={[0.5, 0.5, 0.5]}
+							style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
+						/>
 						<ViroQuad
 							position={[0.6, -1.5, 0]}
 							width={0.6}
@@ -310,9 +355,13 @@ function Scene({ modelUrl }: { modelUrl: string }) {
 									resetModel();
 								}
 							}}
-						>
-							<Text style={styles.controlButtonText}>Reset</Text>
-						</ViroQuad>
+						/>
+						<ViroText
+							position={[0.6, -1.5, 0.1]}
+							text="Reset"
+							scale={[0.5, 0.5, 0.5]}
+							style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
+						/>
 					</View>
 				</View>
 			</ViroQuad>
@@ -337,8 +386,9 @@ function ErrorFallback() {
 }
 
 export default function ProductARScreen() {
-	const { modelUrl } = useLocalSearchParams<{ modelUrl: string }>();
-	const [hasError, setHasError] = useState(false);
+  const { modelUrl } = useLocalSearchParams<{ modelUrl: string }>();
+  const [hasError, setHasError] = useState(false);
+  const [controlsVisible, setControlsVisible] = useState(true);
 
 	useEffect(() => {
 		// Check if we're on a platform that supports Viro
