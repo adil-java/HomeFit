@@ -134,237 +134,227 @@ function Scene({ modelUrl }: { modelUrl: string }) {
 				/>
 			</ViroARPlane>
 
-			{/* Control Panel Overlay */}
+			{/* Control Panel Overlay - Properly positioned in 3D space */}
+			{/* Rotation Controls Row */}
 			<ViroQuad
-				position={[0, -1.5, -2]}
-				width={3}
-				height={1.5}
+				position={[-1.2, 0.5, -2]}
+				width={0.6}
+				height={0.3}
 				materials={["QuadMaterial"]}
-			>
-				<View style={styles.controlPanel}>
-					{/* Rotation Controls */}
-					<View style={styles.controlRow}>
-						<ViroQuad
-							position={[-1.2, 0.5, 0]}
-							width={0.6}
-							height={0.3}
-							materials={["QuadMaterial"]}
-							onClickState={(state) => {
-								if (state === ViroClickStateTypes.CLICKED) {
-									rotateLeft();
-								}
-							}}
-						/>
-						<ViroText
-							position={[-1.2, 0.5, 0.1]}
-							text="↺ Left"
-							scale={[0.5, 0.5, 0.5]}
-							style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
-						/>
-						<ViroQuad
-							position={[0, 0.5, 0]}
-							width={0.6}
-							height={0.3}
-							materials={["QuadMaterial"]}
-							onClickState={(state) => {
-								if (state === ViroClickStateTypes.CLICKED) {
-									rotateRight();
-								}
-							}}
-						/>
-						<ViroText
-							position={[0, 0.5, 0.1]}
-							text="↻ Right"
-							scale={[0.5, 0.5, 0.5]}
-							style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
-						/>
-					</View>
-					<View style={styles.controlRow}>
-						<ViroQuad
-							position={[-0.6, 0, 0]}
-							width={0.6}
-							height={0.3}
-							materials={["QuadMaterial"]}
-							onClickState={(state) => {
-								if (state === ViroClickStateTypes.CLICKED) {
-									rotateUp();
-								}
-							}}
-						/>
-						<ViroText
-							position={[-0.6, 0, 0.1]}
-							text="↑ Up"
-							scale={[0.5, 0.5, 0.5]}
-							style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
-						/>
-						<ViroQuad
-							position={[0.6, 0, 0]}
-							width={0.6}
-							height={0.3}
-							materials={["QuadMaterial"]}
-							onClickState={(state) => {
-								if (state === ViroClickStateTypes.CLICKED) {
-									rotateDown();
-								}
-							}}
-						/>
-						<ViroText
-							position={[0.6, 0, 0.1]}
-							text="↓ Down"
-							scale={[0.5, 0.5, 0.5]}
-							style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
-						/>
-					</View>
+				onClickState={(state) => {
+					if (state === ViroClickStateTypes.CLICKED) {
+						rotateLeft();
+					}
+				}}
+			/>
+			<ViroText
+				position={[-1.2, 0.5, -1.9]}
+				text="↺ Left"
+				scale={[0.3, 0.3, 0.3]}
+				style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
+			/>
 
-					{/* Zoom Controls */}
-					<View style={styles.controlRow}>
-						<ViroQuad
-							position={[-0.6, -0.5, 0]}
-							width={0.6}
-							height={0.3}
-							materials={["QuadMaterial"]}
-							onClickState={(state) => {
-								if (state === ViroClickStateTypes.CLICKED) {
-									zoomIn();
-								}
-							}}
-						/>
-						<ViroText
-							position={[-0.6, -0.5, 0.1]}
-							text="+ Zoom In"
-							scale={[0.5, 0.5, 0.5]}
-							style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
-						/>
-						<ViroQuad
-							position={[0.6, -0.5, 0]}
-							width={0.6}
-							height={0.3}
-							materials={["QuadMaterial"]}
-							onClickState={(state) => {
-								if (state === ViroClickStateTypes.CLICKED) {
-									zoomOut();
-								}
-							}}
-						/>
-						<ViroText
-							position={[0.6, -0.5, 0.1]}
-							text="- Zoom Out"
-							scale={[0.5, 0.5, 0.5]}
-							style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
-						/>
-					</View>
+			<ViroQuad
+				position={[0, 0.5, -2]}
+				width={0.6}
+				height={0.3}
+				materials={["QuadMaterial"]}
+				onClickState={(state) => {
+					if (state === ViroClickStateTypes.CLICKED) {
+						rotateRight();
+					}
+				}}
+			/>
+			<ViroText
+				position={[0, 0.5, -1.9]}
+				text="↻ Right"
+				scale={[0.3, 0.3, 0.3]}
+				style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
+			/>
 
-					{/* Positioning Controls */}
-					<View style={styles.controlRow}>
-						<ViroQuad
-							position={[-1.2, -1, 0]}
-							width={0.6}
-							height={0.3}
-							materials={["QuadMaterial"]}
-							onClickState={(state) => {
-								if (state === ViroClickStateTypes.CLICKED) {
-									moveLeft();
-								}
-							}}
-						/>
-						<ViroText
-							position={[-1.2, -1, 0.1]}
-							text="← Left"
-							scale={[0.5, 0.5, 0.5]}
-							style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
-						/>
-						<ViroQuad
-							position={[0, -1, 0]}
-							width={0.6}
-							height={0.3}
-							materials={["QuadMaterial"]}
-							onClickState={(state) => {
-								if (state === ViroClickStateTypes.CLICKED) {
-									moveRight();
-								}
-							}}
-						/>
-						<ViroText
-							position={[0, -1, 0.1]}
-							text="→ Right"
-							scale={[0.5, 0.5, 0.5]}
-							style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
-						/>
-						<ViroQuad
-							position={[1.2, -1, 0]}
-							width={0.6}
-							height={0.3}
-							materials={["QuadMaterial"]}
-							onClickState={(state) => {
-								if (state === ViroClickStateTypes.CLICKED) {
-									moveUp();
-								}
-							}}
-						/>
-						<ViroText
-							position={[1.2, -1, 0.1]}
-							text="↑ Up"
-							scale={[0.5, 0.5, 0.5]}
-							style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
-						/>
-						<ViroQuad
-							position={[2.4, -1, 0]}
-							width={0.6}
-							height={0.3}
-							materials={["QuadMaterial"]}
-							onClickState={(state) => {
-								if (state === ViroClickStateTypes.CLICKED) {
-									moveDown();
-								}
-							}}
-						/>
-						<ViroText
-							position={[2.4, -1, 0.1]}
-							text="↓ Down"
-							scale={[0.5, 0.5, 0.5]}
-							style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
-						/>
-					</View>
+			{/* Up/Down Rotation Row */}
+			<ViroQuad
+				position={[-0.6, 0, -2]}
+				width={0.6}
+				height={0.3}
+				materials={["QuadMaterial"]}
+				onClickState={(state) => {
+					if (state === ViroClickStateTypes.CLICKED) {
+						rotateUp();
+					}
+				}}
+			/>
+			<ViroText
+				position={[-0.6, 0, -1.9]}
+				text="↑ Up"
+				scale={[0.3, 0.3, 0.3]}
+				style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
+			/>
 
-					{/* Fix Position and Reset */}
-					<View style={styles.controlRow}>
-						<ViroQuad
-							position={[-0.6, -1.5, 0]}
-							width={0.6}
-							height={0.3}
-							materials={["QuadMaterial"]}
-							onClickState={(state) => {
-								if (state === ViroClickStateTypes.CLICKED) {
-									fixPosition();
-								}
-							}}
-						/>
-						<ViroText
-							position={[-0.6, -1.5, 0.1]}
-							text={isPositionFixed ? 'Unfix' : 'Fix'}
-							scale={[0.5, 0.5, 0.5]}
-							style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
-						/>
-						<ViroQuad
-							position={[0.6, -1.5, 0]}
-							width={0.6}
-							height={0.3}
-							materials={["QuadMaterial"]}
-							onClickState={(state) => {
-								if (state === ViroClickStateTypes.CLICKED) {
-									resetModel();
-								}
-							}}
-						/>
-						<ViroText
-							position={[0.6, -1.5, 0.1]}
-							text="Reset"
-							scale={[0.5, 0.5, 0.5]}
-							style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
-						/>
-					</View>
-				</View>
-			</ViroQuad>
+			<ViroQuad
+				position={[0.6, 0, -2]}
+				width={0.6}
+				height={0.3}
+				materials={["QuadMaterial"]}
+				onClickState={(state) => {
+					if (state === ViroClickStateTypes.CLICKED) {
+						rotateDown();
+					}
+				}}
+			/>
+			<ViroText
+				position={[0.6, 0, -1.9]}
+				text="↓ Down"
+				scale={[0.3, 0.3, 0.3]}
+				style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
+			/>
+
+			{/* Zoom Controls Row */}
+			<ViroQuad
+				position={[-0.6, -0.5, -2]}
+				width={0.6}
+				height={0.3}
+				materials={["QuadMaterial"]}
+				onClickState={(state) => {
+					if (state === ViroClickStateTypes.CLICKED) {
+						zoomIn();
+					}
+				}}
+			/>
+			<ViroText
+				position={[-0.6, -0.5, -1.9]}
+				text="+ Zoom In"
+				scale={[0.3, 0.3, 0.3]}
+				style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
+			/>
+
+			<ViroQuad
+				position={[0.6, -0.5, -2]}
+				width={0.6}
+				height={0.3}
+				materials={["QuadMaterial"]}
+				onClickState={(state) => {
+					if (state === ViroClickStateTypes.CLICKED) {
+						zoomOut();
+					}
+				}}
+			/>
+			<ViroText
+				position={[0.6, -0.5, -1.9]}
+				text="- Zoom Out"
+				scale={[0.3, 0.3, 0.3]}
+				style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
+			/>
+
+			{/* Positioning Controls Row */}
+			<ViroQuad
+				position={[-1.2, -1, -2]}
+				width={0.6}
+				height={0.3}
+				materials={["QuadMaterial"]}
+				onClickState={(state) => {
+					if (state === ViroClickStateTypes.CLICKED) {
+						moveLeft();
+					}
+				}}
+			/>
+			<ViroText
+				position={[-1.2, -1, -1.9]}
+				text="← Left"
+				scale={[0.3, 0.3, 0.3]}
+				style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
+			/>
+
+			<ViroQuad
+				position={[0, -1, -2]}
+				width={0.6}
+				height={0.3}
+				materials={["QuadMaterial"]}
+				onClickState={(state) => {
+					if (state === ViroClickStateTypes.CLICKED) {
+						moveRight();
+					}
+				}}
+			/>
+			<ViroText
+				position={[0, -1, -1.9]}
+				text="→ Right"
+				scale={[0.3, 0.3, 0.3]}
+				style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
+			/>
+
+			<ViroQuad
+				position={[1.2, -1, -2]}
+				width={0.6}
+				height={0.3}
+				materials={["QuadMaterial"]}
+				onClickState={(state) => {
+					if (state === ViroClickStateTypes.CLICKED) {
+						moveUp();
+					}
+				}}
+			/>
+			<ViroText
+				position={[1.2, -1, -1.9]}
+				text="↑ Up"
+				scale={[0.3, 0.3, 0.3]}
+				style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
+			/>
+
+			<ViroQuad
+				position={[2.4, -1, -2]}
+				width={0.6}
+				height={0.3}
+				materials={["QuadMaterial"]}
+				onClickState={(state) => {
+					if (state === ViroClickStateTypes.CLICKED) {
+						moveDown();
+					}
+				}}
+			/>
+			<ViroText
+				position={[2.4, -1, -1.9]}
+				text="↓ Down"
+				scale={[0.3, 0.3, 0.3]}
+				style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
+			/>
+
+			{/* Fix Position and Reset Row */}
+			<ViroQuad
+				position={[-0.6, -1.5, -2]}
+				width={0.6}
+				height={0.3}
+				materials={["QuadMaterial"]}
+				onClickState={(state) => {
+					if (state === ViroClickStateTypes.CLICKED) {
+						fixPosition();
+					}
+				}}
+			/>
+			<ViroText
+				position={[-0.6, -1.5, -1.9]}
+				text={isPositionFixed ? 'Unfix' : 'Fix'}
+				scale={[0.3, 0.3, 0.3]}
+				style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
+			/>
+
+			<ViroQuad
+				position={[0.6, -1.5, -2]}
+				width={0.6}
+				height={0.3}
+				materials={["QuadMaterial"]}
+				onClickState={(state) => {
+					if (state === ViroClickStateTypes.CLICKED) {
+						resetModel();
+					}
+				}}
+			/>
+			<ViroText
+				position={[0.6, -1.5, -1.9]}
+				text="Reset"
+				scale={[0.3, 0.3, 0.3]}
+				style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
+			/>
 		</ViroARScene>
 	);
 }
@@ -458,30 +448,5 @@ const styles = StyleSheet.create({
 		textAlign: 'center',
 		lineHeight: 24,
 		marginBottom: 20,
-	},
-	controlPanel: {
-		flex: 1,
-		justifyContent: 'space-around',
-		alignItems: 'center',
-		padding: 10,
-	},
-	controlRow: {
-		flexDirection: 'row',
-		justifyContent: 'space-around',
-		width: '100%',
-		marginVertical: 5,
-	},
-	controlButton: {
-		backgroundColor: 'rgba(0, 0, 0, 0.7)',
-		paddingVertical: 8,
-		paddingHorizontal: 12,
-		borderRadius: 5,
-		marginHorizontal: 5,
-	},
-	controlButtonText: {
-		color: 'white',
-		fontSize: 12,
-		fontWeight: 'bold',
-		textAlign: 'center',
 	},
 });
