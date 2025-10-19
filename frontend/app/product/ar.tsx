@@ -14,7 +14,7 @@ import {
 import FloatingBackButton from "@/components/Shared/FloatingBackButton";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { Viro3DPoint } from "@reactvision/react-viro/dist/components/Types/ViroUtils";
-import { View, Text, StyleSheet, Alert, Platform, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, Alert, Platform } from "react-native";
 import { useTheme } from "@/contexts/ThemeContext";
 
 ViroMaterials.createMaterials({
@@ -143,56 +143,176 @@ function Scene({ modelUrl }: { modelUrl: string }) {
 				<View style={styles.controlPanel}>
 					{/* Rotation Controls */}
 					<View style={styles.controlRow}>
-						<TouchableOpacity style={styles.controlButton} onPress={rotateLeft}>
+						<ViroQuad
+							position={[-1.2, 0.5, 0]}
+							width={0.6}
+							height={0.3}
+							materials={["QuadMaterial"]}
+							onClickState={(state) => {
+								if (state === ViroClickStateTypes.CLICKED) {
+									rotateLeft();
+								}
+							}}
+						>
 							<Text style={styles.controlButtonText}>↺ Left</Text>
-						</TouchableOpacity>
-						<TouchableOpacity style={styles.controlButton} onPress={rotateRight}>
+						</ViroQuad>
+						<ViroQuad
+							position={[0, 0.5, 0]}
+							width={0.6}
+							height={0.3}
+							materials={["QuadMaterial"]}
+							onClickState={(state) => {
+								if (state === ViroClickStateTypes.CLICKED) {
+									rotateRight();
+								}
+							}}
+						>
 							<Text style={styles.controlButtonText}>↻ Right</Text>
-						</TouchableOpacity>
+						</ViroQuad>
 					</View>
 					<View style={styles.controlRow}>
-						<TouchableOpacity style={styles.controlButton} onPress={rotateUp}>
+						<ViroQuad
+							position={[-0.6, 0, 0]}
+							width={0.6}
+							height={0.3}
+							materials={["QuadMaterial"]}
+							onClickState={(state) => {
+								if (state === ViroClickStateTypes.CLICKED) {
+									rotateUp();
+								}
+							}}
+						>
 							<Text style={styles.controlButtonText}>↑ Up</Text>
-						</TouchableOpacity>
-						<TouchableOpacity style={styles.controlButton} onPress={rotateDown}>
+						</ViroQuad>
+						<ViroQuad
+							position={[0.6, 0, 0]}
+							width={0.6}
+							height={0.3}
+							materials={["QuadMaterial"]}
+							onClickState={(state) => {
+								if (state === ViroClickStateTypes.CLICKED) {
+									rotateDown();
+								}
+							}}
+						>
 							<Text style={styles.controlButtonText}>↓ Down</Text>
-						</TouchableOpacity>
+						</ViroQuad>
 					</View>
 
 					{/* Zoom Controls */}
 					<View style={styles.controlRow}>
-						<TouchableOpacity style={styles.controlButton} onPress={zoomIn}>
+						<ViroQuad
+							position={[-0.6, -0.5, 0]}
+							width={0.6}
+							height={0.3}
+							materials={["QuadMaterial"]}
+							onClickState={(state) => {
+								if (state === ViroClickStateTypes.CLICKED) {
+									zoomIn();
+								}
+							}}
+						>
 							<Text style={styles.controlButtonText}>+ Zoom In</Text>
-						</TouchableOpacity>
-						<TouchableOpacity style={styles.controlButton} onPress={zoomOut}>
+						</ViroQuad>
+						<ViroQuad
+							position={[0.6, -0.5, 0]}
+							width={0.6}
+							height={0.3}
+							materials={["QuadMaterial"]}
+							onClickState={(state) => {
+								if (state === ViroClickStateTypes.CLICKED) {
+									zoomOut();
+								}
+							}}
+						>
 							<Text style={styles.controlButtonText}>- Zoom Out</Text>
-						</TouchableOpacity>
+						</ViroQuad>
 					</View>
 
 					{/* Positioning Controls */}
 					<View style={styles.controlRow}>
-						<TouchableOpacity style={styles.controlButton} onPress={moveLeft}>
+						<ViroQuad
+							position={[-1.2, -1, 0]}
+							width={0.6}
+							height={0.3}
+							materials={["QuadMaterial"]}
+							onClickState={(state) => {
+								if (state === ViroClickStateTypes.CLICKED) {
+									moveLeft();
+								}
+							}}
+						>
 							<Text style={styles.controlButtonText}>← Left</Text>
-						</TouchableOpacity>
-						<TouchableOpacity style={styles.controlButton} onPress={moveRight}>
+						</ViroQuad>
+						<ViroQuad
+							position={[0, -1, 0]}
+							width={0.6}
+							height={0.3}
+							materials={["QuadMaterial"]}
+							onClickState={(state) => {
+								if (state === ViroClickStateTypes.CLICKED) {
+									moveRight();
+								}
+							}}
+						>
 							<Text style={styles.controlButtonText}>→ Right</Text>
-						</TouchableOpacity>
-						<TouchableOpacity style={styles.controlButton} onPress={moveUp}>
+						</ViroQuad>
+						<ViroQuad
+							position={[1.2, -1, 0]}
+							width={0.6}
+							height={0.3}
+							materials={["QuadMaterial"]}
+							onClickState={(state) => {
+								if (state === ViroClickStateTypes.CLICKED) {
+									moveUp();
+								}
+							}}
+						>
 							<Text style={styles.controlButtonText}>↑ Up</Text>
-						</TouchableOpacity>
-						<TouchableOpacity style={styles.controlButton} onPress={moveDown}>
+						</ViroQuad>
+						<ViroQuad
+							position={[2.4, -1, 0]}
+							width={0.6}
+							height={0.3}
+							materials={["QuadMaterial"]}
+							onClickState={(state) => {
+								if (state === ViroClickStateTypes.CLICKED) {
+									moveDown();
+								}
+							}}
+						>
 							<Text style={styles.controlButtonText}>↓ Down</Text>
-						</TouchableOpacity>
+						</ViroQuad>
 					</View>
 
 					{/* Fix Position and Reset */}
 					<View style={styles.controlRow}>
-						<TouchableOpacity style={styles.controlButton} onPress={fixPosition}>
+						<ViroQuad
+							position={[-0.6, -1.5, 0]}
+							width={0.6}
+							height={0.3}
+							materials={["QuadMaterial"]}
+							onClickState={(state) => {
+								if (state === ViroClickStateTypes.CLICKED) {
+									fixPosition();
+								}
+							}}
+						>
 							<Text style={styles.controlButtonText}>{isPositionFixed ? 'Unfix' : 'Fix'}</Text>
-						</TouchableOpacity>
-						<TouchableOpacity style={styles.controlButton} onPress={resetModel}>
+						</ViroQuad>
+						<ViroQuad
+							position={[0.6, -1.5, 0]}
+							width={0.6}
+							height={0.3}
+							materials={["QuadMaterial"]}
+							onClickState={(state) => {
+								if (state === ViroClickStateTypes.CLICKED) {
+									resetModel();
+								}
+							}}
+						>
 							<Text style={styles.controlButtonText}>Reset</Text>
-						</TouchableOpacity>
+						</ViroQuad>
 					</View>
 				</View>
 			</ViroQuad>
@@ -247,10 +367,6 @@ export default function ProductARScreen() {
 			<FloatingBackButton onPress={router.back} />
 			<ViroARSceneNavigator
 				initialScene={{ scene: () => <Scene modelUrl={modelUrl} /> }}
-				onError={(error) => {
-					console.error('Viro AR Error:', error);
-					setHasError(true);
-				}}
 			/>
 		</>
 	);
