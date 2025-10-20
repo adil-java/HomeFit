@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from 'react';
 import { router, useLocalSearchParams } from "expo-router";
 import {
 	Viro3DObject,
@@ -15,8 +15,25 @@ import {
 import FloatingBackButton from "@/components/Shared/FloatingBackButton";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { Viro3DPoint } from "@reactvision/react-viro/dist/components/Types/ViroUtils";
-import { View, Text, StyleSheet, Alert, Platform } from "react-native";
+import { View, Text, StyleSheet, Alert, Platform, TouchableOpacity } from "react-native";
 import { useTheme } from "@/contexts/ThemeContext";
+import { Ionicons } from '@expo/vector-icons';
+
+// Define the type for control functions
+interface ControlFunctions {
+	rotateLeft: () => void;
+	rotateRight: () => void;
+	rotateUp: () => void;
+	rotateDown: () => void;
+	zoomIn: () => void;
+	zoomOut: () => void;
+	moveUp: () => void;
+	moveDown: () => void;
+	moveLeft: () => void;
+	moveRight: () => void;
+	fixPosition: () => void;
+	resetModel: () => void;
+}
 
 ViroMaterials.createMaterials({
 	QuadMaterial: {
@@ -25,7 +42,7 @@ ViroMaterials.createMaterials({
 	},
 });
 
-function Scene({ modelUrl }: { modelUrl: string }) {
+function Scene({ modelUrl, controlFunctions }: { modelUrl: string, controlFunctions: React.MutableRefObject<ControlFunctions> }) {
 	const [position, setPosition] = useState<Viro3DPoint | null>(null);
 	const [rotation, setRotation] = useState<[number, number, number]>([0, 0, 0]);
 	const [scale, setScale] = useState<[number, number, number]>([1, 1, 1]);
@@ -70,6 +87,23 @@ function Scene({ modelUrl }: { modelUrl: string }) {
 		setIsPositionFixed(false);
 	};
 
+	useEffect(() => {
+		controlFunctions.current = {
+			rotateLeft,
+			rotateRight,
+			rotateUp,
+			rotateDown,
+			zoomIn,
+			zoomOut,
+			moveUp,
+			moveDown,
+			moveLeft,
+			moveRight,
+			fixPosition,
+			resetModel,
+		};
+	}, []);
+
 	if (error) {
 		return (
 			<ViroARScene>
@@ -94,31 +128,31 @@ function Scene({ modelUrl }: { modelUrl: string }) {
 		<ViroARScene>
 			<ViroAmbientLight color="white" />
 			<ViroARPlane>
-		<Viro3DObject
-			visible={!!position && !isLoading}
-			source={{ uri: modelUrl }}
-			position={position ?? [0, 0, 0]}
-			rotation={rotation}
-			scale={scale}
-			type="GLB"
-			dragType={!isPositionFixed ? "FixedToWorld" : undefined}
-			onDrag={(dragToPos, source) => {
-				if (!isPositionFixed) {
-					setPosition(dragToPos);
-				}
-			}}
-			onLoadStart={() => {
-				console.log('Starting to load 3D model:', modelUrl);
-			}}
-			onLoadEnd={() => {
-				console.log('Finished loading 3D model');
-				setIsLoading(false);
-			}}
-			onError={(error) => {
-				console.error('Error loading 3D model:', error);
-				setError('Failed to load 3D model. Please check your internet connection.');
-			}}
-		/>
+				<Viro3DObject
+					visible={!!position && !isLoading}
+					source={{ uri: modelUrl }}
+					position={position ?? [0, 0, 0]}
+					rotation={rotation}
+					scale={scale}
+					type="GLB"
+					dragType={!isPositionFixed ? "FixedToWorld" : undefined}
+					onDrag={(dragToPos, source) => {
+						if (!isPositionFixed) {
+							setPosition(dragToPos);
+						}
+					}}
+					onLoadStart={() => {
+						console.log('Starting to load 3D model:', modelUrl);
+					}}
+					onLoadEnd={() => {
+						console.log('Finished loading 3D model');
+						setIsLoading(false);
+					}}
+					onError={(error) => {
+						console.error('Error loading 3D model:', error);
+						setError('Failed to load 3D model. Please check your internet connection.');
+					}}
+				/>
 				<ViroQuad
 					visible={!position || isLoading}
 					position={[0, 0, 0]}
@@ -133,228 +167,6 @@ function Scene({ modelUrl }: { modelUrl: string }) {
 					}}
 				/>
 			</ViroARPlane>
-
-			{/* Control Panel Overlay - Properly positioned in 3D space */}
-			{/* Rotation Controls Row */}
-			<ViroQuad
-				position={[-1.2, 0.5, -2]}
-				width={0.6}
-				height={0.3}
-				materials={["QuadMaterial"]}
-				onClickState={(state) => {
-					if (state === ViroClickStateTypes.CLICKED) {
-						rotateLeft();
-					}
-				}}
-			/>
-			<ViroText
-				position={[-1.2, 0.5, -1.9]}
-				text="↺ Left"
-				scale={[0.3, 0.3, 0.3]}
-				style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
-			/>
-
-			<ViroQuad
-				position={[0, 0.5, -2]}
-				width={0.6}
-				height={0.3}
-				materials={["QuadMaterial"]}
-				onClickState={(state) => {
-					if (state === ViroClickStateTypes.CLICKED) {
-						rotateRight();
-					}
-				}}
-			/>
-			<ViroText
-				position={[0, 0.5, -1.9]}
-				text="↻ Right"
-				scale={[0.3, 0.3, 0.3]}
-				style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
-			/>
-
-			{/* Up/Down Rotation Row */}
-			<ViroQuad
-				position={[-0.6, 0, -2]}
-				width={0.6}
-				height={0.3}
-				materials={["QuadMaterial"]}
-				onClickState={(state) => {
-					if (state === ViroClickStateTypes.CLICKED) {
-						rotateUp();
-					}
-				}}
-			/>
-			<ViroText
-				position={[-0.6, 0, -1.9]}
-				text="↑ Up"
-				scale={[0.3, 0.3, 0.3]}
-				style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
-			/>
-
-			<ViroQuad
-				position={[0.6, 0, -2]}
-				width={0.6}
-				height={0.3}
-				materials={["QuadMaterial"]}
-				onClickState={(state) => {
-					if (state === ViroClickStateTypes.CLICKED) {
-						rotateDown();
-					}
-				}}
-			/>
-			<ViroText
-				position={[0.6, 0, -1.9]}
-				text="↓ Down"
-				scale={[0.3, 0.3, 0.3]}
-				style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
-			/>
-
-			{/* Zoom Controls Row */}
-			<ViroQuad
-				position={[-0.6, -0.5, -2]}
-				width={0.6}
-				height={0.3}
-				materials={["QuadMaterial"]}
-				onClickState={(state) => {
-					if (state === ViroClickStateTypes.CLICKED) {
-						zoomIn();
-					}
-				}}
-			/>
-			<ViroText
-				position={[-0.6, -0.5, -1.9]}
-				text="+ Zoom In"
-				scale={[0.3, 0.3, 0.3]}
-				style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
-			/>
-
-			<ViroQuad
-				position={[0.6, -0.5, -2]}
-				width={0.6}
-				height={0.3}
-				materials={["QuadMaterial"]}
-				onClickState={(state) => {
-					if (state === ViroClickStateTypes.CLICKED) {
-						zoomOut();
-					}
-				}}
-			/>
-			<ViroText
-				position={[0.6, -0.5, -1.9]}
-				text="- Zoom Out"
-				scale={[0.3, 0.3, 0.3]}
-				style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
-			/>
-
-			{/* Positioning Controls Row */}
-			<ViroQuad
-				position={[-1.2, -1, -2]}
-				width={0.6}
-				height={0.3}
-				materials={["QuadMaterial"]}
-				onClickState={(state) => {
-					if (state === ViroClickStateTypes.CLICKED) {
-						moveLeft();
-					}
-				}}
-			/>
-			<ViroText
-				position={[-1.2, -1, -1.9]}
-				text="← Left"
-				scale={[0.3, 0.3, 0.3]}
-				style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
-			/>
-
-			<ViroQuad
-				position={[0, -1, -2]}
-				width={0.6}
-				height={0.3}
-				materials={["QuadMaterial"]}
-				onClickState={(state) => {
-					if (state === ViroClickStateTypes.CLICKED) {
-						moveRight();
-					}
-				}}
-			/>
-			<ViroText
-				position={[0, -1, -1.9]}
-				text="→ Right"
-				scale={[0.3, 0.3, 0.3]}
-				style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
-			/>
-
-			<ViroQuad
-				position={[1.2, -1, -2]}
-				width={0.6}
-				height={0.3}
-				materials={["QuadMaterial"]}
-				onClickState={(state) => {
-					if (state === ViroClickStateTypes.CLICKED) {
-						moveUp();
-					}
-				}}
-			/>
-			<ViroText
-				position={[1.2, -1, -1.9]}
-				text="↑ Up"
-				scale={[0.3, 0.3, 0.3]}
-				style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
-			/>
-
-			<ViroQuad
-				position={[2.4, -1, -2]}
-				width={0.6}
-				height={0.3}
-				materials={["QuadMaterial"]}
-				onClickState={(state) => {
-					if (state === ViroClickStateTypes.CLICKED) {
-						moveDown();
-					}
-				}}
-			/>
-			<ViroText
-				position={[2.4, -1, -1.9]}
-				text="↓ Down"
-				scale={[0.3, 0.3, 0.3]}
-				style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
-			/>
-
-			{/* Fix Position and Reset Row */}
-			<ViroQuad
-				position={[-0.6, -1.5, -2]}
-				width={0.6}
-				height={0.3}
-				materials={["QuadMaterial"]}
-				onClickState={(state) => {
-					if (state === ViroClickStateTypes.CLICKED) {
-						fixPosition();
-					}
-				}}
-			/>
-			<ViroText
-				position={[-0.6, -1.5, -1.9]}
-				text={isPositionFixed ? 'Unfix' : 'Fix'}
-				scale={[0.3, 0.3, 0.3]}
-				style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
-			/>
-
-			<ViroQuad
-				position={[0.6, -1.5, -2]}
-				width={0.6}
-				height={0.3}
-				materials={["QuadMaterial"]}
-				onClickState={(state) => {
-					if (state === ViroClickStateTypes.CLICKED) {
-						resetModel();
-					}
-				}}
-			/>
-			<ViroText
-				position={[0.6, -1.5, -1.9]}
-				text="Reset"
-				scale={[0.3, 0.3, 0.3]}
-				style={{ color: 'white', fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}
-			/>
 		</ViroARScene>
 	);
 }
@@ -379,6 +191,7 @@ export default function ProductARScreen() {
   const { modelUrl } = useLocalSearchParams<{ modelUrl: string }>();
   const [hasError, setHasError] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
+  const controlFunctions = useRef<ControlFunctions>({} as ControlFunctions);
 
 	useEffect(() => {
 		// Check if we're on a platform that supports Viro
@@ -406,8 +219,70 @@ export default function ProductARScreen() {
 		<>
 			<FloatingBackButton onPress={router.back} />
 			<ViroARSceneNavigator
-				initialScene={{ scene: () => <Scene modelUrl={modelUrl} /> }}
+				initialScene={{ scene: () => <Scene modelUrl={modelUrl} controlFunctions={controlFunctions} /> }}
 			/>
+			{/* 2D Control Panel - Fixed at bottom of screen */}
+			<View style={styles.controlPanel}>
+				{/* Rotation Controls Row */}
+				<View style={styles.controlRow}>
+					<TouchableOpacity style={styles.controlButton} onPress={() => controlFunctions.current.rotateLeft?.()}>
+						<Ionicons name="arrow-back" size={24} color="#fff" />
+					</TouchableOpacity>
+					<TouchableOpacity style={styles.controlButton} onPress={() => controlFunctions.current.rotateRight?.()}>
+						<Ionicons name="arrow-forward" size={24} color="#fff" />
+					</TouchableOpacity>
+				</View>
+
+				{/* Up/Down Controls Row */}
+				<View style={styles.controlRow}>
+					<TouchableOpacity style={styles.controlButton} onPress={() => controlFunctions.current.rotateUp?.()}>
+						<Ionicons name="arrow-up" size={24} color="#fff" />
+					</TouchableOpacity>
+					<TouchableOpacity style={styles.controlButton} onPress={() => controlFunctions.current.rotateDown?.()}>
+						<Ionicons name="arrow-down" size={24} color="#fff" />
+					</TouchableOpacity>
+				</View>
+
+				{/* Movement Controls Row */}
+				<View style={styles.controlRow}>
+					<TouchableOpacity style={styles.controlButton} onPress={() => controlFunctions.current.moveLeft?.()}>
+						<Ionicons name="arrow-back" size={24} color="#fff" />
+						<Text style={styles.controlButtonText}>Left</Text>
+					</TouchableOpacity>
+					<TouchableOpacity style={styles.controlButton} onPress={() => controlFunctions.current.moveRight?.()}>
+						<Ionicons name="arrow-forward" size={24} color="#fff" />
+						<Text style={styles.controlButtonText}>Right</Text>
+					</TouchableOpacity>
+					<TouchableOpacity style={styles.controlButton} onPress={() => controlFunctions.current.moveUp?.()}>
+						<Ionicons name="arrow-up" size={24} color="#fff" />
+						<Text style={styles.controlButtonText}>Up</Text>
+					</TouchableOpacity>
+					<TouchableOpacity style={styles.controlButton} onPress={() => controlFunctions.current.moveDown?.()}>
+						<Ionicons name="arrow-down" size={24} color="#fff" />
+						<Text style={styles.controlButtonText}>Down</Text>
+					</TouchableOpacity>
+				</View>
+
+				{/* Zoom and Action Controls Row */}
+				<View style={styles.controlRow}>
+					<TouchableOpacity style={styles.controlButton} onPress={() => controlFunctions.current.zoomIn?.()}>
+						<Ionicons name="add" size={24} color="#fff" />
+						<Text style={styles.controlButtonText}>Zoom In</Text>
+					</TouchableOpacity>
+					<TouchableOpacity style={styles.controlButton} onPress={() => controlFunctions.current.zoomOut?.()}>
+						<Ionicons name="remove" size={24} color="#fff" />
+						<Text style={styles.controlButtonText}>Zoom Out</Text>
+					</TouchableOpacity>
+					<TouchableOpacity style={styles.controlButton} onPress={() => controlFunctions.current.fixPosition?.()}>
+						<Ionicons name="pin" size={24} color="#fff" />
+						<Text style={styles.controlButtonText}>Fix</Text>
+					</TouchableOpacity>
+					<TouchableOpacity style={styles.controlButton} onPress={() => controlFunctions.current.resetModel?.()}>
+						<Ionicons name="refresh" size={24} color="#fff" />
+						<Text style={styles.controlButtonText}>Reset</Text>
+					</TouchableOpacity>
+				</View>
+			</View>
 		</>
 	);
 
@@ -448,5 +323,37 @@ const styles = StyleSheet.create({
 		textAlign: 'center',
 		lineHeight: 24,
 		marginBottom: 20,
+	},
+	controlPanel: {
+		position: 'absolute',
+		bottom: 20,
+		left: 20,
+		right: 20,
+		backgroundColor: 'rgba(0, 0, 0, 0.7)',
+		borderRadius: 15,
+		padding: 15,
+		borderWidth: 1,
+		borderColor: 'rgba(255, 255, 255, 0.3)',
+	},
+	controlRow: {
+		flexDirection: 'row',
+		justifyContent: 'space-around',
+		marginBottom: 10,
+	},
+	controlButton: {
+		backgroundColor: 'rgba(255, 255, 255, 0.2)',
+		borderRadius: 25,
+		padding: 12,
+		alignItems: 'center',
+		justifyContent: 'center',
+		minWidth: 60,
+		borderWidth: 1,
+		borderColor: 'rgba(255, 255, 255, 0.3)',
+	},
+	controlButtonText: {
+		color: '#fff',
+		fontSize: 10,
+		fontWeight: 'bold',
+		marginTop: 2,
 	},
 });
