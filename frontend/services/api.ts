@@ -3,7 +3,7 @@ import { auth } from '../firebaseConfig';
 // Prefer environment variable set via Expo (e.g., EXPO_PUBLIC_API_BASE_URL)
 // Fallback to previous hardcoded value to avoid breaking existing setups
 const API_BASE_URL =
-  (process.env.EXPO_PUBLIC_API_BASE_URL as string) || 'http://192.168.0.112:8080/api';
+  (process.env.EXPO_PUBLIC_API_BASE_URL as string) || 'http://192.168.0.112:8081/api';
 
 class ApiService {
   private async getAuthHeaders(): Promise<Record<string, string>> {
@@ -190,14 +190,35 @@ class ApiService {
       };
     }
   }
-  async stripeService(){
-    const res = await fetch(`${API_BASE_URL}/api/stripe/keys`)
-    const data = await res.json()
-    if(!res.ok){
-      throw new Error('Failed to fetch Stripe keys')
-    }
-    return data
 
+  async stripeGetKeys() {
+    // Public endpoint: no auth required
+    const res = await fetch(`${API_BASE_URL}/stripe/keys`);
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error('Failed to fetch Stripe keys');
+    }
+    return data as { publishableKey: string };
+  }
+
+  async createPaymentIntent() {
+    // Protected endpoint: requires Authorization header
+    const headers = await this.getAuthHeaders();
+    const res = await fetch(`${API_BASE_URL}/stripe/create-payment-intent`, {
+      method: 'POST',
+      headers,
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      const message = (data as any)?.error || 'Failed to create PaymentIntent';
+      throw new Error(message);
+    }
+    return data as {
+      paymentIntent: string; // client_secret
+      ephemeralKey: string;
+      customer: string;
+      publishableKey?: string;
+    };
   }
 }
 

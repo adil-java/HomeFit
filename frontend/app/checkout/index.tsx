@@ -23,6 +23,9 @@ import { RootState } from '@/store/store';
 import { clearCart } from '@/store/slices/cartSlice';
 import { addOrder } from '@/store/slices/ordersSlice';
 import Toast from 'react-native-toast-message';
+import { useStripe } from '@stripe/stripe-react-native';
+import { apiService } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 const mockAddresses = [
   {
@@ -54,17 +57,19 @@ export default function CheckoutScreen() {
   const { theme } = useTheme();
   const dispatch = useDispatch();
   const { items, total } = useSelector((state: RootState) => state.cart);
-  const { user } = useSelector((state: RootState) => state.auth || {});
+  const { user } = useAuth();
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
   
   const [selectedAddress, setSelectedAddress] = useState(mockAddresses[0].id);
   const [selectedPayment, setSelectedPayment] = useState('wallet');
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentSheetInitialized, setPaymentSheetInitialized] = useState(false);
 
   const shippingCost = 0; // Free shipping
   const discount = appliedCoupon?.discount || 0;
-  const finalTotal = total - discount + shippingCost;
+  const finalTotal: number = Number(total - discount + shippingCost);
 
   const applyCoupon = () => {
     // Mock coupon validation
@@ -127,8 +132,35 @@ export default function CheckoutScreen() {
     setIsProcessing(true);
 
     try {
-      // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      if (selectedPayment === 'card') {
+        // Initialize PaymentSheet with backend intent and customer ephemeral key
+        if (!paymentSheetInitialized) {
+          const pi = await apiService.createPaymentIntent();
+          const initRes = await initPaymentSheet({
+            customerId: pi.customer,
+            customerEphemeralKeySecret: pi.ephemeralKey,
+            paymentIntentClientSecret: pi.paymentIntent,
+            merchantDisplayName: 'HomeFit',
+            defaultBillingDetails: {
+              name: user?.name || user?.email || 'Customer',
+              email: user?.email,
+            },
+            allowsDelayedPaymentMethods: true,
+          });
+          if (initRes.error) {
+            throw new Error(initRes.error.message);
+          }
+          setPaymentSheetInitialized(true);
+        }
+
+        const presentRes = await presentPaymentSheet();
+        if (presentRes.error) {
+          throw new Error(presentRes.error.message);
+        }
+      } else {
+        // Simulate wallet payment
+        await new Promise(resolve => setTimeout(resolve, 1200));
+      }
 
       const selectedAddr = mockAddresses.find(addr => addr.id === selectedAddress);
       const paymentMethod = paymentMethods.find(pm => pm.id === selectedPayment);
@@ -145,6 +177,7 @@ export default function CheckoutScreen() {
         })),
         total: finalTotal,
         status: 'pending' as const,
+        paymentStatus: 'paid' as const,
         shippingAddress: selectedAddr!,
         paymentMethod: paymentMethod!.name,
         createdAt: new Date().toISOString(),
@@ -166,7 +199,7 @@ export default function CheckoutScreen() {
       Toast.show({
         type: 'error',
         text1: 'Order failed',
-        text2: 'Please try again',
+        text2: error instanceof Error ? error.message : 'Please try again',
         position: 'bottom',
       });
     } finally {
@@ -286,9 +319,9 @@ export default function CheckoutScreen() {
                 <Text style={[styles.paymentName, { color: theme.colors.text }]}>
                   {method.name}
                 </Text>
-                {method.id === 'wallet' && (
+                {method.id === 'wallet' && typeof (method as any).balance === 'number' && (
                   <Text style={[styles.walletBalance, { color: theme.colors.textSecondary }]}>
-                    Balance: ${method.balance.toFixed(2)}
+                    Balance: ${((method as any).balance as number).toFixed(2)}
                   </Text>
                 )}
               </View>
@@ -409,7 +442,7 @@ export default function CheckoutScreen() {
           disabled={isProcessing}
         >
           <Text style={styles.placeOrderText}>
-            {isProcessing ? 'Processing...' : `Place Order • $${finalTotal.toFixed(2)}`}
+            {isProcessing ? 'Processing...' : `Place Order • $${Number(finalTotal).toFixed(2)}`}
           </Text>
         </TouchableOpacity>
       </View>
