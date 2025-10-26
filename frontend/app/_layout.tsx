@@ -8,10 +8,14 @@ import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { store } from '@/store/store';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { apiService } from '@/services/api';
 
-export default function RootLayout() {
+export default async function RootLayout() {
   useFrameworkReady();
-
+  const { data } = await apiService.stripeService();
+  useEffect(() => {
+    console.log('Stripe Keys:', data);
+  }, [data]);
   return (
     <Provider store={store}>
       <ThemeProvider>

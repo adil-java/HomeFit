@@ -190,6 +190,15 @@ class ApiService {
       };
     }
   }
+  async stripeService(){
+    const res = await fetch(`${API_BASE_URL}/api/stripe/keys`)
+    const data = await res.json()
+    if(!res.ok){
+      throw new Error('Failed to fetch Stripe keys')
+    }
+    return data
+
+  }
 }
 
 export const apiService = new ApiService();
