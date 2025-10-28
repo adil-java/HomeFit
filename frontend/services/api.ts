@@ -100,6 +100,19 @@ class ApiService {
     }
   }
 
+  async getProducts(){
+    try{
+      const response = await fetch(`${API_BASE_URL}/products/`, {
+        method: 'GET',
+        headers: await this.getAuthHeaders(),
+      });
+      return await response.json();
+    }catch(error){
+      console.error('Failed to fetch products:', error);
+      return { success: false, error: 'Failed to fetch products' };
+    }
+  }
+
   async getProfile() {
     try {
       const headers = await this.getAuthHeaders();

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -12,10 +12,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState, AppDispatch } from '@/store/store';
 import { ProductCard } from '@/components/ProductCard';
 import { CategoryCard } from '@/components/CategoryCard';
+import { apiService } from '@/services/api';
+import { setProducts } from '@/store/slices/productsSlice';
+import { Product } from '@/types';
 import { HeroBanner } from '@/components/HeroBanner';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Search, Bell } from 'lucide-react-native';
@@ -26,20 +29,62 @@ const { width } = Dimensions.get('window');
 export default function HomeScreen() {
   const { theme } = useTheme();
   const { user, isLoading } = useAuth();
-  const { featuredProducts, categories } = useSelector((state: RootState) => state.products);
+  const dispatch = useDispatch<AppDispatch>();
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  const { products, categories } = useSelector((state: RootState) => state.products);
+  
+  // Get featured products (first 4 products)
+  const featuredProducts = products.slice(0, 4);
 
   useEffect(() => {
     if (!isLoading && !user) {
       router.replace('/auth');
+    } else if (user) {
+      fetchProducts();
     }
   }, [user, isLoading]);
+  
+  const fetchProducts = async () => {
+    try {
+      setIsLoadingProducts(true);
+      setError(null);
+      const response = await apiService.getProducts();
+      if (response.success) {
+        dispatch(setProducts(response.data));
+      } else {
+        setError('Failed to load products');
+        console.error('Failed to load products:', response.error);
+      }
+    } catch (err) {
+      setError('Network error. Please try again.');
+      console.error('Error fetching products:', err);
+    } finally {
+      setIsLoadingProducts(false);
+    }
+  };
 
-  if (isLoading) {
+  if (isLoading || isLoadingProducts) {
     return (
       <View style={[styles.centered, { backgroundColor: theme.colors.background }]}>
         <Text style={[styles.loadingText, { color: theme.colors.text }]}>
           Loading...
         </Text>
+      </View>
+    );
+  }
+  
+  if (error) {
+    return (
+      <View style={[styles.centered, { backgroundColor: theme.colors.background }]}>
+        <Text style={[styles.errorText, { color: theme.colors.error }]}>{error}</Text>
+        <TouchableOpacity 
+          style={[styles.retryButton, { backgroundColor: theme.colors.primary }]}
+          onPress={fetchProducts}
+        >
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -84,17 +129,25 @@ export default function HomeScreen() {
               </Text>
             </TouchableOpacity>
           </View>
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false} 
-            style={styles.horizontalScroll}
-            contentContainerStyle={styles.productsContent}
-          >
-            {featuredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-            <View style={styles.endPadding} />
-          </ScrollView>
+          {featuredProducts.length > 0 ? (
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false} 
+              style={styles.horizontalScroll}
+              contentContainerStyle={styles.productsContent}
+            >
+              {featuredProducts.map((product: Product) => (
+                <ProductCard key={product._id || product.id} product={product} />
+              ))}
+              <View style={styles.endPadding} />
+            </ScrollView>
+          ) : (
+            <View style={styles.emptyState}>
+              <Text style={[styles.emptyStateText, { color: theme.colors.text }]}>
+                No products available
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Deals Section */}
