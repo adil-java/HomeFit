@@ -3,7 +3,7 @@ import { auth } from '../firebaseConfig';
 // Prefer environment variable set via Expo (e.g., EXPO_PUBLIC_API_BASE_URL)
 // Fallback to previous hardcoded value to avoid breaking existing setups
 const API_BASE_URL =
-  (process.env.EXPO_PUBLIC_API_BASE_URL as string) || 'http://192.168.0.112:8081/api';
+  (process.env.EXPO_PUBLIC_API_BASE_URL as string) || 'http://192.168.0.112:8080/api';
 
 class ApiService {
   private async getAuthHeaders(): Promise<Record<string, string>> {
