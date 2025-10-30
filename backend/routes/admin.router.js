@@ -5,20 +5,36 @@ import {
   getUserById,
   updateUserRole,
   deleteUser,
-  allSellers
+  allSellers,
+  listSellerRequests,
+  approveSellerRequest,
+  rejectSellerRequest,
+  analyticsSummary,
+  revenueMonthly,
+  topProducts
 } from '../controllers/admin.controller.js';
-import { adminVerify } from '../middlewares/authMiddleware.js';
+import { adminJwtVerify } from '../middlewares/authMiddleware.js';
 // import {  checkAdmin } from '../middlewares/authMiddleware.js';
 const router = express.Router();
 
 
 
 
-router.route('/login').post(adminLogin); // Placeholder for admin login if needed
-router.route('/user/:id',adminVerify).get(getUserById);
-router.route('/users',adminVerify).get(getAllUsers);
-router.route('/users/:id/role',adminVerify).put(updateUserRole);
-router.route('/users/:id',adminVerify).delete(deleteUser);
-router.route("/sellers",adminVerify).get( allSellers);
+router.route('/login').post(adminLogin); 
+router.route('/user/:id',adminJwtVerify).get(getUserById);
+router.route('/users',adminJwtVerify).get(getAllUsers);
+router.route('/users/:id/role',adminJwtVerify).put(updateUserRole);
+router.route('/users/:id',adminJwtVerify).delete(deleteUser);
+router.route("/sellers",adminJwtVerify).get( allSellers);
+
+// Seller requests moderation
+router.route('/seller-requests', adminJwtVerify).get(listSellerRequests);
+router.route('/seller-requests/:id/approve', adminJwtVerify).post(approveSellerRequest);
+router.route('/seller-requests/:id/reject', adminJwtVerify).post(rejectSellerRequest);
+
+// Analytics
+router.route('/analytics/summary', adminJwtVerify).get(analyticsSummary);
+router.route('/analytics/revenue-monthly', adminJwtVerify).get(revenueMonthly);
+router.route('/analytics/top-products', adminJwtVerify).get(topProducts);
 
 export default router;

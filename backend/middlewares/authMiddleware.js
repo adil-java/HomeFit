@@ -1,5 +1,6 @@
 import firebaseService from '../services/firebase.service.js';
 import prisma from '../config/db.js';
+import { verifyToken as verifyCustomJwt } from '../utils/jwtHelper.js';
 
 const verifyFirebaseToken = async (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1]; // "Bearer <token>"
@@ -115,5 +116,32 @@ const adminVerify = async (req, res, next) => {
     });
   }
 }
-export { protect, checkAdmin, checkSeller, adminVerify };
+// Middleware to verify custom JWT for admin panel
+const adminJwtVerify = (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization || '';
+    const parts = authHeader.split(' ');
+    if (parts.length !== 2 || parts[0] !== 'Bearer') {
+      return res.status(401).json({ success: false, error: 'No token provided' });
+    }
+    const token = parts[1];
+
+    const payload = verifyCustomJwt(token);
+    if (!payload) {
+      return res.status(401).json({ success: false, error: 'Invalid token' });
+    }
+
+    if (payload.role !== 'ADMIN') {
+      return res.status(403).json({ success: false, error: 'Not authorized as an admin' });
+    }
+
+    req.user = payload; // { id, email, role }
+    next();
+  } catch (error) {
+    console.error('Custom admin JWT verification error:', error);
+    return res.status(500).json({ success: false, error: 'Server error during admin JWT verification' });
+  }
+};
+
+export { protect, checkAdmin, checkSeller, adminVerify, adminJwtVerify };
 export default verifyFirebaseToken;

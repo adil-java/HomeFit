@@ -5,12 +5,41 @@ import StatusBadge from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Ban, Trash2 } from 'lucide-react';
-import { users } from '@/utils/dummyData';
 import { toast } from 'sonner';
+import { useEffect } from 'react';
+import { adminApi } from '@/services/adminApi';
 
 const Users = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [userData, setUserData] = useState(users);
+  const [userData, setUserData] = useState<Array<{
+    id: string;
+    name: string;
+    email: string;
+    phone: string;
+    status: 'active' | 'inactive';
+    joinedDate: string;
+    totalOrders: number;
+  }>>([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await adminApi.getUsers();
+        const rows = (res?.data || []).map((u: any) => ({
+          id: u.id,
+          name: u.name || u.email,
+          email: u.email,
+          phone: u.phoneNumber || '',
+          status: 'active',
+          joinedDate: u.createdAt ? new Date(u.createdAt).toISOString().slice(0, 10) : '',
+          totalOrders: 0,
+        }));
+        setUserData(rows);
+      } catch (e: any) {
+        toast.error(e?.message || 'Failed to load users');
+      }
+    })();
+  }, []);
 
   const filteredUsers = userData.filter(
     (user) =>
@@ -25,24 +54,29 @@ const Users = () => {
     toast.success('User status updated');
   };
 
-  const handleDelete = (id: string) => {
-    setUserData(userData.filter(user => user.id !== id));
-    toast.success('User deleted successfully');
+  const handleDelete = async (id: string) => {
+    try {
+      await adminApi.deleteUser(id);
+      setUserData(userData.filter(user => user.id !== id));
+      toast.success('User deleted successfully');
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to delete user');
+    }
   };
 
   const columns = [
     { header: 'Name', accessor: 'name' as const },
     { header: 'Email', accessor: 'email' as const },
     { header: 'Phone', accessor: 'phone' as const },
-    { 
-      header: 'Status', 
-      accessor: (row: typeof users[0]) => <StatusBadge status={row.status} />
+    {
+      header: 'Status',
+      accessor: (row: any) => <StatusBadge status={row.status} />
     },
     { header: 'Joined Date', accessor: 'joinedDate' as const },
     { header: 'Total Orders', accessor: 'totalOrders' as const },
     {
       header: 'Actions',
-      accessor: (row: typeof users[0]) => (
+      accessor: (row: any) => (
         <div className="flex gap-2">
           <Button
             variant="outline"

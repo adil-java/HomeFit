@@ -1,10 +1,11 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { adminApi } from '@/services/adminApi';
 
 interface User {
   id: string;
   email: string;
   name: string;
-  role: 'admin';
+  role: string;
 }
 
 interface AuthContextType {
@@ -12,12 +13,14 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   isAuthenticated: boolean;
+  isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -25,31 +28,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (savedUser) {
       setUser(JSON.parse(savedUser));
     }
+    setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    // Dummy authentication - replace with real API call
-    if (email === 'admin@furniture.com' && password === 'admin123') {
+    try {
+      const { token, user } = await adminApi.login(email, password);
+      localStorage.setItem('admin_token', token);
       const adminUser: User = {
-        id: '1',
-        email: 'admin@furniture.com',
-        name: 'Admin User',
-        role: 'admin',
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
       };
       setUser(adminUser);
       localStorage.setItem('admin_user', JSON.stringify(adminUser));
       return true;
+    } catch (e) {
+      return false;
     }
-    return false;
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem('admin_user');
+    localStorage.removeItem('admin_token');
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

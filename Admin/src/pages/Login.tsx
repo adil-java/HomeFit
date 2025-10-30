@@ -25,7 +25,7 @@ const Login = () => {
         toast.success('Login successful!');
         navigate('/');
       } else {
-        toast.error('Invalid credentials. Try admin@furniture.com / admin123');
+        toast.error('Invalid credentials.');
       }
     } catch (error) {
       toast.error('An error occurred during login');

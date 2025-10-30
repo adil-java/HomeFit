@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PageHeader from '@/components/PageHeader';
 import DataTable from '@/components/DataTable';
 import StatusBadge from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Check, X, FileText } from 'lucide-react';
-import { sellerRequests } from '@/utils/dummyData';
 import { toast } from 'sonner';
+import { adminApi } from '@/services/adminApi';
 
 type SellerRequest = {
   id: string;
@@ -18,20 +18,46 @@ type SellerRequest = {
 };
 
 const SellerRequests = () => {
-  const [requestData, setRequestData] = useState<SellerRequest[]>(sellerRequests);
+  const [requestData, setRequestData] = useState<SellerRequest[]>([]);
 
-  const handleApprove = (id: string) => {
-    setRequestData(requestData.map(req => 
-      req.id === id ? { ...req, status: 'approved' as const } : req
-    ));
-    toast.success('Seller request approved');
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await adminApi.listSellerRequests();
+        const rows: SellerRequest[] = (res?.data || []).map((r: any) => ({
+          id: r.id,
+          name: r.businessName || r.user?.name || r.user?.email || 'Unknown',
+          email: r.user?.email || '',
+          phone: r.user?.phoneNumber || '',
+          status: (r.status || 'PENDING').toLowerCase(),
+          requestDate: r.submittedAt ? new Date(r.submittedAt).toISOString().slice(0,10) : '',
+          businessDoc: r.businessLicense || '-',
+        }));
+        setRequestData(rows);
+      } catch (e: any) {
+        toast.error(e?.message || 'Failed to load seller requests');
+      }
+    })();
+  }, []);
+
+  const handleApprove = async (id: string) => {
+    try {
+      await adminApi.approveSellerRequest(id);
+      setRequestData(prev => prev.map(req => req.id === id ? { ...req, status: 'approved' } : req));
+      toast.success('Seller request approved');
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to approve request');
+    }
   };
 
-  const handleReject = (id: string) => {
-    setRequestData(requestData.map(req => 
-      req.id === id ? { ...req, status: 'rejected' as const } : req
-    ));
-    toast.error('Seller request rejected');
+  const handleReject = async (id: string) => {
+    try {
+      await adminApi.rejectSellerRequest(id);
+      setRequestData(prev => prev.map(req => req.id === id ? { ...req, status: 'rejected' } : req));
+      toast.error('Seller request rejected');
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to reject request');
+    }
   };
 
   const columns = [
@@ -40,12 +66,12 @@ const SellerRequests = () => {
     { header: 'Phone', accessor: 'phone' as const },
     { 
       header: 'Status', 
-      accessor: (row: typeof sellerRequests[0]) => <StatusBadge status={row.status} />
+      accessor: (row: SellerRequest) => <StatusBadge status={row.status} />
     },
     { header: 'Request Date', accessor: 'requestDate' as const },
     {
       header: 'Documents',
-      accessor: (row: typeof sellerRequests[0]) => (
+      accessor: (row: SellerRequest) => (
         <Button variant="ghost" size="sm" className="gap-2">
           <FileText className="h-4 w-4" />
           View
@@ -54,7 +80,7 @@ const SellerRequests = () => {
     },
     {
       header: 'Actions',
-      accessor: (row: typeof sellerRequests[0]) => (
+      accessor: (row: SellerRequest) => (
         <div className="flex gap-2">
           {row.status === 'pending' && (
             <>

@@ -5,12 +5,43 @@ import StatusBadge from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Ban, Trash2, Star } from 'lucide-react';
-import { sellers } from '@/utils/dummyData';
 import { toast } from 'sonner';
+import { useEffect } from 'react';
+import { adminApi } from '@/services/adminApi';
 
 const Sellers = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [sellerData, setSellerData] = useState(sellers);
+  const [sellerData, setSellerData] = useState<Array<{
+    id: string;
+    name: string;
+    email: string;
+    phone: string;
+    status: 'active' | 'inactive';
+    productsCount: number;
+    rating: number;
+    joinedDate: string;
+  }>>([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await adminApi.getSellers();
+        const rows = (res?.data || []).map((s: any) => ({
+          id: s.id,
+          name: s.name || s.email,
+          email: s.email,
+          phone: s.phoneNumber || '',
+          status: 'active',
+          productsCount: 0,
+          rating: 0,
+          joinedDate: s.createdAt ? new Date(s.createdAt).toISOString().slice(0, 10) : '',
+        }));
+        setSellerData(rows);
+      } catch (e: any) {
+        toast.error(e?.message || 'Failed to load sellers');
+      }
+    })();
+  }, []);
 
   const filteredSellers = sellerData.filter(
     (seller) =>
@@ -34,14 +65,14 @@ const Sellers = () => {
     { header: 'Business Name', accessor: 'name' as const },
     { header: 'Email', accessor: 'email' as const },
     { header: 'Phone', accessor: 'phone' as const },
-    { 
+    {
       header: 'Status', 
-      accessor: (row: typeof sellers[0]) => <StatusBadge status={row.status} />
+      accessor: (row: any) => <StatusBadge status={row.status} />
     },
     { header: 'Products', accessor: 'productsCount' as const },
     {
       header: 'Rating',
-      accessor: (row: typeof sellers[0]) => (
+      accessor: (row: any) => (
         <div className="flex items-center gap-1">
           <Star className="h-4 w-4 fill-warning text-warning" />
           <span>{row.rating}</span>
@@ -51,7 +82,7 @@ const Sellers = () => {
     { header: 'Joined Date', accessor: 'joinedDate' as const },
     {
       header: 'Actions',
-      accessor: (row: typeof sellers[0]) => (
+      accessor: (row: any) => (
         <div className="flex gap-2">
           <Button
             variant="outline"

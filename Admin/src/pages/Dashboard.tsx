@@ -1,11 +1,47 @@
+import { useEffect, useState } from 'react';
 import PageHeader from '@/components/PageHeader';
 import StatCard from '@/components/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Store, Package, ShoppingCart, DollarSign, UserCheck } from 'lucide-react';
-import { dashboardStats, revenueData, topProducts } from '@/utils/dummyData';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { adminApi } from '@/services/adminApi';
 
 const Dashboard = () => {
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    adminCount: 0,
+    totalUsersExcludingAdmin: 0,
+    activeSellers: 0,
+    pendingRequests: 0,
+    totalProducts: 0,
+    totalOrders: 0,
+    revenue: 0,
+  });
+
+  const [revenueData, setRevenueData] = useState<Array<{ month: string; revenue: number }>>([]);
+  const [topProducts, setTopProducts] = useState<Array<{ name: string; sales: number }>>([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await adminApi.analyticsSummary();
+        if (res?.data) {
+          setStats(res.data);
+        }
+      } catch (e) {}
+
+      try {
+        const rev = await adminApi.analyticsRevenueMonthly();
+        setRevenueData(rev?.data || []);
+      } catch (e) {}
+
+      try {
+        const top = await adminApi.analyticsTopProducts();
+        setTopProducts(top?.data || []);
+      } catch (e) {}
+    })();
+  }, []);
+
   return (
     <div>
       <PageHeader
@@ -17,14 +53,14 @@ const Dashboard = () => {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-8">
         <StatCard
           title="Total Users"
-          value={dashboardStats.totalUsers}
-          description="Registered customers"
+          value={stats.totalUsersExcludingAdmin}
+          description={`Registered customers (excl. ${stats.adminCount} admin)`}
           icon={Users}
           trend={{ value: '12% from last month', isPositive: true }}
         />
         <StatCard
           title="Active Sellers"
-          value={dashboardStats.activeSellers}
+          value={stats.activeSellers}
           description="Approved sellers"
           icon={Store}
           trend={{ value: '5% from last month', isPositive: true }}
@@ -32,28 +68,28 @@ const Dashboard = () => {
         />
         <StatCard
           title="Pending Requests"
-          value={dashboardStats.pendingRequests}
+          value={stats.pendingRequests}
           description="Seller applications"
           icon={UserCheck}
           iconColor="text-warning"
         />
         <StatCard
           title="Total Products"
-          value={dashboardStats.totalProducts}
+          value={stats.totalProducts}
           description="Listed items"
           icon={Package}
           trend={{ value: '8% from last month', isPositive: true }}
         />
         <StatCard
           title="Total Orders"
-          value={dashboardStats.totalOrders}
+          value={stats.totalOrders}
           description="All time orders"
           icon={ShoppingCart}
           trend={{ value: '15% from last month', isPositive: true }}
         />
         <StatCard
           title="Revenue"
-          value={`$${dashboardStats.revenue.toLocaleString()}`}
+          value={`$${Number(stats.revenue).toLocaleString()}`}
           description="Total revenue"
           icon={DollarSign}
           trend={{ value: '23% from last month', isPositive: true }}
