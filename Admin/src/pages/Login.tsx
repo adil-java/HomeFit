@@ -23,7 +23,7 @@ const Login = () => {
       const success = await login(email, password);
       if (success) {
         toast.success('Login successful!');
-        navigate('/');
+        navigate('/dashboard');
       } else {
         toast.error('Invalid credentials.');
       }
