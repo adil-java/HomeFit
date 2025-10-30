@@ -74,11 +74,7 @@ const Login = () => {
               {isLoading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
-          <div className="mt-4 p-4 bg-muted rounded-md text-sm">
-            <p className="font-medium mb-2">Demo Credentials:</p>
-            <p className="text-muted-foreground">Email: admin@furniture.com</p>
-            <p className="text-muted-foreground">Password: admin123</p>
-          </div>
+          
         </CardContent>
       </Card>
     </div>

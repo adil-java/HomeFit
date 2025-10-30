@@ -196,7 +196,7 @@ try {
 export const allSellers = async (req, res) => {
   try {
     const sellers = await prisma.user.findMany({
-      where: { role: Role.SELLER }, // ✅ Correct role
+      where: { role: Role.SELLER }, //  Correct role
       select: {
         id: true,
         firebaseUid: true,
