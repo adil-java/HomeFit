@@ -137,7 +137,7 @@ class ApiService {
           id: 'mock-user-id',
           email: 'user@example.com',
           name: 'Mock User',
-          role: 'customer'
+          role: 'seller'
         }
       };
     }
