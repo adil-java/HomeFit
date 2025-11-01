@@ -53,6 +53,14 @@ export default function ProductDetailScreen() {
   const imageScrollRef = useRef<FlatList>(null);
   
   const isInWishlist = wishlist.some(item => item.id === id);
+  
+  // Format price with currency
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(price);
+  };
 
   if (!product) {
     return (
@@ -98,9 +106,11 @@ export default function ProductDetailScreen() {
       id: product.id,
       name: product.name,
       price: product.price,
-      image: product.image,
+      image: product.images?.[0] || '',
       color: selectedColor,
       size: selectedSize,
+      sku: product.sku,
+      quantity: 1,
     };
 
     for (let i = 0; i < quantity; i++) {
@@ -237,6 +247,9 @@ export default function ProductDetailScreen() {
           <Text style={[styles.productName, { color: theme.colors.text }]}>
             {product.name}
           </Text>
+           <Text style={[styles.description, { color: theme.colors.textSecondary }]}>
+              {product.description}
+            </Text>
           
           <View style={styles.ratingContainer}>
             <View style={styles.ratingStars}>
@@ -253,81 +266,119 @@ export default function ProductDetailScreen() {
               </Text>
             </View>
           </View>
+          
 
           <View style={styles.priceContainer}>
-            <Text style={[styles.price, { color: theme.colors.text }]}>
-              ${product.price}
-            </Text>
-            {product.originalPrice && (
-              <Text style={[styles.originalPrice, { color: theme.colors.textSecondary }]}>
-                ${product.originalPrice}
+              <Text style={[styles.productPrice, { color: theme.colors.accent, fontSize: 24, fontWeight: '700' }]}>
+                {formatPrice(product.price)}
               </Text>
-            )}
+              {product.comparePrice && product.comparePrice > product.price && (
+                <Text style={[styles.comparePrice, { color: theme.colors.textSecondary }]}>
+                  {formatPrice(product.comparePrice)}
+                </Text>
+              )}
+            </View>
+
+            <View style={styles.descriptionSection}>
+            
+            
+            <View style={[
+              styles.stockBadge, 
+              { 
+                backgroundColor: product.quantity > 0 
+                  ? (theme.dark ? 'rgba(76, 175, 80, 0.2)' : 'rgba(76, 175, 80, 0.1)') 
+                  : (theme.dark ? 'rgba(244, 67, 54, 0.2)' : 'rgba(244, 67, 54, 0.1)'),
+                borderColor: product.quantity > 0 ? '#4CAF50' : '#F44336',
+                borderWidth: 1,
+              }
+            ]}>
+              <View style={{
+                width: 8,
+                height: 8,
+                borderRadius: 4,
+                backgroundColor: product.quantity > 0 ? '#4CAF50' : '#F44336',
+              }} />
+              <Text style={[
+                styles.stockText, 
+                { color: product.quantity > 0 ? '#4CAF50' : '#F44336' }
+              ]}>
+                {product.quantity > 0 ? `In Stock (${product.quantity} available)` : 'Out of Stock'}
+              </Text>
+            </View>
+           
           </View>
 
-          {/* Colors */}
-          {product.colors && product.colors.length > 0 && (
-            <View style={styles.optionSection}>
-              <Text style={[styles.optionTitle, { color: theme.colors.text }]}>Color</Text>
-              <View style={styles.colorOptions}>
-                {product.colors.map((color) => (
-                  <TouchableOpacity
-                    key={color}
-                    onPress={() => setSelectedColor(color)}
-                    style={[
-                      styles.colorOption,
-                      {
-                        borderColor: selectedColor === color ? theme.colors.primary : theme.colors.border,
-                        backgroundColor: theme.colors.surface,
-                      },
-                    ]}
-                  >
-                    <Text style={[
-                      styles.colorText,
-                      { 
-                        color: selectedColor === color ? theme.colors.primary : theme.colors.text,
-                        fontWeight: selectedColor === color ? '600' : '400',
-                      }
-                    ]}>
-                      {color}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+          {/* Product Variants */}
+          {product.variants?.map((variant: any) => (
+            <View key={variant.id} style={[
+              styles.variantSection, 
+              { 
+                borderColor: theme.colors.border,
+                backgroundColor: theme.colors.surfaceVariant
+              }
+            ]}>
+              <View style={styles.variantHeader}>
+                <Text style={[styles.variantTitle, { color: theme.colors.text }]}>
+                  {variant.name}
+                  <Text style={styles.variantRequired}> *</Text>
+                </Text>
+                <Text style={{ 
+                  fontSize: 12, 
+                  color: theme.colors.textSecondary
+                }}>
+                  {variant.name === 'Color' && selectedColor ? selectedColor : ''}
+                  {variant.name === 'Size' && selectedSize ? selectedSize : ''}
+                </Text>
+              </View>
+              <View style={styles.variantOptions}>
+                {variant.options.map((option: string, index: number) => {
+                  const isSelected = 
+                    (variant.name === 'Color' && selectedColor === option) ||
+                    (variant.name === 'Size' && selectedSize === option);
+                  
+                  return (
+                    <TouchableOpacity
+                      key={index}
+                      style={[
+                        styles.variantOption,
+                        {
+                          borderColor: theme.colors.border,
+                          backgroundColor: theme.colors.surface,
+                        },
+                        isSelected && styles.variantOptionSelected,
+                        variant.name === 'non' && {
+                          backgroundColor: option.toLowerCase(),
+                          width: 40,
+                          height: 40,
+                          borderRadius: 20,
+                          borderColor: isSelected ? theme.colors.primary : theme.colors.border,
+                        },
+                      ]}
+                      onPress={() => {
+                        if (variant.name === 'Color') {
+                          setSelectedColor(option);
+                        } else if (variant.name === 'Size') {
+                          setSelectedSize(option);
+                        }
+                      }}
+                    >
+                      {(
+                        <Text style={[
+                          styles.variantOptionText,
+                          isSelected ? styles.variantOptionSelectedText : { color: theme.colors.text },
+                          { fontWeight: isSelected ? '600' : '500' }
+                        ]}>
+                          {option}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </View>
-          )}
+          ))}
 
-          {/* Sizes */}
-          {product.sizes && product.sizes.length > 0 && (
-            <View style={styles.optionSection}>
-              <Text style={[styles.optionTitle, { color: theme.colors.text }]}>Size</Text>
-              <View style={styles.sizeOptions}>
-                {product.sizes.map((size) => (
-                  <TouchableOpacity
-                    key={size}
-                    onPress={() => setSelectedSize(size)}
-                    style={[
-                      styles.sizeOption,
-                      {
-                        borderColor: selectedSize === size ? theme.colors.primary : theme.colors.border,
-                        backgroundColor: selectedSize === size ? theme.colors.primary : theme.colors.surface,
-                      },
-                    ]}
-                  >
-                    <Text style={[
-                      styles.sizeText,
-                      { 
-                        color: selectedSize === size ? '#fff' : theme.colors.text,
-                        fontWeight: selectedSize === size ? '600' : '400',
-                      }
-                    ]}>
-                      {size}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          )}
+
 
           {/* Quantity */}
           <View style={styles.optionSection}>
@@ -350,24 +401,21 @@ export default function ProductDetailScreen() {
           </View>
 
           {/* Description */}
-          <View style={styles.descriptionSection}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Description</Text>
-            <Text style={[styles.description, { color: theme.colors.textSecondary }]}>
-              {product.description}
-            </Text>
-          </View>
+          
 
           {/* Features */}
-          <View style={styles.featuresSection}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Features</Text>
-            <View style={styles.featuresList}>
-              {product.tags.map((tag, index) => (
-                <View key={index} style={[styles.featureItem, { backgroundColor: theme.colors.surface }]}>
-                  <Text style={[styles.featureText, { color: theme.colors.text }]}>{tag}</Text>
-                </View>
-              ))}
+          {product.tags && product.tags.length > 0 && (
+            <View style={styles.featuresSection}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Features</Text>
+              <View style={styles.featuresList}>
+                {product.tags.map((tag, index) => (
+                  <View key={index} style={[styles.featureItem, { backgroundColor: theme.colors.surface }]}>
+                    <Text style={[styles.featureText, { color: theme.colors.text }]}>{tag}</Text>
+                  </View>
+                ))}
+              </View>
             </View>
-          </View>
+          )}
 
           {/* Comments Section */}
           <View style={styles.commentsSection}>
@@ -517,6 +565,97 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  comparePrice: {
+    fontSize: 16,
+    textDecorationLine: 'line-through',
+    marginLeft: 8,
+    opacity: 0.7,
+  },
+  stockBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+    marginTop: -5,
+    marginBottom: -16,
+  },
+  stockText: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 4,
+  },
+  detailsContainer: {
+    backgroundColor: 'rgba(0,0,0,0.02)',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 8,
+  },
+  variantSection: {
+    marginTop: 20,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  variantHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  variantTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  variantRequired: {
+    fontSize: 12,
+    color: '#F44336',
+  },
+  variantOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 4,
+  },
+  variantOption: {
+    borderWidth: 1.5,
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginRight: 10,
+    marginBottom: 10,
+    minWidth: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  variantOptionSelected: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  variantOptionText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  variantOptionSelected: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  variantOptionSelectedText: {
+    color: '#fff',
+  },
+  arContainer: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -585,6 +724,7 @@ const styles = StyleSheet.create({
     lineHeight: 30,
   },
   ratingContainer: {
+    marginTop:10,
     marginBottom: 16,
   },
   ratingStars: {

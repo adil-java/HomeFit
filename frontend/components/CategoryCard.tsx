@@ -13,7 +13,7 @@ const CARD_HEIGHT = CARD_WIDTH * 0.7;
 
 interface CategoryCardProps {
   category: string;
-  image?: any;
+  image?: string | null;
 }
 
 const categoryData = {
@@ -44,7 +44,7 @@ const categoryData = {
   },
 };
 
-export const CategoryCard: React.FC<CategoryCardProps> = ({ category }) => {
+export const CategoryCard: React.FC<CategoryCardProps> = ({ category, image }) => {
   const { theme } = useTheme();
   const dispatch = useDispatch();
   
@@ -70,12 +70,20 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({ category }) => {
       ]}
     >
       <View style={styles.card}>
-        {categoryInfo.image && (
+        {image ? (
+          <Image 
+            source={{ uri: image }} 
+            style={styles.image}
+            resizeMode="cover"
+          />
+        ) : categoryInfo.image ? (
           <Image 
             source={categoryInfo.image} 
             style={styles.image}
             resizeMode="cover"
           />
+        ) : (
+          <View style={[styles.image, { backgroundColor: theme.colors.background }]} />
         )}
         <LinearGradient
           colors={['transparent', 'rgba(0,0,0,0.8)']}

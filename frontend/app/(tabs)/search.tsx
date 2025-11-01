@@ -243,8 +243,7 @@ export default function SearchScreen() {
               data={filteredProducts}
               renderItem={({ item }) => <ProductCard product={item} showAddToCart />}
               keyExtractor={(item) => item.id}
-              numColumns={2}
-              columnWrapperStyle={styles.row}
+              numColumns={1}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.productsContainer}
             />
@@ -367,8 +366,6 @@ const styles = StyleSheet.create({
   },
   productsContainer: {
     paddingBottom: 20,
-  },
-  row: {
-    justifyContent: 'space-between',
+    paddingHorizontal: 0,
   },
 });

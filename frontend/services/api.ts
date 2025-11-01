@@ -37,16 +37,8 @@ class ApiService {
       return json;
     } catch (error) {
       console.warn('Token verification error (network/API unavailable):', error);
-      // Return a mock response for build environments or when backend is unavailable
-      return {
-        success: true,
-        user: {
-          uid: 'mock-user-id',
-          email: 'user@example.com',
-          displayName: 'Mock User',
-          role: 'customer'
-        }
-      };
+      // Throw the error to be handled by the auth context
+      throw new Error('Unable to verify token. Please check your connection and try again.');
     }
   }
 
@@ -233,6 +225,36 @@ class ApiService {
       publishableKey?: string;
     };
   }
+
+  async getCategories() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/categories`, {
+        method: 'GET',
+        headers: await this.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to fetch categories');
+      }
+
+      const categories = await response.json();
+      
+      // Map the categories to include the image URL
+      return categories.map((category: any) => ({
+        id: category.id,
+        name: category.name,
+        slug: category.slug,
+        image: category.image || null, // Assuming the category has an image property
+        description: category.description || '',
+      }));
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      throw error;
+    }
+  }
+
+  
 }
 
 export const apiService = new ApiService();

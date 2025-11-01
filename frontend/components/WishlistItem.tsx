@@ -77,8 +77,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   image: {
-    width: 100,
-    height: 100,
+    width: 80,
+    height: 80,
     borderRadius: 8,
     marginRight: 12,
   },
@@ -88,13 +88,13 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 8,
+    marginBottom: 4,
     lineHeight: 20,
   },
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   rating: {
     fontSize: 14,

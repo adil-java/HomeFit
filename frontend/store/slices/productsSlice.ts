@@ -2,6 +2,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { Comment } from './commentsSlice';
 
 export interface Product {
+  comparePrice: boolean;
   id: string;
   name: string;
   price: number;
@@ -20,10 +21,18 @@ export interface Product {
   comments?: Comment[];
 }
 
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  image: string | null;
+  description?: string;
+}
+
 interface ProductsState {
   products: Product[];
   featuredProducts: Product[];
-  categories: string[];
+  categories: Category[];
   loading: boolean;
   searchQuery: string;
   selectedCategory: string;
@@ -124,10 +133,10 @@ const mockProducts: Product[] = [
 const initialState: ProductsState = {
   products: mockProducts,
   featuredProducts: mockProducts.filter((_, index) => index < 3),
-  categories: ['Sofas', 'Chairs', 'Tables', 'Beds', 'Decor'],
+  categories: [] as Category[],
   loading: false,
   searchQuery: '',
-  selectedCategory: '',
+  selectedCategory: null,
   selectedTags: [],
 };
 
@@ -135,6 +144,9 @@ const productsSlice = createSlice({
   name: 'products',
   initialState,
   reducers: {
+    setCategories: (state, action: PayloadAction<Category[]>) => {
+      state.categories = action.payload;
+    },
     setProducts: (state, action: PayloadAction<Product[]>) => {
       state.products = action.payload;
     },
@@ -166,6 +178,7 @@ const productsSlice = createSlice({
 });
 
 export const {
+  setCategories,
   setProducts,
   setSearchQuery,
   setSelectedCategory,

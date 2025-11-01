@@ -17,12 +17,11 @@ import { RootState, AppDispatch } from '@/store/store';
 import { ProductCard } from '@/components/ProductCard';
 import { CategoryCard } from '@/components/CategoryCard';
 import { apiService } from '@/services/api';
-import { setProducts } from '@/store/slices/productsSlice';
+import { setProducts, setCategories, Category } from '@/store/slices/productsSlice';
 import { Product } from '@/types';
 import { HeroBanner } from '@/components/HeroBanner';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Search, Bell } from 'lucide-react-native';
-import logo from '@/assets/images/logo.png';
 
 const { width } = Dimensions.get('window');
 
@@ -31,9 +30,11 @@ export default function HomeScreen() {
   const { user, isLoading } = useAuth();
   const dispatch = useDispatch<AppDispatch>();
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const { products, categories } = useSelector((state: RootState) => state.products);
+  const typedCategories = categories as Category[];
   
   // Get featured products (first 4 products)
   const featuredProducts = products.slice(0, 4);
@@ -43,8 +44,23 @@ export default function HomeScreen() {
       router.replace('/auth');
     } else if (user) {
       fetchProducts();
+      fetchCategories();
     }
   }, [user, isLoading]);
+  
+  const fetchCategories = async () => {
+    try {
+      setIsLoadingCategories(true);
+      const categories = await apiService.getCategories();
+      // Update Redux state with full category objects
+      dispatch(setCategories(categories));
+    } catch (err) {
+      console.error('Error fetching categories:', err);
+      // Handle error (you might want to show a user-friendly message)
+    } finally {
+      setIsLoadingCategories(false);
+    }
+  };
   
   const fetchProducts = async () => {
     try {
@@ -104,17 +120,31 @@ export default function HomeScreen() {
           <Text style={[styles.sectionTitle, { color: theme.colors.text, marginBottom: 12}]}>
             Categories
           </Text>
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false} 
-            style={styles.horizontalScroll}
-            contentContainerStyle={styles.categoriesContent}
-          >
-            {categories.map((category, index) => (
-              <CategoryCard key={index} category={category} />
-            ))}
-            <View style={styles.endPadding} />
-          </ScrollView>
+          {isLoadingCategories ? (
+            <View style={styles.centered}>
+              <Text style={{ color: theme.colors.text }}>Loading categories...</Text>
+            </View>
+          ) : categories.length > 0 ? (
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false} 
+              style={styles.horizontalScroll}
+              contentContainerStyle={styles.categoriesContent}
+            >
+              {typedCategories.map((category) => (
+                <CategoryCard 
+                  key={category.id} 
+                  category={category.name} 
+                  image={category.image}
+                />
+              ))}
+              <View style={styles.endPadding} />
+            </ScrollView>
+          ) : (
+            <View style={styles.centered}>
+              <Text style={{ color: theme.colors.text }}>No categories available</Text>
+            </View>
+          )}
         </View>
 
         {/* Featured Products */}
@@ -151,6 +181,7 @@ export default function HomeScreen() {
         </View>
 
         {/* Deals Section */}
+        {!['seller', 'admin'].includes(user?.role?.toLowerCase()) && (
         <View style={styles.section}>
           <LinearGradient
             colors={[theme.colors.primary, theme.colors.accent]}
@@ -168,6 +199,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </LinearGradient>
         </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

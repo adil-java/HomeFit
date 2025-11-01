@@ -72,7 +72,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               id: backendResponse.user.uid,
               email: backendResponse.user.email || "",
               name: backendResponse.user.displayName || firebaseUser.email?.split("@")[0] || "",
-              role: backendResponse.user.role || 'seller'
+              role: backendResponse.user.role || 'customer'
             };
 
             setUser(user);
