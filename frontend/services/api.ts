@@ -254,6 +254,67 @@ class ApiService {
     }
   }
 
+    // Wishlist methods
+  async getWishlist() {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}/wishlist`, {
+      method: 'GET',
+      headers,
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || 'Failed to fetch wishlist');
+    }
+    
+    return response.json();
+  }
+
+  async addToWishlist(productId: string) {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}/wishlist/items`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ productId }),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || 'Failed to add to wishlist');
+    }
+    
+    return response.json();
+  }
+
+  async removeFromWishlist(productId: string) {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}/wishlist/items/${productId}`, {
+      method: 'DELETE',
+      headers,
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || 'Failed to remove from wishlist');
+    }
+    
+    return response.json();
+  }
+
+  async checkInWishlist(productId: string) {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}/wishlist/items/${productId}`, {
+      method: 'GET',
+      headers,
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || 'Failed to check wishlist status');
+    }
+    
+    return response.json();
+  }
   
 }
 

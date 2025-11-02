@@ -50,7 +50,7 @@ export const CartItem: React.FC<CartItemProps> = ({ item, onUpdateQuantity, onRe
         )}
         
         <Text style={[styles.price, { color: theme.colors.text }]}>
-          ${item.price.toFixed(2)}
+          Rs. {item.price.toFixed(2)}
         </Text>
         
         <View style={styles.controls}>

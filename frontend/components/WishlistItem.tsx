@@ -44,7 +44,7 @@ export const WishlistItem: React.FC<WishlistItemProps> = ({ item, onRemove, onAd
         </View>
         
         <Text style={[styles.price, { color: theme.colors.text }]}>
-          ${item.price.toFixed(2)}
+          Rs. {item.price.toFixed(2)}
         </Text>
         
         <View style={styles.actions}>

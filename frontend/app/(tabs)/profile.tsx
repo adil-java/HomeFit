@@ -95,7 +95,7 @@ export default function ProfileScreen() {
             </View>
             <Text style={styles.userName}>{user?.name || 'User'}</Text>
             <Text style={styles.userEmail}>{user?.email || 'user@example.com'}</Text>
-            {user?.role === 'seller' && (
+            {user?.role?.toLowerCase() === 'seller' && (
               <View style={styles.sellerBadge}>
                 <Shield size={12} color="#fff" />
                 <Text style={styles.sellerBadgeText}>Seller</Text>
@@ -131,7 +131,7 @@ export default function ProfileScreen() {
             onPress={() => router.push('/wallet')}
           >
             <Wallet size={24} color={theme.colors.success} />
-            <Text style={[styles.statNumber, { color: theme.colors.text }]}>$250</Text>
+            <Text style={[styles.statNumber, { color: theme.colors.text }]}>Rs. 250</Text>
             <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Wallet</Text>
           </TouchableOpacity>
         </View>
@@ -164,7 +164,7 @@ export default function ProfileScreen() {
           <ProfileOption
             icon={Wallet}
             title="Wallet"
-            subtitle="Balance: $250.00"
+            subtitle="Balance: Rs. 250.00"
             onPress={() => router.push('/wallet')}
           />
         </View>

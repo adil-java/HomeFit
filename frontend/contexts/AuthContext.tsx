@@ -67,12 +67,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Try to verify token with backend but don't block if it fails
           try {
             const backendResponse = await apiService.verifyToken();
+            console.log('Backend response:', backendResponse); // Debug log
 
+            // Check if the response has the expected structure
+            const userData = backendResponse.user || backendResponse; // Handle different response formats
+            
+            // Convert role to lowercase for consistency
+            const role = userData.role?.toLowerCase() || 
+                        (firebaseUser.email?.toLowerCase().includes('seller') ? 'seller' : 'customer');
+            
             const user: User = {
-              id: backendResponse.user.uid,
-              email: backendResponse.user.email || "",
-              name: backendResponse.user.displayName || firebaseUser.email?.split("@")[0] || "",
-              role: backendResponse.user.role || 'customer'
+              id: firebaseUser.uid, // Use firebaseUser.uid as the source of truth
+              email: firebaseUser.email || "",
+              name: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "",
+              role: role
             };
 
             setUser(user);
@@ -126,27 +134,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      // Immediately use Firebase token so UI can proceed without waiting on backend
       const token = await userCredential.user.getIdToken();
       setToken(token);
 
-      // Optimistically set minimal user; full user will be set by onAuthStateChanged + verifyToken
-      const optimisticUser = {
-        id: userCredential.user.uid,
-        email: userCredential.user.email || '',
-        name: userCredential.user.displayName || (userCredential.user.email?.split('@')[0] || ''),
-        role: userCredential.user.email?.includes('seller') ? 'seller' : 'customer',
-      };
-      setUser(optimisticUser);
-      await SecureStore.setItemAsync('token', token);
-      await SecureStore.setItemAsync('user', JSON.stringify(optimisticUser));
-
-      // Best-effort: notify backend to create/update user based on Firebase token
-      // Any error here should not block the UI
-      apiService
-        .login()
-        .then(() => console.log('Backend login verification successful'))
-        .catch((backendError) => console.warn('Backend login verification failed:', backendError));
+      // First try to get the user role from the backend
+      try {
+        const backendResponse = await apiService.login();
+        console.log('Login backend response:', backendResponse);
+        
+        const userData = backendResponse.user || backendResponse; // Handle different response formats
+        const role = userData.role?.toLowerCase() || 
+                    (userCredential.user.email?.toLowerCase().includes('seller') ? 'seller' : 'customer');
+        
+        const user: User = {
+          id: userCredential.user.uid,
+          email: userCredential.user.email || '',
+          name: userCredential.user.displayName || (userCredential.user.email?.split('@')[0] || ''),
+          role: role,
+        };
+        
+        setUser(user);
+        await SecureStore.setItemAsync('token', token);
+        await SecureStore.setItemAsync('user', JSON.stringify(user));
+      } catch (backendError) {
+        console.warn('Backend login verification failed, using fallback:', backendError);
+        // Fallback to optimistic user if backend fails
+        const optimisticUser = {
+          id: userCredential.user.uid,
+          email: userCredential.user.email || '',
+          name: userCredential.user.displayName || (userCredential.user.email?.split('@')[0] || ''),
+          role: userCredential.user.email?.includes('seller') ? 'seller' : 'customer',
+        };
+        setUser(optimisticUser);
+        await SecureStore.setItemAsync('token', token);
+        await SecureStore.setItemAsync('user', JSON.stringify(optimisticUser));
+      }
 
       router.replace('/(tabs)');
     } catch (error: any) {
@@ -158,31 +180,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (email: string, password: string, name: string) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-
-      // Update the user's display name
       await updateProfile(userCredential.user, {
         displayName: name,
       });
 
-      // Immediately use Firebase token so UI can proceed
       const token = await userCredential.user.getIdToken();
       setToken(token);
 
-      const optimisticUser = {
-        id: userCredential.user.uid,
-        email: userCredential.user.email || '',
-        name: name || userCredential.user.displayName || (userCredential.user.email?.split('@')[0] || ''),
-        role: userCredential.user.email?.includes('seller') ? 'seller' : 'customer',
-      };
-      setUser(optimisticUser);
-      await SecureStore.setItemAsync('token', token);
-      await SecureStore.setItemAsync('user', JSON.stringify(optimisticUser));
-
-      // Best-effort: notify backend to create user entry
-      apiService
-        .register()
-        .then(() => console.log('Backend registration verification successful'))
-        .catch((backendError) => console.warn('Backend registration verification failed:', backendError));
+      // First try to register with the backend to get the user role
+      try {
+        const backendResponse = await apiService.register();
+        console.log('Registration backend response:', backendResponse);
+        
+        const userData = backendResponse.user || backendResponse; // Handle different response formats
+        const user: User = {
+          id: userCredential.user.uid,
+          email: userCredential.user.email || '',
+          name: name || userCredential.user.displayName || (userCredential.user.email?.split('@')[0] || ''),
+          role: userData.role || (userCredential.user.email?.includes('seller') ? 'seller' : 'customer'),
+        };
+        
+        setUser(user);
+        await SecureStore.setItemAsync('token', token);
+        await SecureStore.setItemAsync('user', JSON.stringify(user));
+      } catch (backendError) {
+        console.warn('Backend registration failed, using fallback:', backendError);
+        // Fallback to optimistic user if backend fails
+        const optimisticUser = {
+          id: userCredential.user.uid,
+          email: userCredential.user.email || '',
+          name: name || userCredential.user.displayName || (userCredential.user.email?.split('@')[0] || ''),
+          role: userCredential.user.email?.includes('seller') ? 'seller' : 'customer',
+        };
+        setUser(optimisticUser);
+        await SecureStore.setItemAsync('token', token);
+        await SecureStore.setItemAsync('user', JSON.stringify(optimisticUser));
+      }
 
       router.replace('/(tabs)');
     } catch (error: any) {
