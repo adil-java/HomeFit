@@ -9,10 +9,10 @@ import { protect } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
-// All routes are protected
+
 router.use(protect);
 
-// Wishlist routes
+
 router.route('/')
   .get(getWishlist);
 

@@ -27,12 +27,11 @@ router.route('/users/:id/role',adminJwtVerify).put(updateUserRole);
 router.route('/users/:id',adminJwtVerify).delete(deleteUser);
 router.route("/sellers",adminJwtVerify).get( allSellers);
 
-// Seller requests moderation
 router.route('/seller-requests', adminJwtVerify).get(listSellerRequests);
 router.route('/seller-requests/:id/approve', adminJwtVerify).post(approveSellerRequest);
 router.route('/seller-requests/:id/reject', adminJwtVerify).post(rejectSellerRequest);
 
-// Analytics
+
 router.route('/analytics/summary', adminJwtVerify).get(analyticsSummary);
 router.route('/analytics/revenue-monthly', adminJwtVerify).get(revenueMonthly);
 router.route('/analytics/top-products', adminJwtVerify).get(topProducts);

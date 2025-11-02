@@ -1,9 +1,6 @@
 import asyncHandler from 'express-async-handler';
 import WishlistService from '../services/wishlist.service.js';
 
-// @desc    Get user's wishlist
-// @route   GET /api/wishlist
-// @access  Private
 export const getWishlist = asyncHandler(async (req, res) => {
   try {
     const wishlist = await WishlistService.getWishlist(req.user.id);
@@ -14,9 +11,6 @@ export const getWishlist = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Add item to wishlist
-// @route   POST /api/wishlist/items
-// @access  Private
 export const addItemToWishlist = asyncHandler(async (req, res) => {
   try {
     const { productId } = req.body;
@@ -38,9 +32,6 @@ export const addItemToWishlist = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Remove item from wishlist
-// @route   DELETE /api/wishlist/items/:productId
-// @access  Private
 export const removeItemFromWishlist = asyncHandler(async (req, res) => {
   try {
     const { productId } = req.params;
@@ -62,9 +53,6 @@ export const removeItemFromWishlist = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Check if product is in wishlist
-// @route   GET /api/wishlist/items/:productId
-// @access  Private
 export const checkInWishlist = asyncHandler(async (req, res) => {
   try {
     const { productId } = req.params;

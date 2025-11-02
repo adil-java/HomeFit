@@ -92,10 +92,10 @@ export const getProfile = async (req, res) => {
   }
 };
 
-// Verify Firebase token and get user info
+
 export const verifyToken = async (req, res) => {
   try {
-    // Create or update user in database
+
     const user = await createOrUpdateUser(req.user);
     
     res.json({
@@ -112,10 +112,8 @@ export const verifyToken = async (req, res) => {
   }
 };
 
-// Login endpoint (for token verification)
 export const login = async (req, res) => {
   try {
-    // Create or update user in database
     const user = await createOrUpdateUser(req.user);
     
     res.json({
@@ -132,10 +130,8 @@ export const login = async (req, res) => {
   }
 };
 
-// Register endpoint (for token verification after signup)
 export const register = async (req, res) => {
   try {
-    // Check if user with this email already exists
     const existingUser = await prisma.user.findUnique({
       where: { email: req.user.email }
     });
@@ -147,7 +143,6 @@ export const register = async (req, res) => {
       });
     }
 
-    // Create new user in database
     const user = await createOrUpdateUser(req.user);
     
     res.status(201).json({
@@ -158,7 +153,6 @@ export const register = async (req, res) => {
   } catch (error) {
     console.error('Registration error:', error);
     
-    // Handle Prisma unique constraint violation
     if (error.code === 'P2002') {
       return res.status(400).json({
         success: false,
@@ -173,7 +167,6 @@ export const register = async (req, res) => {
   }
 };
 
-// Get current user details (me endpoint)
 export const getMe = async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
@@ -212,19 +205,17 @@ export const getMe = async (req, res) => {
   }
 };
 
-// Apply for seller
-// Apply for seller
+
 export const applyForSeller = async (req, res) => {
   try {
-    const firebaseUid = req.user.uid; // Firebase UID from token
+    const firebaseUid = req.user.uid;
 
-    // Find or create user in the database
     let user = await prisma.user.findUnique({
       where: { firebaseUid: firebaseUid },
     });
 
     if (!user) {
-      // Optional: auto-create the user if not found
+
      return res.status(404).json({
         success: false,
         error: "User not found"
@@ -242,7 +233,7 @@ export const applyForSeller = async (req, res) => {
       businessLicense,
     } = req.body;
 
-    // Check if user already has a pending or approved application
+
     const existingApplication = await prisma.sellerApplication.findFirst({
       where: {
         userId: user.id,
@@ -257,10 +248,10 @@ export const applyForSeller = async (req, res) => {
       });
     }
 
-    // Create new seller application
+
     const application = await prisma.sellerApplication.create({
       data: {
-        userId: user.id, // ✅ ensure correct foreign key
+        userId: user.id, 
         businessName,
         businessType,
         description,
@@ -293,7 +284,6 @@ export const applyForSeller = async (req, res) => {
 };
 
 
-// Get all seller applications (Admin only)
 export const getAllSellerApplications = async (req, res) => {
   try {
     const applications = await prisma.sellerApplication.findMany({
@@ -330,13 +320,11 @@ export const getAllSellerApplications = async (req, res) => {
   }
 };
 
-// Accept seller application (Admin only)
 export const acceptSellerApplication = async (req, res) => {
   try {
     const { applicationId } = req.params;
     const { adminNotes } = req.body;
 
-    // Find the application
     const application = await prisma.sellerApplication.findUnique({
       where: { id: applicationId },
       include: { user: true }
@@ -356,7 +344,6 @@ export const acceptSellerApplication = async (req, res) => {
       });
     }
 
-    // Update application status
     const updatedApplication = await prisma.sellerApplication.update({
       where: { id: applicationId },
       data: {
@@ -376,7 +363,6 @@ export const acceptSellerApplication = async (req, res) => {
       }
     });
 
-    // Update user role to SELLER
     await prisma.user.update({
       where: { id: application.userId },
       data: { role: 'SELLER' }
@@ -396,13 +382,11 @@ export const acceptSellerApplication = async (req, res) => {
   }
 };
 
-// Reject seller application (Admin only)
 export const rejectSellerApplication = async (req, res) => {
   try {
     const { applicationId } = req.params;
     const { adminNotes } = req.body;
 
-    // Find the application
     const application = await prisma.sellerApplication.findUnique({
       where: { id: applicationId },
       include: { user: true }
@@ -422,7 +406,6 @@ export const rejectSellerApplication = async (req, res) => {
       });
     }
 
-    // Update application status
     const updatedApplication = await prisma.sellerApplication.update({
       where: { id: applicationId },
       data: {

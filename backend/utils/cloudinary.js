@@ -1,4 +1,3 @@
-// utils/cloudinary.js
 import { v2 as cloudinary } from 'cloudinary';
 import fs from 'fs';
 
@@ -18,7 +17,6 @@ export const uploadToCloudinary = async (filePath, folder = 'ecommerce') => {
       resource_type: 'auto',
     });
 
-    // Delete file from server after upload
     fs.unlinkSync(filePath);
     
     return {
@@ -27,7 +25,6 @@ export const uploadToCloudinary = async (filePath, folder = 'ecommerce') => {
     };
   } catch (error) {
     console.error('Error uploading to Cloudinary:', error);
-    // Delete file from server if upload fails
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }

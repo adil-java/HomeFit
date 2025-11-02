@@ -4,12 +4,12 @@ import { uploadToCloudinary, deleteFromCloudinary } from '../utils/cloudinary.js
 
 const prisma = new PrismaClient();
 
-// Generate a slug from product name
+
 const generateSlug = (name) => {
   return slugify(name, { lower: true, strict: true });
 };
 
-// Get all products with pagination and filters
+
 export const getProducts = async (queryParams) => {
   const {
     page = 1,
@@ -79,14 +79,14 @@ export const getProducts = async (queryParams) => {
   };
 };
 
-// Get a single product by ID
+
 export const getProductById = async (id) => {
   const product = await prisma.product.findUnique({
     where: { id },
     include: {
       categories: true,
       variants: true,
-      tags: true, // Include tags in the response
+      tags: true, 
       reviews: {
         include: {
           user: {
@@ -101,7 +101,6 @@ export const getProductById = async (id) => {
     },
   });
 
-  // Convert tags to an array of tag names if they exist
   if (product && product.tags) {
     product.tags = product.tags.map(tag => tag.name);
   }
@@ -119,7 +118,6 @@ export const getProductById = async (id) => {
   };
 };
 
-// Get a single product by slug
 export const getProductBySlug = async (slug) => {
   const product = await prisma.product.findFirst({
     where: { slug },
@@ -153,7 +151,6 @@ export const getProductBySlug = async (slug) => {
   };
 };
 
-// Get featured products
 export const getFeaturedProducts = async (limit = 4) => {
   const products = await prisma.product.findMany({
     where: { isFeatured: true },
@@ -169,7 +166,6 @@ export const getFeaturedProducts = async (limit = 4) => {
   };
 };
 
-// Search products by name or description
 export const searchProducts = async (query, limit = 10) => {
   const products = await prisma.product.findMany({
     where: {
@@ -190,13 +186,12 @@ export const searchProducts = async (query, limit = 10) => {
   };
 };
 
-// Create a new product
 export const createProduct = async (productData, userId, files = []) => {
   try {
-    console.log('🚀 Starting product creation...');
-    console.log('📦 Product data received:', JSON.stringify(productData, null, 2));
-    console.log('🔑 User ID:', userId);
-    console.log('📎 Files received:', files?.length || 0);
+    console.log('Starting product creation...');
+    console.log('Product data received:', JSON.stringify(productData, null, 2));
+    console.log('User ID:', userId);
+    console.log('Files received:', files?.length || 0);
 
     const {
       name,
@@ -214,52 +209,50 @@ export const createProduct = async (productData, userId, files = []) => {
       generate3D = false,
     } = productData;
 
-    console.log('✅ Extracted fields:');
-    console.log('  - Name:', name);
-    console.log('  - Description:', description);
-    console.log('  - Price:', price);
-    console.log('  - Category IDs:', categoryIds);
-    console.log('  - Variants:', variants?.length || 0);
-    console.log('  - Generate 3D:', generate3D);
+    console.log('Extracted fields:');
+    console.log(' - Name:', name);
+    console.log(' - Description:', description);
+    console.log(' - Price:', price);
+    console.log(' - Category IDs:', categoryIds);
+    console.log(' - Variants:', variants?.length || 0);
+    console.log(' - Generate 3D:', generate3D);
 
     if (!name || typeof name !== 'string') {
       throw new Error(`Product name validation failed: ${name} (type: ${typeof name})`);
     }
 
     const slug = generateSlug(name);
-    console.log('🔗 Generated slug:', slug);
+    console.log('Generated slug:', slug);
 
-    // Generate 3D model FIRST (before image upload cleanup)
     let arModelUrl = null;
     let objModelUrl = null;
     if (generate3D && files.length > 0) {
-      console.log('🤖 Starting 3D model generation (before image upload)...');
+      console.log('Starting 3D model generation (before image upload)...');
       try {
         const { generate3DModel } = await import('./3dModel.service.js');
         const modelResult = await generate3DModel(files[0].path);
 
         arModelUrl = modelResult.glbUrl;
         objModelUrl = modelResult.objUrl;
-        console.log('✅ 3D models generated and uploaded to Cloudinary');
-        console.log('🔗 GLB Model URL:', arModelUrl);
-        console.log('🔗 OBJ Model URL:', objModelUrl);
+        console.log('3D models generated and uploaded to Cloudinary');
+        console.log('GLB Model URL:', arModelUrl);
+        console.log('OBJ Model URL:', objModelUrl);
       } catch (error) {
-        console.error('❌ 3D model generation failed:', error);
-        // Continue with product creation even if 3D fails
+        console.error('3D model generation failed:', error);
+
       }
     }
 
-    // Upload images to Cloudinary
-    console.log('📸 Starting image uploads...');
+
+    console.log('Starting image uploads...');
     const imageUploads = files.map(file =>
       uploadToCloudinary(file.path, 'ecommerce/products')
     );
 
     const uploadedImages = await Promise.all(imageUploads);
-    console.log('✅ Images uploaded:', uploadedImages.length);
+    console.log('Images uploaded:', uploadedImages.length);
 
-    // Find user by Firebase UID and get database ID
-    console.log('👤 Looking up user in database...');
+    console.log('Looking up user in database...');
     const user = await prisma.user.findUnique({
       where: { firebaseUid: userId }
     });
@@ -268,16 +261,15 @@ export const createProduct = async (productData, userId, files = []) => {
       throw new Error(`User not found with Firebase UID: ${userId}`);
     }
 
-    console.log('✅ User found:', user.id);
+    console.log('User found:', user.id);
 
-    // Filter out invalid category IDs (categories that don't exist)
-    console.log('🏷️ Processing categories...');
+    console.log('Processing categories...');
     const validCategoryIds = [];
     if (categoryIds && categoryIds.length > 0) {
-      console.log('⚠️ Categories provided but skipping as they may not exist in database');
+      console.log('Categories provided but skipping as they may not exist in database');
     }
 
-    console.log('📋 Building product data object...');
+    console.log('Building product data object...');
     const productDataObj = {
       name,
       slug,
@@ -296,17 +288,15 @@ export const createProduct = async (productData, userId, files = []) => {
       sellerId: user.id,
     };
 
-    console.log('📋 Final product data:', JSON.stringify(productDataObj, null, 2));
+    console.log('Final product data:', JSON.stringify(productDataObj, null, 2));
 
-    // Only add categories if we have valid ones
     if (validCategoryIds.length > 0) {
       productDataObj.categories = {
         connect: validCategoryIds.map((id) => ({ id })),
       };
-      console.log('🏷️ Adding categories to product');
+      console.log('Adding categories to product');
     }
 
-    // Only add variants if we have them
     if (variants && variants.length > 0) {
       productDataObj.variants = {
         create: variants.map((variant) => ({
@@ -314,10 +304,10 @@ export const createProduct = async (productData, userId, files = []) => {
           options: variant.options,
         })),
       };
-      console.log('🔧 Adding variants to product');
+      console.log('Adding variants to product');
     }
 
-    console.log('💾 Creating product in database...');
+    console.log('Creating product in database...');
     const product = await prisma.product.create({
       data: productDataObj,
       include: {
@@ -326,14 +316,14 @@ export const createProduct = async (productData, userId, files = []) => {
       },
     });
 
-    console.log('✅ Product created successfully:', product.id);
+    console.log('Product created successfully:', product.id);
     return {
       success: true,
       data: product,
     };
   } catch (error) {
-    console.error('❌ Error creating product:', error);
-    console.error('❌ Error stack:', error.stack);
+    console.error('Error creating product:', error);
+    console.error('Error stack:', error.stack);
     return {
       success: false,
       error: `Failed to create product: ${error.message}`,
@@ -351,8 +341,8 @@ export const deleteProductService = async (id) => {
       data: product,
     };
   } catch (error) {
-    console.error('❌ Error deleting product:', error);
-    console.error('❌ Error stack:', error.stack);
+    console.error('Error deleting product:', error);
+    console.error('Error stack:', error.stack);
     return {
       success: false,
       error: `Failed to delete product: ${error.message}`,
@@ -360,7 +350,6 @@ export const deleteProductService = async (id) => {
   }
 };
 
-// Update a product
 export const updateProduct = async (id, productData, files = []) => {
   const {
     name,
@@ -387,33 +376,29 @@ export const updateProduct = async (id, productData, files = []) => {
     const uploadedImages = await Promise.all(imageUploads);
     updateData.images = uploadedImages.map(img => img.url);
   }
-  
-  // Remove fields that shouldn't be updated directly
+
   delete updateData.id;
   delete updateData.slug;
   delete updateData.createdAt;
   delete updateData.updatedAt;
 
-  // Generate new slug if name is being updated
   if (name) {
     updateData.slug = generateSlug(name);
   }
 
-  // Convert string numbers to appropriate types
   if (price) updateData.price = parseFloat(price);
   if (comparePrice) updateData.comparePrice = parseFloat(comparePrice);
   if (cost) updateData.cost = parseFloat(cost);
   if (quantity) updateData.quantity = parseInt(quantity);
 
   try {
-    // Start a transaction to handle related updates
+
     const [updatedProduct] = await prisma.$transaction([
-      // Update the product
+
       prisma.product.update({
         where: { id },
         data: {
           ...updateData,
-          // Handle categories if provided
           ...(categoryIds && {
             categories: {
               set: categoryIds.map((id) => ({ id })),
@@ -425,7 +410,6 @@ export const updateProduct = async (id, productData, files = []) => {
           variants: true,
         },
       }),
-      // Delete existing variants if new ones are provided
       ...(variants
         ? [
             prisma.variant.deleteMany({
@@ -435,7 +419,6 @@ export const updateProduct = async (id, productData, files = []) => {
         : []),
     ]);
 
-    // Create new variants if provided
     if (variants && variants.length > 0) {
       await prisma.variant.createMany({
         data: variants.map((variant) => ({
@@ -444,7 +427,6 @@ export const updateProduct = async (id, productData, files = []) => {
         })),
       });
 
-      // Fetch the product with updated variants
       const productWithVariants = await prisma.product.findUnique({
         where: { id },
         include: {
@@ -472,7 +454,6 @@ export const updateProduct = async (id, productData, files = []) => {
   }
 };
 
-// Get products by category
 export const getProductsByCategory = async (categoryId, queryParams) => {
   const { page = 1, limit = 10 } = queryParams;
   const skip = (page - 1) * limit;
@@ -521,7 +502,6 @@ export const getProductsByCategory = async (categoryId, queryParams) => {
   };
 };
 
-// Get products by seller
 export const getProductsBySeller = async (sellerId, queryParams) => {
   const { page = 1, limit = 10 } = queryParams;
   const skip = (page - 1) * limit;
@@ -554,7 +534,6 @@ export const getProductsBySeller = async (sellerId, queryParams) => {
   };
 };
 
-// Get related products (same category, different product)
 export const getRelatedProducts = async (productId, limit = 4) => {
   const product = await prisma.product.findUnique({
     where: { id: productId },
@@ -594,7 +573,6 @@ export const getRelatedProducts = async (productId, limit = 4) => {
   };
 };
 
-// Toggle product status (active/featured)
 export const toggleProductStatus = async (id, field, value) => {
   try {
     const updateData = { [field]: value };
@@ -621,7 +599,6 @@ export const toggleProductStatus = async (id, field, value) => {
   }
 };
 
-// Get product statistics for dashboard
 export const getProductStats = async (sellerId = null) => {
   try {
     const where = sellerId ? { sellerId } : {};

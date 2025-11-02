@@ -1,9 +1,7 @@
 import asyncHandler from 'express-async-handler';
 import CategoryService from '../services/category.service.js';
 
-// @desc    Get all categories
-// @route   GET /api/categories
-// @access  Public
+
 export const getCategories = asyncHandler(async (req, res) => {
   try {
     const categories = await CategoryService.getAllCategories();
@@ -14,9 +12,6 @@ export const getCategories = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Get single category with products
-// @route   GET /api/categories/:id
-// @access  Public
 export const getCategoryById = asyncHandler(async (req, res) => {
   try {
     const category = await CategoryService.getCategoryById(req.params.id);
@@ -33,9 +28,6 @@ export const getCategoryById = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Get category by slug with products
-// @route   GET /api/categories/slug/:slug
-// @access  Public
 export const getCategoryBySlug = asyncHandler(async (req, res) => {
   try {
     const category = await CategoryService.getCategoryBySlug(req.params.slug);
@@ -52,9 +44,6 @@ export const getCategoryBySlug = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Create a category
-// @route   POST /api/categories
-// @access  Private/Admin
 export const createCategory = asyncHandler(async (req, res) => {
   try {
     const { name, description, image, slug } = req.body;
@@ -78,9 +67,6 @@ export const createCategory = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Update a category
-// @route   PUT /api/categories/:id
-// @access  Private/Admin
 export const updateCategory = asyncHandler(async (req, res) => {
   try {
     const { name, description, image, slug } = req.body;
@@ -106,9 +92,7 @@ export const updateCategory = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Delete a category
-// @route   DELETE /api/categories/:id
-// @access  Private/Admin
+
 export const deleteCategory = asyncHandler(async (req, res) => {
   try {
     const category = await CategoryService.getCategoryById(req.params.id);

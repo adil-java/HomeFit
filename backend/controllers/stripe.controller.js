@@ -4,8 +4,7 @@ const stripe= new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export const createPaymentIntent = async (req = request, res = response) => {
   try { 
-    // const { amount, currency } = req.body;
-    // todo: add customer info
+
    const customer = await stripe.customers.create()
   const ephemeralKey = await stripe.ephemeralKeys.create(
     {customer: customer.id},
@@ -14,7 +13,7 @@ export const createPaymentIntent = async (req = request, res = response) => {
     }
   );
   const paymentIntent = await stripe.paymentIntents.create({
-    amount: 1099, // based on calculated amount later calculated 
+    amount: 1099, 
     currency: 'eur',
     customer: customer.id,
   

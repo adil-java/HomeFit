@@ -14,7 +14,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User Authentication
+
 model User {
   id            String        @id @default(uuid())
   firebaseUid   String        @unique
@@ -29,7 +29,7 @@ model User {
   reviews       Review[]
   cart          Cart?
   wishlist      Wishlist?
-  products      Product[]     @relation("SellerProducts") // Added: Seller's products
+  products      Product[]     @relation("SellerProducts") 
   sellerApplication SellerApplication?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
@@ -41,12 +41,12 @@ enum Role {
   SELLER
 }
 
-// Address Management
+
 model Address {
   id          String   @id @default(uuid())
   userId      String
   user        User     @relation(fields: [userId], references: [id])
-  type        String   // 'SHIPPING' or 'BILLING'
+  type        String   
   street      String
   city        String
   state       String?
@@ -58,7 +58,7 @@ model Address {
   updatedAt   DateTime @updatedAt
 }
 
-// Product Catalog
+
 model Product {
   id            String     @id @default(uuid())
   name          String
@@ -72,22 +72,22 @@ model Product {
   quantity      Int        @default(0)
   isActive      Boolean    @default(true)
   isFeatured    Boolean    @default(false)
-  images        Json       // Array of image URLs stored as JSON
+  images        Json       
   ARModelUrl    String?
-  objModelUrl   String?    // OBJ 3D model URL for backup format
+  objModelUrl   String?    
   sellerId      String?
   seller        User?       @relation("SellerProducts", fields: [sellerId], references: [id])
   categories    Category[] @relation("ProductCategories")
   variants      Variant[]
   reviews       Review[]
   orderItems    OrderItem[]
-  cartItems     CartItem[]  // Added reverse relation for CartItem
+  cartItems     CartItem[]  
   wishlistItems WishlistItem[]
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 }
 
-// Categories
+
 model Category {
   id          String    @id @default(uuid())
   name        String
@@ -102,18 +102,17 @@ model Category {
   updatedAt   DateTime  @updatedAt
 }
 
-// Product Variants
 model Variant {
   id          String   @id @default(uuid())
   productId   String
   product     Product  @relation(fields: [productId], references: [id])
-  name        String   // e.g., "Color", "Size"
-  options     Json     // Array of options stored as JSON
+  name        String   
+  options     Json     
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
 
-// Shopping Cart
+
 model Cart {
   id        String    @id @default(uuid())
   userId    String    @unique
@@ -131,12 +130,12 @@ model CartItem {
   product   Product  @relation(fields: [productId], references: [id])
   quantity  Int      @default(1)
   price     Float
-  options   Json?    // Store selected variants
+  options   Json?    
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-// Wishlist
+
 model Wishlist {
   id        String         @id @default(uuid())
   userId    String         @unique
@@ -156,7 +155,7 @@ model WishlistItem {
   updatedAt  DateTime @updatedAt
 }
 
-// Orders
+
 model Order {
   id              String      @id @default(uuid())
   orderNumber     String      @unique
@@ -189,7 +188,7 @@ model OrderItem {
   productName String
   price       Float
   quantity    Int
-  options     Json?    // Store selected variants
+  options     Json?    
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -230,7 +229,6 @@ enum PaymentStatus {
   PARTIALLY_REFUNDED
 }
 
-// Reviews & Ratings
 model Review {
   id        String   @id @default(uuid())
   userId    String
@@ -240,13 +238,13 @@ model Review {
   rating    Int
   title     String?
   comment   String?
-  images    Json     // Array of image URLs stored as JSON
+  images    Json     
   isApproved Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-// Seller Applications
+
 model SellerApplication {
   id            String   @id @default(uuid())
   userId        String   @unique
@@ -261,7 +259,7 @@ model SellerApplication {
   businessLicense String?
   status        ApplicationStatus @default(PENDING)
   adminNotes    String?
-  reviewedBy    String?  // Admin user ID who reviewed
+  reviewedBy    String?  
   reviewedAt    DateTime?
   submittedAt   DateTime @default(now())
   updatedAt     DateTime @updatedAt

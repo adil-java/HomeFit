@@ -9,14 +9,13 @@ import wishlistRoutes from "./routes/wishlist.routes.js";
 import prisma from "./config/db.js";
 import stripeRoutes from "./routes/payment.route.js";
 
-// Load env variables
 dotenv.config({ path: "./config/config.env" });
 
 const app = express();
 
 // Middlewares
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(cors());
 
 // Routes
@@ -30,16 +29,11 @@ app.use("/api/stripe", stripeRoutes);
 import adminRoutes from "./routes/admin.router.js";
 app.use("/api/admin", adminRoutes);
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({
     success: false,
-    error: 'Not Found',
+    error: "Not Found",
     message: `Cannot ${req.method} ${req.originalUrl}`,
   });
 });
@@ -49,8 +43,11 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({
     success: false,
-    error: 'Server Error',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong',
+    error: "Server Error",
+    message:
+      process.env.NODE_ENV === "development"
+        ? err.message
+        : "Something went wrong",
   });
 });
 
@@ -61,14 +58,12 @@ async function startServer() {
     await prisma.$connect();
     console.log("Database connected");
 
-    app.listen(PORT,"0.0.0.0", () => {
+    app.listen(PORT, "0.0.0.0", () => {
       console.log(`Server running on port ${PORT}`);
-      // console.log(hashPassword("admin123"))
-      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
     });
   } catch (err) {
     console.error("Database connection error:", err);
-    process.exit(1); // stop the app if DB connection fails
+    process.exit(1);
   }
 }
 

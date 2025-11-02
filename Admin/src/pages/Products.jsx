@@ -31,7 +31,7 @@ const Products = () => {
       header: 'Price', 
       accessor: (row) => `Rs. ${row.price.toFixed(2)}`
     },
-    { header: 'Seller', accessor: 'seller' },
+    { header: 'Business Name', accessor: 'seller' },
     { 
       header: 'Status', 
       accessor: (row) => <StatusBadge status={row.status} />

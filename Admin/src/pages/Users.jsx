@@ -21,6 +21,7 @@ const Users = () => {
           id: u.id,
           name: u.name || u.email,
           email: u.email,
+          role: u.role,
           phone: u.phoneNumber || '',
           status: 'active',
           joinedDate: u.createdAt ? new Date(u.createdAt).toISOString().slice(0, 10) : '',
@@ -59,6 +60,7 @@ const Users = () => {
   const columns = [
     { header: 'Name', accessor: 'name' },
     { header: 'Email', accessor: 'email' },
+    { header: 'Role', accessor: 'role' },
     { header: 'Phone', accessor: 'phone' },
     {
       header: 'Status',

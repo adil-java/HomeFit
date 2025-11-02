@@ -1,14 +1,15 @@
 import prisma from '../config/db.js';
 import { Role } from '@prisma/client';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import { generateToken,verifyToken } from '../utils/jwtHelper.js';
+import { generateToken} from '../utils/jwtHelper.js';
 
-
-// Get all users (admin only)
 export const getAllUsers = async (req, res) => {
   try {
     const users = await prisma.user.findMany({
+      where: {
+        role: {
+          not: Role.ADMIN
+        }
+      },
       select: {
         id: true,
         firebaseUid: true,
@@ -25,8 +26,6 @@ export const getAllUsers = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
-
-// Revenue over last 6 months grouped by month
 export const revenueMonthly = async (req, res) => {
   try {
     const now = new Date();
@@ -57,7 +56,6 @@ export const revenueMonthly = async (req, res) => {
   }
 };
 
-// Top 5 products by quantity sold
 export const topProducts = async (req, res) => {
   try {
     const items = await prisma.orderItem.findMany({ select: { productName: true, quantity: true } });
@@ -77,7 +75,6 @@ export const topProducts = async (req, res) => {
   }
 };
 
-// Update user role (admin only)
 export const updateUserRole = async (req, res) => {
   const { id } = req.params;
   const { role } = req.body;
@@ -98,7 +95,6 @@ export const updateUserRole = async (req, res) => {
   }
 };
 
-// Delete user (admin only)
 export const deleteUser = async (req, res) => {
   const { id } = req.params;
 
@@ -113,10 +109,10 @@ export const deleteUser = async (req, res) => {
   }
 };
 
-// Get user by ID (admin only)
+
 export const getUserById = async (req, res) => {
   const { id } = req.params;
- console.log("📥 Received ID:", id);
+ console.log("Received ID:", id);
   try {
     const user = await prisma.user.findUnique({
       where: { id:id },
@@ -125,9 +121,9 @@ export const getUserById = async (req, res) => {
         firebaseUid: true,
         email: true,
         name: true,
+        role: true,
         phoneNumber: true,
         photoURL: true,
-        role: true,
         createdAt: true,
         updatedAt: true
       }
@@ -136,7 +132,7 @@ export const getUserById = async (req, res) => {
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
-    console.log("👤 Retrieved User:", user);
+    console.log("Retrieved User:", user);
     res.status(200).json({ success: true, data: user });
 
   } catch (error) {
@@ -146,7 +142,6 @@ export const getUserById = async (req, res) => {
   }
 };
 
-// Admin login (if needed)
 export const adminLogin = async (req, res) => {
   const { email, password } = req.body;
 try {
@@ -196,7 +191,7 @@ try {
 export const allSellers = async (req, res) => {
   try {
     const sellers = await prisma.user.findMany({
-      where: { role: Role.SELLER }, //  Correct role
+      where: { role: Role.SELLER }, 
       select: {
         id: true,
         firebaseUid: true,
@@ -215,11 +210,9 @@ export const allSellers = async (req, res) => {
     res.status(500).json({ success: false, message: 'Cannot get all sellers. Server Error.' });
   }
 };
-
-// List seller requests (all or only pending)
 export const listSellerRequests = async (req, res) => {
   try {
-    const status = req.query.status; // optional: PENDING/APPROVED/REJECTED
+    const status = req.query.status; 
     const where = status ? { status } : {};
     const requests = await prisma.sellerApplication.findMany({
       where,
@@ -233,9 +226,9 @@ export const listSellerRequests = async (req, res) => {
   }
 };
 
-// Approve seller request: set application APPROVED and update user role to SELLER
+
 export const approveSellerRequest = async (req, res) => {
-  const { id } = req.params; // sellerApplication id
+  const { id } = req.params;
   try {
     const application = await prisma.sellerApplication.update({
       where: { id },
@@ -255,7 +248,7 @@ export const approveSellerRequest = async (req, res) => {
   }
 };
 
-// Reject seller request
+
 export const rejectSellerRequest = async (req, res) => {
   const { id } = req.params;
   try {
@@ -271,7 +264,7 @@ export const rejectSellerRequest = async (req, res) => {
   }
 };
 
-// Analytics summary for dashboard
+
 export const analyticsSummary = async (req, res) => {
   try {
     const [totalUsers, adminCount, activeSellers, pendingRequests, totalProducts, totalOrders, revenueAgg] = await Promise.all([

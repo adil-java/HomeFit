@@ -24,7 +24,7 @@ import { protect, checkSeller } from '../middlewares/authMiddleware.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Configure multer for file uploads
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, path.join(__dirname, '../uploads/'));
@@ -37,7 +37,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const filetypes = /jpeg|jpg|png|webp/;
     const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
@@ -51,10 +51,9 @@ const upload = multer({
   }
 }).array('files', 5);
 
-// Multer for 3D model generation (single image)
 const uploadSingle = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  limits: { fileSize: 5 * 1024 * 1024 }, 
   fileFilter: (req, file, cb) => {
     const filetypes = /jpeg|jpg|png|webp/;
     const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
@@ -70,22 +69,20 @@ const uploadSingle = multer({
 
 const router = express.Router();
 
-// Public routes
 router.get('/', getProducts);
 router.get('/:id', getProductById);
 router.get('/slug/:slug', getProductBySlug);
 router.get('/featured', getFeaturedProducts);
 router.get('/search', searchProducts);
 
-// 3D model generation (needs file upload middleware first)
+
 router.post('/generate-3d', uploadSingle, generate3DModelEndpoint);
 
-// Protected routes (sellers and admins) - file upload middleware first, then auth
+
 router.post('/', upload, protect, checkSeller, createProduct);
 router.put('/:id', upload, protect, checkSeller, updateProduct);
 router.delete('/:id', protect, checkSeller, deleteProduct);
 
-// Additional useful routes for e-commerce
 router.get('/category/:categoryId', getProductsByCategory);
 router.get('/seller/:sellerId', getProductsBySeller);
 router.get('/related/:productId', getRelatedProducts);

@@ -136,7 +136,8 @@ const adminVerify = async (req, res, next) => {
     });
   }
 }
-// Middleware to verify custom JWT for admin panel
+
+
 const adminJwtVerify = (req, res, next) => {
   try {
     const authHeader = req.headers.authorization || '';
@@ -155,7 +156,7 @@ const adminJwtVerify = (req, res, next) => {
       return res.status(403).json({ success: false, error: 'Not authorized as an admin' });
     }
 
-    req.user = payload; // { id, email, role }
+    req.user = payload;
     next();
   } catch (error) {
     console.error('Custom admin JWT verification error:', error);

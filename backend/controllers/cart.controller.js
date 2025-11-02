@@ -1,9 +1,6 @@
 import asyncHandler from 'express-async-handler';
 import CartService from '../services/cart.service.js';
 
-// @desc    Get user's cart
-// @route   GET /api/cart
-// @access  Private
 export const getCart = asyncHandler(async (req, res) => {
   try {
     const cart = await CartService.getCart(req.user.id);
@@ -14,9 +11,6 @@ export const getCart = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Add item to cart
-// @route   POST /api/cart/items
-// @access  Private
 export const addItemToCart = asyncHandler(async (req, res) => {
   try {
     const { productId, quantity = 1, options = null } = req.body;
@@ -39,9 +33,6 @@ export const addItemToCart = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Update cart item quantity
-// @route   PUT /api/cart/items/:id
-// @access  Private
 export const updateCartItem = asyncHandler(async (req, res) => {
   try {
     const { quantity } = req.body;
@@ -64,9 +55,6 @@ export const updateCartItem = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Remove item from cart
-// @route   DELETE /api/cart/items/:id
-// @access  Private
 export const removeItemFromCart = asyncHandler(async (req, res) => {
   try {
     const cart = await CartService.removeItemFromCart(
@@ -80,9 +68,6 @@ export const removeItemFromCart = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Clear cart
-// @route   DELETE /api/cart
-// @access  Private
 export const clearCart = asyncHandler(async (req, res) => {
   try {
     const cart = await CartService.clearCart(req.user.id);

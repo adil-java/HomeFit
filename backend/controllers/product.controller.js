@@ -127,9 +127,7 @@ export const generate3DModelEndpoint = async (req, res) => {
   }
 };
 
-// @desc    Get all products
-// @route   GET /api/products
-// @access  Public
+
 export const getProducts = async (req, res) => {
   try {
     const result = await getProductsService(req.query);
@@ -144,9 +142,6 @@ export const getProducts = async (req, res) => {
   }
 };
 
-// @desc    Get single product by ID
-// @route   GET /api/products/:id
-// @access  Public
 export const getProductById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -162,9 +157,7 @@ export const getProductById = async (req, res) => {
   }
 };
 
-// @desc    Get single product by slug
-// @route   GET /api/products/slug/:slug
-// @access  Public
+
 export const getProductBySlug = async (req, res) => {
   try {
     const { slug } = req.params;
@@ -180,9 +173,7 @@ export const getProductBySlug = async (req, res) => {
   }
 };
 
-// @desc    Get featured products
-// @route   GET /api/products/featured
-// @access  Public
+
 export const getFeaturedProducts = async (req, res) => {
   try {
     const { limit } = req.query;
@@ -193,9 +184,7 @@ export const getFeaturedProducts = async (req, res) => {
   }
 };
 
-// @desc    Search products
-// @route   GET /api/products/search
-// @access  Public
+
 export const searchProducts = async (req, res) => {
   try {
     const { q, limit } = req.query;
@@ -214,15 +203,11 @@ export const searchProducts = async (req, res) => {
   }
 };
 
-// @desc    Create a new product
-// @route   POST /api/products
-// @access  Private/Admin
+
 export const createProduct = async (req, res) => {
   try {
-    // Handle the nested data structure from frontend
-    let productData = req.body;
 
-    // If data is nested in productData field (from frontend), parse it
+    let productData = req.body;
     if (req.body.productData && typeof req.body.productData === 'string') {
       try {
         productData = JSON.parse(req.body.productData);
@@ -261,9 +246,6 @@ export const createProduct = async (req, res) => {
   }
 };
 
-// @desc    Update a product
-// @route   PUT /api/products/:id
-// @access  Private/Admin
 export const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
@@ -288,9 +270,6 @@ export const updateProduct = async (req, res) => {
   }
 };
 
-// @desc    Get products by category
-// @route   GET /api/products/category/:categoryId
-// @access  Public
 export const getProductsByCategory = async (req, res) => {
   try {
     const { categoryId } = req.params;
@@ -308,9 +287,7 @@ export const getProductsByCategory = async (req, res) => {
   }
 };
 
-// @desc    Get products by seller
-// @route   GET /api/products/seller/:sellerId
-// @access  Public
+
 export const getProductsBySeller = async (req, res) => {
   try {
     const { sellerId } = req.params;
@@ -328,9 +305,6 @@ export const getProductsBySeller = async (req, res) => {
   }
 };
 
-// @desc    Get related products
-// @route   GET /api/products/related/:productId
-// @access  Public
 export const getRelatedProducts = async (req, res) => {
   try {
     const { productId } = req.params;
@@ -348,13 +322,10 @@ export const getRelatedProducts = async (req, res) => {
   }
 };
 
-// @desc    Toggle product status (active/featured)
-// @route   PATCH /api/products/:id/status
-// @access  Private/Seller
 export const toggleProductStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { field, value } = req.body; // field: 'isActive' or 'isFeatured', value: boolean
+    const { field, value } = req.body;
 
     if (!['isActive', 'isFeatured'].includes(field)) {
       return res.status(400).json({
@@ -375,12 +346,9 @@ export const toggleProductStatus = async (req, res) => {
   }
 };
 
-// @desc    Get product statistics for admin dashboard
-// @route   GET /api/products/admin/stats
-// @access  Private/Seller
 export const getProductStats = async (req, res) => {
   try {
-    const sellerId = req.user?.role === 'ADMIN' ? null : req.user?.id; // Admin sees all, sellers see their own
+    const sellerId = req.user?.role === 'ADMIN' ? null : req.user?.id;
 
     const result = await getProductStatsService(sellerId);
 

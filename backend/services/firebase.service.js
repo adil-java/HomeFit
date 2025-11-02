@@ -21,12 +21,10 @@ class FirebaseServices {
 
     FirebaseServices.instance = this;
 
-    // Example: Get the user by ID
     this.getUserById = async (userId) => {
       return this.auth.getUser(userId);
     };
 
-    // Example: List all users
     this.listUsers = async () => {
       const users = [];
       let listUsersResult = await this.auth.listUsers();
@@ -36,8 +34,6 @@ class FirebaseServices {
       } while (listUsersResult.pageToken);
       return users;
     };
-
-    // Example: Send a push notification
     this.sendPushNotification = async (title, body, token) => {
       const message = {
         notification: {
