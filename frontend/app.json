@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "HomeFit",
-    "slug": "bolt-expo-nativewind",
+    "slug": "HomeFit-expo-nativewind",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/logo-square.png",
@@ -18,7 +18,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourcompany.boltecommerce",
+      "bundleIdentifier": "com.yourcompany.HomeFitecommerce",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Allow $(PRODUCT_NAME) to access your photos",
         "NSPhotoLibraryAddUsageDescription": "Allow $(PRODUCT_NAME) to save photos",
@@ -33,7 +33,7 @@
         "foregroundImage": "./assets/images/logo-square.png",
         "backgroundColor": "#2563eb"
       },
-      "package": "com.yourcompany.boltecommerce",
+      "package": "com.yourcompany.HomeFitecommerce",
       "permissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.CAMERA",
