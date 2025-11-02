@@ -5,8 +5,8 @@ import { protect, checkAdmin } from "../middlewares/authMiddleware.js";
 const router = express.Router();
 
 // Auth routes (public)
-router.post("/login",protect, login);
-router.post("/register", register);
+router.post("/login", protect, login);
+router.post("/register", protect, register);
 router.post("/verify-token", protect, verifyToken);
 
 // Profile routes

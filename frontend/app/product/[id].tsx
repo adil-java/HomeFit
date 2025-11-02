@@ -56,10 +56,7 @@ export default function ProductDetailScreen() {
   
   // Format price with currency
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(price);
+    return `Rs. ${price.toFixed(2)}`;
   };
 
   if (!product) {

@@ -230,11 +230,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           <View style={styles.priceContainer}>
             <View>
               <Text style={[styles.price, { color: theme.colors.primary }]}>
-                ${product.price?.toFixed(2) || '0.00'}
+                Rs. {product.price?.toFixed(2) || '0.00'}
               </Text>
               {product.comparePrice && product.comparePrice > product.price && (
                 <Text style={[styles.originalPrice, { color: theme.colors.textSecondary }]}>
-                  ${product.comparePrice.toFixed(2)}
+                  Rs. {product.comparePrice.toFixed(2)}
                 </Text>
               )}
             </View>

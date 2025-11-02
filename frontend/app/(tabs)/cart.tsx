@@ -87,7 +87,7 @@ export default function CartScreen() {
                 Total ({itemCount} {itemCount === 1 ? 'item' : 'items'}):
               </Text>
               <Text style={[styles.totalAmount, { color: theme.colors.primary }]}>
-                ${total.toFixed(2)}
+                Rs. {total.toFixed(2)}
               </Text>
             </View>
             <TouchableOpacity

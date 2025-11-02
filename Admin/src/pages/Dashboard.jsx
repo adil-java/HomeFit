@@ -90,7 +90,7 @@ const Dashboard = () => {
         />
         <StatCard
           title="Revenue"
-          value={`$${Number(stats.revenue).toLocaleString()}`}
+          value={`Rs. ${Number(stats.revenue).toLocaleString()}`}
           description="Total revenue"
           icon={DollarSign}
           trend={{ value: '23% from last month', isPositive: true }}

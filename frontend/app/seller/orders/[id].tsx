@@ -275,7 +275,7 @@ export default function OrderDetailScreen() {
                 Shipping
               </Text>
               <Text style={[styles.summaryValue, { color: theme.colors.text }]}>
-                {order.shippingCost ? `$${order.shippingCost.toFixed(2)}` : 'Free'}
+                {order.shippingCost ? `Rs. ${order.shippingCost.toFixed(2)}` : 'Free'}
               </Text>
             </View>
             

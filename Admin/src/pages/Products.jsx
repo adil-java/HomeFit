@@ -29,7 +29,7 @@ const Products = () => {
     { header: 'Category', accessor: 'category' },
     { 
       header: 'Price', 
-      accessor: (row) => `$${row.price.toFixed(2)}`
+      accessor: (row) => `Rs. ${row.price.toFixed(2)}`
     },
     { header: 'Seller', accessor: 'seller' },
     { 

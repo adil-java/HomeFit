@@ -87,7 +87,7 @@ export default function CheckoutScreen() {
       Toast.show({
         type: 'success',
         text1: 'Coupon applied!',
-        text2: `You saved $${validCoupons[couponCode.toUpperCase() as keyof typeof validCoupons]}`,
+        text2: `You saved Rs. ${validCoupons[couponCode.toUpperCase() as keyof typeof validCoupons]}`,
         position: 'bottom',
       });
     } else {
@@ -321,7 +321,7 @@ export default function CheckoutScreen() {
                 </Text>
                 {method.id === 'wallet' && typeof (method as any).balance === 'number' && (
                   <Text style={[styles.walletBalance, { color: theme.colors.textSecondary }]}>
-                    Balance: ${((method as any).balance as number).toFixed(2)}
+                    Balance: Rs. {((method as any).balance as number).toFixed(2)}
                   </Text>
                 )}
               </View>
@@ -347,7 +347,7 @@ export default function CheckoutScreen() {
                   {appliedCoupon.code}
                 </Text>
                 <Text style={[styles.couponDiscount, { color: theme.colors.textSecondary }]}>
-                  You saved ${appliedCoupon.discount}
+                  You saved Rs. {appliedCoupon.discount}
                 </Text>
               </View>
               <TouchableOpacity onPress={removeCoupon}>
@@ -393,7 +393,7 @@ export default function CheckoutScreen() {
                 Subtotal ({items.reduce((sum, item) => sum + item.quantity, 0)} items)
               </Text>
               <Text style={[styles.summaryValue, { color: theme.colors.text }]}>
-                ${total.toFixed(2)}
+                Rs. {total.toFixed(2)}
               </Text>
             </View>
             
@@ -402,7 +402,7 @@ export default function CheckoutScreen() {
                 Shipping
               </Text>
               <Text style={[styles.summaryValue, { color: theme.colors.text }]}>
-                {shippingCost === 0 ? 'Free' : `$${shippingCost.toFixed(2)}`}
+                {shippingCost === 0 ? 'Free' : `Rs. ${shippingCost.toFixed(2)}`}
               </Text>
             </View>
             
@@ -412,7 +412,7 @@ export default function CheckoutScreen() {
                   Discount ({appliedCoupon.code})
                 </Text>
                 <Text style={[styles.summaryValue, { color: theme.colors.success }]}>
-                  -${appliedCoupon.discount.toFixed(2)}
+                  -Rs. {appliedCoupon.discount.toFixed(2)}
                 </Text>
               </View>
             )}
@@ -422,7 +422,7 @@ export default function CheckoutScreen() {
                 Total
               </Text>
               <Text style={[styles.totalValue, { color: theme.colors.text }]}>
-                ${finalTotal.toFixed(2)}
+                Rs. {finalTotal.toFixed(2)}
               </Text>
             </View>
           </View>
@@ -442,7 +442,7 @@ export default function CheckoutScreen() {
           disabled={isProcessing}
         >
           <Text style={styles.placeOrderText}>
-            {isProcessing ? 'Processing...' : `Place Order • $${Number(finalTotal).toFixed(2)}`}
+            {isProcessing ? 'Processing...' : `Place Order • Rs. ${Number(finalTotal).toFixed(2)}`}
           </Text>
         </TouchableOpacity>
       </View>

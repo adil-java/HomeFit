@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -33,6 +33,17 @@ export default function RegisterScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [registerError, setRegisterError] = useState('');
+
+  // Clear error message after 4 seconds
+  useEffect(() => {
+    if (registerError) {
+      const timer = setTimeout(() => {
+        setRegisterError('');
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [registerError]);
 
   const handleRegister = async (values: {
     name: string;
@@ -41,10 +52,11 @@ export default function RegisterScreen() {
     confirmPassword: string;
   }) => {
     setIsLoading(true);
+    setRegisterError(''); // Clear any previous errors
     try {
       await register(values.email, values.password, values.name);
     } catch (error) {
-      Alert.alert('Registration Failed', 'Unable to create account. Please try again.');
+      setRegisterError('Unable to create account. Account already exists.');
     } finally {
       setIsLoading(false);
     }
@@ -204,6 +216,12 @@ export default function RegisterScreen() {
                     </Text>
                   )}
                 </View>
+
+                {registerError ? (
+                  <Text style={[styles.errorText, { color: theme.colors.error, marginBottom: 20, textAlign: 'center' }]}>
+                    {registerError}
+                  </Text>
+                ) : null}
 
                 <TouchableOpacity
                   style={[styles.registerButton, { backgroundColor: theme.colors.primary }]}

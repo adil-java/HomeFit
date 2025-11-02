@@ -135,16 +135,37 @@ export const login = async (req, res) => {
 // Register endpoint (for token verification after signup)
 export const register = async (req, res) => {
   try {
+    // Check if user with this email already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email: req.user.email }
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        error: "User with this email already exists"
+      });
+    }
+
     // Create new user in database
     const user = await createOrUpdateUser(req.user);
     
-    res.json({
+    res.status(201).json({
       success: true,
       message: "Registration successful",
       user: user
     });
   } catch (error) {
     console.error('Registration error:', error);
+    
+    // Handle Prisma unique constraint violation
+    if (error.code === 'P2002') {
+      return res.status(400).json({
+        success: false,
+        error: "User with this email already exists"
+      });
+    }
+    
     res.status(500).json({
       success: false,
       error: "Registration failed"

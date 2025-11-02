@@ -166,7 +166,7 @@ export default function DashboardScreen() {
             </Text>
           </View>
           <Text variant="titleLarge" style={[styles.statValue, { color: theme.colors.text }]}>
-            {isCurrency ? `$${value.toLocaleString()}` : value.toLocaleString()}
+            {isCurrency ? `Rs. ${value.toLocaleString()}` : value.toLocaleString()}
           </Text>
           <Text variant="bodyMedium" style={[styles.statTitle, { color: theme.colors.secondary }]}>
             {title}

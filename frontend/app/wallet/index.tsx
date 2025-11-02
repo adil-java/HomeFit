@@ -87,7 +87,7 @@ export default function WalletScreen() {
       Toast.show({
         type: 'error',
         text1: 'Amount too high',
-        text2: 'Maximum top-up amount is $1000',
+        text2: 'Maximum top-up amount is Rs. 1000',
         position: 'bottom',
       });
       return;
@@ -102,7 +102,7 @@ export default function WalletScreen() {
       Toast.show({
         type: 'success',
         text1: 'Top-up successful!',
-        text2: `$${amount.toFixed(2)} added to your wallet`,
+        text2: `Rs. ${amount.toFixed(2)} added to your wallet`,
         position: 'bottom',
       });
     }, 1000);
@@ -132,7 +132,7 @@ export default function WalletScreen() {
           styles.transactionAmount,
           { color: isCredit ? theme.colors.success : theme.colors.error }
         ]}>
-          {isCredit ? '+' : '-'}${transaction.amount.toFixed(2)}
+          {isCredit ? '+' : '-'}Rs. {transaction.amount.toFixed(2)}
         </Text>
       </View>
     );
@@ -162,7 +162,7 @@ export default function WalletScreen() {
             </View>
             
             <Text style={styles.balanceAmount}>
-              ${walletBalance.toFixed(2)}
+              Rs. {walletBalance.toFixed(2)}
             </Text>
             
             <TouchableOpacity

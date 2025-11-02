@@ -41,11 +41,31 @@ const protect = async (req, res, next) => {
 
     try {
       const firebaseUser = await firebaseService.verifyToken(token);
+      
+      // For registration, we don't need to check if user exists in database
+      if (req.path === '/register' && req.method === 'POST') {
+        req.user = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+          photoURL: firebaseUser.photoURL,
+          phoneNumber: firebaseUser.phoneNumber,
+          role: 'customer' // Default role for new users
+        };
+        return next();
+      }
 
-      // Get user from database to get proper role
+      // For all other protected routes, check if user exists in database
       const dbUser = await prisma.user.findUnique({
         where: { firebaseUid: firebaseUser.uid }
       });
+
+      if (!dbUser) {
+        return res.status(401).json({
+          success: false,
+          error: 'User not found in database',
+        });
+      }
 
       req.user = {
         id: dbUser.id,
@@ -54,7 +74,7 @@ const protect = async (req, res, next) => {
         displayName: firebaseUser.displayName,
         photoURL: firebaseUser.photoURL,
         phoneNumber: firebaseUser.phoneNumber,
-        role: dbUser?.role || 'customer', // Default to customer if not found
+        role: dbUser.role || 'customer',
       };
 
       next();

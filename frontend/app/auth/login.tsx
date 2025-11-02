@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -30,13 +30,25 @@ export default function LoginScreen() {
 
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [loginError, setLoginError] = useState('');
+
+  // Clear error message after 4 seconds
+  useEffect(() => {
+    if (loginError) {
+      const timer = setTimeout(() => {
+        setLoginError('');
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [loginError]);
 
   const handleLogin = async (values: { email: string; password: string }) => {
     setIsLoading(true);
+    setLoginError(''); // Clear any previous errors
     try {
       await login(values.email, values.password);
     } catch (error) {
-      Alert.alert('Login Failed', 'Invalid email or password');
+      setLoginError('Invalid email or password');
     } finally {
       setIsLoading(false);
     }
@@ -133,6 +145,11 @@ export default function LoginScreen() {
                       {errors.password}
                     </Text>
                   )}
+                  {loginError ? (
+                    <Text style={[styles.errorText, { color: theme.colors.error }]}>
+                      {loginError}
+                    </Text>
+                  ) : null}
                 </View>
 
                 <TouchableOpacity

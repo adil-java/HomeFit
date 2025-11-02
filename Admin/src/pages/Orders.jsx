@@ -40,7 +40,7 @@ const Orders = () => {
     { header: 'Product', accessor: 'product' },
     { 
       header: 'Total', 
-      accessor: (row) => `$${row.total.toFixed(2)}`
+      accessor: (row) => `Rs. ${row.total.toFixed(2)}`
     },
     { 
       header: 'Status', 
