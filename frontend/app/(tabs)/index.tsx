@@ -16,6 +16,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/store/store';
 import { ProductCard } from '@/components/ProductCard';
 import { CategoryCard } from '@/components/CategoryCard';
+import { useFocusEffect } from '@react-navigation/native';
+import { fetchWishlist } from '@/store/slices/wishlistSlice';
 import { apiService } from '@/services/api';
 import { setProducts, setCategories, Category } from '@/store/slices/productsSlice';
 import { Product } from '@/types';
@@ -39,14 +41,26 @@ export default function HomeScreen() {
   // Get featured products (first 4 products)
   const featuredProducts = products.slice(0, 4);
 
+  // Fetch initial data
   useEffect(() => {
     if (!isLoading && !user) {
       router.replace('/auth');
     } else if (user) {
       fetchProducts();
       fetchCategories();
+      // Initial wishlist fetch
+      dispatch(fetchWishlist()).catch(console.error);
     }
   }, [user, isLoading]);
+
+  // Refresh wishlist when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      if (user) {
+        dispatch(fetchWishlist()).catch(console.error);
+      }
+    }, [user])
+  );
   
   const fetchCategories = async () => {
     try {

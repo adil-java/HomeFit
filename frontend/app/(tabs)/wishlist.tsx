@@ -1,34 +1,57 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   FlatList,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Heart, ShoppingCart } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '@/store/store';
-import { removeFromWishlist } from '@/store/slices/wishlistSlice';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import type { RootState } from '@/store/store';
+import { fetchWishlist, removeFromWishlist } from '@/store/slices/wishlistSlice';
 import { addToCart } from '@/store/slices/cartSlice';
 import { WishlistItem } from '@/components/WishlistItem';
 import Toast from 'react-native-toast-message';
 
 export default function WishlistScreen() {
   const { theme } = useTheme();
-  const dispatch = useDispatch();
-  const { items } = useSelector((state: RootState) => state.wishlist);
+  const dispatch = useAppDispatch();
+  const { 
+    items, 
+    loading, 
+    error, 
+    isInitialized 
+  } = useAppSelector((state: RootState) => state.wishlist);
+
+  // Fetch wishlist on initial load if not already initialized
+  useEffect(() => {
+    if (!isInitialized) {
+      dispatch(fetchWishlist());
+    }
+  }, [dispatch, isInitialized]);
+
+  // Handle errors
+  useEffect(() => {
+    if (error) {
+      Toast.show({
+        type: 'error',
+        text1: error,
+        position: 'bottom',
+      });
+    }
+  }, [error]);
 
   const handleRemoveFromWishlist = (id: string) => {
-    dispatch(removeFromWishlist(id));
-    Toast.show({
-      type: 'info',
-      text1: 'Removed from wishlist',
-      position: 'bottom',
-    });
+    dispatch(removeFromWishlist(id))
+      .unwrap()
+      .catch(() => {
+        // Error is already handled by the thunk
+      });
   };
 
   const handleAddToCart = (item: any) => {
@@ -45,6 +68,20 @@ export default function WishlistScreen() {
     });
   };
 
+  // Show loading state
+  if (!isInitialized || loading) {
+    return (
+      <SafeAreaView style={[styles.container, { 
+        backgroundColor: theme.colors.background,
+        justifyContent: 'center',
+        alignItems: 'center',
+      }]}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+      </SafeAreaView>
+    );
+  }
+
+  // Show empty state
   if (items.length === 0) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>

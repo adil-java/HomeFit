@@ -48,14 +48,10 @@ class ApiService {
         headers,
       });
 
-      const json = await response.json().catch(() => ({ success: false }));
-      if (!response.ok) {
-        const message = (json as any)?.error || 'Backend login failed';
-        throw new Error(message);
-      }
-
-      return json;
+      return response.json();
     } catch (error) {
+      console.error('Login error:', error);
+      throw error;
       console.warn('Backend login error (network/API unavailable):', error);
       // Return a mock response for build environments or when backend is unavailable
       return {
@@ -265,7 +261,24 @@ class ApiService {
       throw new Error(error.message || 'Failed to fetch wishlist');
     }
     
-    return response.json();
+    const data = await response.json();
+    
+    // Transform the response to match the expected frontend format
+    if (data && data.items) {
+      return {
+        ...data,
+        items: data.items.map((item: any) => ({
+          id: item.productId,
+          name: item.product?.name || 'Unknown Product',
+          price: item.product?.price || 0,
+          image: item.product?.images?.[0] || '',
+          rating: 0, // Default rating if not provided
+          product: item.product // Include full product details
+        }))
+      };
+    }
+    
+    return { items: [] };
   }
 
   async addToWishlist(productId: string) {
@@ -281,7 +294,24 @@ class ApiService {
       throw new Error(error.message || 'Failed to add to wishlist');
     }
     
-    return response.json();
+    const data = await response.json();
+    
+    // Transform the response to match the expected frontend format
+    if (data && data.items) {
+      return {
+        ...data,
+        items: data.items.map((item: any) => ({
+          id: item.productId,
+          name: item.product?.name || 'Unknown Product',
+          price: item.product?.price || 0,
+          image: item.product?.images?.[0] || '',
+          rating: 0, // Default rating if not provided
+          product: item.product // Include full product details
+        }))
+      };
+    }
+    
+    return { items: [] };
   }
 
   async removeFromWishlist(productId: string) {
@@ -290,18 +320,37 @@ class ApiService {
       method: 'DELETE',
       headers,
     });
+
+    const data = await response.json().catch(() => ({}));
     
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || 'Failed to remove from wishlist');
+      const errorMessage = data.message || 'Failed to remove from wishlist';
+      const error = new Error(errorMessage);
+      (error as any).status = response.status;
+      throw error;
     }
     
-    return response.json();
+    // Transform the response to match the expected frontend format
+    if (data && data.items) {
+      return {
+        ...data,
+        items: data.items.map((item: any) => ({
+          id: item.productId,
+          name: item.product?.name || 'Unknown Product',
+          price: item.product?.price || 0,
+          image: item.product?.images?.[0] || '',
+          rating: 0, // Default rating if not provided
+          product: item.product // Include full product details
+        }))
+      };
+    }
+    
+    return { items: [] };
   }
 
-  async checkInWishlist(productId: string) {
+  async isInWishlist(productId: string) {
     const headers = await this.getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/wishlist/items/${productId}`, {
+    const response = await fetch(`${API_BASE_URL}/wishlist/check/${productId}`, {
       method: 'GET',
       headers,
     });
@@ -311,9 +360,9 @@ class ApiService {
       throw new Error(error.message || 'Failed to check wishlist status');
     }
     
-    return response.json();
+    const data = await response.json();
+    return data.isInWishlist || false;
   }
-  
 }
 
 export const apiService = new ApiService();
