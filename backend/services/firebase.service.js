@@ -2,7 +2,7 @@ import { initializeApp, cert } from "firebase-admin/app";
 import { getMessaging } from "firebase-admin/messaging";
 import { getAuth } from "firebase-admin/auth";
 
-import serviceAccount from "../config/firebase-service-account.json" with { type: "json" };
+import serviceAccount  from "../utils/firebaseAdmin.js";
 
 class FirebaseServices {
   static instance;
