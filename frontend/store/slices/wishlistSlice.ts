@@ -16,6 +16,7 @@ interface WishlistState {
   lastUpdated: number | null;
   pendingActions: Record<string, boolean>; // Track pending optimistic updates
   isInitialized: boolean; // Track if initial data has been loaded
+  isRefreshing: boolean; // Track if we're refreshing the data
 }
 
 const initialState: WishlistState = {
@@ -25,16 +26,33 @@ const initialState: WishlistState = {
   lastUpdated: null,
   pendingActions: {},
   isInitialized: false,
+  isRefreshing: false,
 };
 
 // Utility function to generate unique ID for pending actions
 const generateActionId = (prefix: string) => `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
 // Async thunks
+interface FetchWishlistOptions {
+  forceRefresh?: boolean;
+}
+
 export const fetchWishlist = createAsyncThunk(
   'wishlist/fetchWishlist',
-  async (_, { rejectWithValue }) => {
+  async ({ forceRefresh = false }: FetchWishlistOptions = {}, { getState, rejectWithValue }) => {
     try {
+      const state = getState() as { wishlist: WishlistState };
+      
+      // Don't refetch if we already have data and it's not a force refresh
+      if (!forceRefresh && state.wishlist.isInitialized && !state.wishlist.isRefreshing) {
+        return {
+          items: state.wishlist.items,
+          isInitialized: true,
+          timestamp: state.wishlist.lastUpdated || Date.now(),
+          isRefreshing: false
+        };
+      }
+      
       const startTime = performance.now();
       const response = await apiService.getWishlist();
       const duration = performance.now() - startTime;
@@ -44,13 +62,15 @@ export const fetchWishlist = createAsyncThunk(
       return {
         items: Array.isArray(response?.items) ? response.items : [],
         isInitialized: true,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        isRefreshing: false
       };
     } catch (error: any) {
       console.error('Error fetching wishlist:', error);
       return rejectWithValue({
         error: error.message || 'Failed to fetch wishlist',
-        isInitialized: true
+        isInitialized: true,
+        isRefreshing: false
       });
     }
   }
@@ -193,24 +213,31 @@ const wishlistSlice = createSlice({
   extraReducers: (builder) => {
     // Fetch wishlist
     builder
-      .addCase(fetchWishlist.pending, (state) => {
-        // Clear items when starting a fresh fetch to prevent showing stale data
-        if (!state.isInitialized) {
-          state.items = [];
+      .addCase(fetchWishlist.pending, (state, action) => {
+        // Only clear items on initial load or force refresh
+        if (!state.isInitialized || action.meta.arg?.forceRefresh) {
+          state.isRefreshing = true;
+          if (!state.isInitialized) {
+            state.items = [];
+          }
         }
         state.loading = true;
         state.error = null;
       })
       .addCase(fetchWishlist.fulfilled, (state, action) => {
         state.loading = false;
-        // Always replace the entire items array with fresh data from the server
-        state.items = action.payload.items;
-        state.isInitialized = true;
-        state.lastUpdated = action.payload.timestamp || Date.now();
+        state.isRefreshing = false;
+        // Only update items if we got a valid response
+        if (action.payload) {
+          state.items = action.payload.items;
+          state.isInitialized = true;
+          state.lastUpdated = action.payload.timestamp || Date.now();
+        }
         state.error = null;
       })
       .addCase(fetchWishlist.rejected, (state, action) => {
         state.loading = false;
+        state.isRefreshing = false;
         state.isInitialized = true; // Mark as initialized even on error
         state.error = (action.payload as any)?.error || 'Failed to fetch wishlist';
         // Keep existing items if we have them, but mark as potentially stale

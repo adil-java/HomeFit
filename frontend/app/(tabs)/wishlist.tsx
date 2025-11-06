@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Heart, ShoppingCart } from 'lucide-react-native';
@@ -31,9 +32,14 @@ export default function WishlistScreen() {
   // Fetch wishlist on initial load if not already initialized
   useEffect(() => {
     if (!isInitialized) {
-      dispatch(fetchWishlist());
+      dispatch(fetchWishlist({ forceRefresh: true }));
     }
   }, [dispatch, isInitialized]);
+
+  // Handle pull-to-refresh
+  const onRefresh = useCallback(() => {
+    dispatch(fetchWishlist({ forceRefresh: true }));
+  }, [dispatch]);
 
   // Handle errors
   useEffect(() => {
@@ -68,8 +74,8 @@ export default function WishlistScreen() {
     });
   };
 
-  // Show loading state
-  if (!isInitialized || loading) {
+  // Show loading state only on initial load
+  if (!isInitialized && loading) {
     return (
       <SafeAreaView style={[styles.container, { 
         backgroundColor: theme.colors.background,
@@ -108,16 +114,24 @@ export default function WishlistScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <FlatList
         data={items}
+        keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <WishlistItem
             item={item}
-            onRemove={() => handleRemoveFromWishlist(item.id)}
-            onAddToCart={() => handleAddToCart(item)}
+            onRemove={handleRemoveFromWishlist}
+            onAddToCart={handleAddToCart}
           />
         )}
-        keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading && isInitialized}
+            onRefresh={onRefresh}
+            colors={[theme.colors.primary]}
+            tintColor={theme.colors.primary}
+          />
+        }
       />
     </SafeAreaView>
   );

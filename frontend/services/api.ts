@@ -363,6 +363,12 @@ class ApiService {
     const data = await response.json();
     return data.isInWishlist || false;
   }
+
+
+  //Cart methods
+  async getCart(){
+    
+  }
 }
 
 export const apiService = new ApiService();
