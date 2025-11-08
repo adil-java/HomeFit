@@ -81,6 +81,11 @@ export default function AuthIndex() {
               onPress={loginWithGoogle}
               activeOpacity={0.9}
             >
+              <Image
+                source={{ uri: 'https://res.cloudinary.com/dmpinsiam/image/upload/v1762603041/google-icon_vqmcjy.png' }}
+                style={styles.googleIcon}
+                resizeMode="contain"
+              />
               <Text style={[styles.googleButtonText, { color: '#333' }]}>
                 Continue with Google
               </Text>
@@ -147,7 +152,6 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     gap: 16,
-    marginBottom: 40,
   },
   button: {
     paddingVertical: 16,
@@ -184,6 +188,12 @@ const styles = StyleSheet.create({
   footer: {
     alignItems: 'center',
     paddingBottom: 20,
+  },
+  googleIcon: {
+    width: 20,      
+    height: 20,    
+    marginRight: 12,
+    marginTop:2 
   },
   footerText: {
     fontSize: 12,
