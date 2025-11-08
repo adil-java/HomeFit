@@ -10,6 +10,7 @@ import {
   TrendingUp,
   ArrowUpRight,
   ArrowDownRight,
+  ArrowLeft,
   CreditCard,
   Package,
   Clock,
@@ -19,102 +20,134 @@ import {
 } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { router } from 'expo-router';
+import { BackHandler } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
+
 // Mock data - replace with actual API calls
-const statsData = {
-  totalUsers: 1245,
-  activeUsers: 843,
-  totalRevenue: 12500,
-  totalOrders: 356,
-  monthlyGrowth: 12.5,
+export const statsData = {
+  totalUsers: 2540,
+  activeUsers: 1840,
+  totalRevenue: 486000,
+  totalOrders: 920,
+  monthlyGrowth: 14.2,
+
   revenueByCategory: [
-    { name: 'Electronics', population: 35, color: '#FF6B6B', legendFontColor: '#7F7F7F', legendFontSize: 12 },
-    { name: 'Furniture', population: 25, color: '#4ECDC4', legendFontColor: '#7F7F7F', legendFontSize: 12 },
-    { name: 'Clothing', population: 20, color: '#45B7D1', legendFontColor: '#7F7F7F', legendFontSize: 12 },
-    { name: 'Books', population: 15, color: '#96CEB4', legendFontColor: '#7F7F7F', legendFontSize: 12 },
+    { name: 'Sofas', population: 30, color: '#FF6B6B', legendFontColor: '#7F7F7F', legendFontSize: 12 },
+    { name: 'Beds', population: 35, color: '#4ECDC4', legendFontColor: '#7F7F7F', legendFontSize: 12 },
+    { name: 'Dining Tables', population: 25, color: '#45B7D1', legendFontColor: '#7F7F7F', legendFontSize: 12 },
+    { name: 'Chairs', population: 5, color: '#96CEB4', legendFontColor: '#7F7F7F', legendFontSize: 12 },
     { name: 'Other', population: 5, color: '#FFEEAD', legendFontColor: '#7F7F7F', legendFontSize: 12 },
   ],
+
   monthlyRevenue: {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+    labels: ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'],
     datasets: [
       {
-        data: [2000, 4500, 2800, 8000, 9900, 12500],
+        data: [52000, 73500, 60200, 84500, 92800, 123000],
         color: (opacity = 1) => `rgba(134, 65, 244, ${opacity})`,
         strokeWidth: 2
       }
     ]
   },
+
   topProducts: [
-    { id: '1', name: 'Wireless Earbuds Pro', revenue: 3200, orders: 45, stock: 28 },
-    { id: '2', name: 'Smart Watch X', revenue: 2800, orders: 32, stock: 15 },
-    { id: '3', name: 'Bluetooth Speaker', revenue: 1850, orders: 27, stock: 12 },
+    {
+      id: '040f98bf-73ce-4ee0-abff-c90ee08b3b9d',
+      name: 'Velvet Chesterfield Sofa',
+      revenue: 182000,
+      orders: 220,
+      stock: 12
+    },
+    {
+      id: 'f676bf63-db27-4eda-9b68-ee1ee3c591ec',
+      name: 'Industrial Metal Canopy Bed',
+      revenue: 156000,
+      orders: 190,
+      stock: 18
+    },
+    {
+      id: 'c143a48f-cfb8-4c92-80cd-441beb447fa0',
+      name: 'Modern Oak Dining Table',
+      revenue: 98000,
+      orders: 150,
+      stock: 15
+    }
   ],
+
   trendingProducts: [
     {
-      id: '1',
-      name: 'Wireless Earbuds Pro',
-      category: 'Electronics',
-      price: 129.99,
-      sales: 1280,
-      revenue: 166387.20,
-      growth: 24.5,
-      stock: 42,
-      rating: 4.8
+      id: '040f98bf-73ce-4ee0-abff-c90ee08b3b9d',
+      name: 'Velvet Chesterfield Sofa',
+      category: 'Sofas',
+      price: 1499.99,
+      sales: 220,
+      revenue: 329997.8,
+      growth: 22.5,
+      stock: 12,
+      rating: 4.7,
+      image: 'https://res.cloudinary.com/dmpinsiam/image/upload/v1760469014/ecommerce/products/zea2mvkeguferzogxjfq.jpg'
     },
     {
-      id: '2',
-      name: 'Smart Watch X',
-      category: 'Wearables',
-      price: 199.99,
-      sales: 845,
-      revenue: 168991.55,
-      growth: 18.2,
-      stock: 36,
-      rating: 4.7
+      id: 'f676bf63-db27-4eda-9b68-ee1ee3c591ec',
+      name: 'Industrial Metal Canopy Bed',
+      category: 'Beds',
+      price: 999.99,
+      sales: 190,
+      revenue: 189998.1,
+      growth: 18.3,
+      stock: 18,
+      rating: 4.8,
+      image: 'https://res.cloudinary.com/dmpinsiam/image/upload/v1760470454/ecommerce/products/khlt31mjw6ejdwmrz28t.jpg'
     },
     {
-      id: '3',
-      name: 'Bluetooth Speaker',
-      category: 'Audio',
-      price: 79.99,
-      sales: 1560,
-      revenue: 124784.40,
-      growth: 32.1,
-      stock: 28,
-      rating: 4.6
-    },
-    {
-      id: '4',
-      name: 'Fitness Tracker',
-      category: 'Wearables',
-      price: 59.99,
-      sales: 2100,
-      revenue: 125979.00,
-      growth: 41.3,
+      id: 'c143a48f-cfb8-4c92-80cd-441beb447fa0',
+      name: 'Modern Oak Dining Table',
+      category: 'Dining',
+      price: 899.99,
+      sales: 150,
+      revenue: 134998.5,
+      growth: 16.4,
       stock: 15,
-      rating: 4.5
+      rating: 4.5,
+      image: 'https://res.cloudinary.com/dmpinsiam/image/upload/v1760467967/ecommerce/products/uwutybzwqdyzbbnizsic.jpg'
     },
     {
-      id: '5',
-      name: 'Wireless Charger',
-      category: 'Accessories',
-      price: 29.99,
-      sales: 3250,
-      revenue: 97467.50,
-      growth: 28.7,
-      stock: 64,
-      rating: 4.4
+      id: '7d38a558-5d35-496e-84ea-d5216a6f9dfc',
+      name: 'Upholstered Linen Platform Bed',
+      category: 'Beds',
+      price: 749.99,
+      sales: 175,
+      revenue: 131248.25,
+      growth: 20.1,
+      stock: 25,
+      rating: 4.4,
+      image: 'https://res.cloudinary.com/dmpinsiam/image/upload/v1760468327/ecommerce/products/vxhlmqpx0wlkqmg8yeyj.webp'
     }
   ]
 };
 
 export default function DashboardScreen() {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(statsData);
+
+    // Handle hardware back button press
+    useEffect(() => {
+      const backAction = () => {
+        router.replace('/(tabs)');
+        return true; // Prevent default behavior
+      };
+  
+      const backHandler = BackHandler.addEventListener(
+        'hardwareBackPress',
+        backAction
+      );
+  
+      return () => backHandler.remove();
+    }, []);
 
   useEffect(() => {
     // Simulate API call
@@ -138,8 +171,8 @@ export default function DashboardScreen() {
     backgroundGradientFrom: theme.colors.surface,
     backgroundGradientTo: theme.colors.surface,
     decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-    labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+    color: (opacity = 1) => isDark ? `rgba(255, 255, 255, ${opacity})` : `rgba(0, 0, 0, ${opacity})`,
+    labelColor: (opacity = 1) => isDark ? `rgba(255, 255, 255, ${opacity})` : `rgba(0, 0, 0, ${opacity})`,
     style: {
       borderRadius: 16,
     },
@@ -149,6 +182,10 @@ export default function DashboardScreen() {
       stroke: theme.colors.primary,
     },
   };
+
+  const revenueByCategoryData = isDark
+    ? stats.revenueByCategory.map((d) => ({ ...d, legendFontColor: '#E5E7EB' }))
+    : stats.revenueByCategory;
 
   const StatCard = ({ title, value, icon: Icon, change, isCurrency = false }) => {
     const isPositive = change >= 0;
@@ -160,10 +197,20 @@ export default function DashboardScreen() {
             <View style={[styles.statIcon, { backgroundColor: `${theme.colors.primary}20` }]}>
               <Icon size={20} color={theme.colors.primary} />
             </View>
-            <Text style={[styles.statChange, { color: isPositive ? '#10B981' : '#EF4444' }]}>
-              {isPositive ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
-              {Math.abs(change)}%
-            </Text>
+            <View
+              style={[
+                styles.statChangeBadge,
+                {
+                  backgroundColor: isPositive ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                  borderColor: isPositive ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)'
+                }
+              ]}
+            >
+              {isPositive ? <ArrowUpRight size={14} color="#10B981" /> : <ArrowDownRight size={14} color="#EF4444" />}
+              <Text style={[styles.statChangeText, { color: isPositive ? '#10B981' : '#EF4444' }]}>
+                {Math.abs(change)}%
+              </Text>
+            </View>
           </View>
           <Text variant="titleLarge" style={[styles.statValue, { color: theme.colors.text }]}>
             {isCurrency ? `Rs. ${value.toLocaleString()}` : value.toLocaleString()}
@@ -181,9 +228,18 @@ export default function DashboardScreen() {
       style={[styles.container, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={styles.contentContainer}
     >
-      <Text variant="headlineMedium" style={[styles.title, { color: theme.colors.text }]}>
-        Dashboard
-      </Text>
+      <View style={styles.headerRow}>
+        <TouchableOpacity 
+          onPress={() => router.replace('/(tabs)')}
+          style={[styles.backButtonInline, { backgroundColor: theme.colors.surface }]}
+          activeOpacity={0.8}
+        >
+          <ArrowLeft size={20} color={theme.colors.text} />
+        </TouchableOpacity>
+        <Text variant="headlineMedium" style={[styles.title, { color: theme.colors.text, marginBottom: 0 }]}>
+          Dashboard
+        </Text>
+      </View>
       
       <View style={styles.statsContainer}>
         <StatCard 
@@ -236,7 +292,7 @@ export default function DashboardScreen() {
               Revenue by Category
             </Text>
             <PieChart
-              data={stats.revenueByCategory}
+              data={revenueByCategoryData}
               width={width - 48}
               height={200}
               chartConfig={chartConfig}
@@ -267,10 +323,17 @@ export default function DashboardScreen() {
             {stats.trendingProducts.map((product, index) => (
               <TouchableOpacity 
                 key={product.id}
-                style={[styles.productItem, index !== stats.trendingProducts.length - 1 && styles.productItemBorder]}
+                style={[
+                  styles.productItem,
+                  index !== stats.trendingProducts.length - 1 && styles.productItemBorder,
+                  index !== stats.trendingProducts.length - 1 && { borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)' }
+                ]}
                 onPress={() => router.push(`/seller/products/${product.id}`)}
               >
-                <View style={styles.productImage}>
+                <View style={[
+                  styles.productImage,
+                  { backgroundColor: isDark ? `${theme.colors.primary}26` : 'rgba(79, 70, 229, 0.1)' }
+                ]}>
                   <Package size={20} color={theme.colors.primary} />
                 </View>
                 <View style={styles.productInfo}>
@@ -279,7 +342,13 @@ export default function DashboardScreen() {
                       {product.name}
                     </Text>
                     <View style={styles.productMeta}>
-                      <Text style={[styles.productCategory, { color: theme.colors.textSecondary }]}>{product.category}</Text>
+                      <Text style={[
+                        styles.productCategory,
+                        { 
+                          color: theme.colors.textSecondary,
+                          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)'
+                        }
+                      ]}>{product.category}</Text>
                       <View style={styles.ratingContainer}>
                         <Text style={[styles.ratingText, { color: '#F59E0B' }]}>{product.rating}</Text>
                         <Text style={[styles.ratingIcon, { color: '#F59E0B' }]}>★</Text>
@@ -371,6 +440,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  statChangeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  statChangeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 4,
+  },
   chartCard: {
     marginBottom: 16,
     borderRadius: 12,
@@ -404,8 +486,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   sectionTitle: {
     fontWeight: '600',
+  },
+  backButtonInline: {
+    padding: 8,
+    borderRadius: 20,
+    marginRight: 8,
+    elevation: 2,
   },
   productsList: {
     borderRadius: 8,

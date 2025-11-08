@@ -30,26 +30,17 @@ import { useAuth } from '@/contexts/AuthContext';
 const mockAddresses = [
   {
     id: '1',
-    name: 'John Doe',
-    address: '123 Main Street, Apt 4B',
-    city: 'New York',
-    zipCode: '10001',
-    country: 'United States',
+    name: 'Azlan',
+    address: 'Block 5, Nazimabad',
+    city: 'Karachi',
+    zipCode: '1432',
+    country: 'Pakistan',
     isDefault: true,
-  },
-  {
-    id: '2',
-    name: 'John Doe',
-    address: '456 Oak Avenue',
-    city: 'Brooklyn',
-    zipCode: '11201',
-    country: 'United States',
-    isDefault: false,
   },
 ];
 
 const paymentMethods = [
-  { id: 'wallet', name: 'Wallet', balance: 250.00, icon: Wallet },
+  // { id: 'wallet', name: 'Wallet', balance: 250.00, icon: Wallet },
   { id: 'card', name: 'Credit/Debit Card', icon: CreditCard },
 ];
 

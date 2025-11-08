@@ -1,12 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
-
 }
 
 datasource db {
@@ -14,202 +7,257 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 model User {
-  id            String        @id @default(uuid())
-  firebaseUid   String        @unique
-  email         String        @unique
-  emailVerified Boolean       @default(false)
-  name          String?
-  phoneNumber   String?
-  photoURL      String?
-  role          Role          @default(CUSTOMER)
-  addresses     Address[]
-  orders        Order[]
-  reviews       Review[]
-  cart          Cart?
-  wishlist      Wishlist?
-  products      Product[]     @relation("SellerProducts") 
+  id                String             @id @default(uuid())
+  email             String             @unique
+  name              String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  emailVerified     Boolean            @default(false)
+  firebaseUid       String             @unique
+  phoneNumber       String?
+  photoURL          String?
+  role              Role               @default(CUSTOMER)
+  addresses         Address[]
+  cart              Cart?
+  orders            Order[]
+  products          Product[]          @relation("SellerProducts")
+  reviews           Review[]
   sellerApplication SellerApplication?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  wishlist          Wishlist?
+}
+
+model Address {
+  id         String   @id @default(uuid())
+  userId     String
+  type       String
+  street     String
+  city       String
+  state      String?
+  postalCode String
+  country    String
+  isDefault  Boolean  @default(false)
+  phone      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@index([userId], map: "Address_userId_fkey")
+}
+
+model Product {
+  id            String         @id @default(uuid())
+  name          String
+  slug          String         @unique
+  description   String
+  price         Float
+  comparePrice  Float?
+  cost          Float?
+  sku           String?        @unique
+  barcode       String?
+  quantity      Int            @default(0)
+  isActive      Boolean        @default(true)
+  isFeatured    Boolean        @default(false)
+  images        Json
+  ARModelUrl    String?
+  objModelUrl   String?        // 3D model URL for AR/3D preview
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  sellerId      String?
+  cartItems     CartItem[]
+  orderItems    OrderItem[]
+  seller        User?          @relation("SellerProducts", fields: [sellerId], references: [id])
+  reviews       Review[]
+  variants      Variant[]
+  wishlistItems WishlistItem[]
+  categories    Category[]     @relation("ProductCategories")
+  averageRating Float?         @default(0) // Average rating of the product
+
+  @@index([sellerId], map: "Product_sellerId_fkey")
+}
+
+model Category {
+  id          String     @id @default(uuid())
+  name        String
+  slug        String     @unique
+  description String?
+  image       String?
+  parentId    String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
+  products    Product[]  @relation("ProductCategories")
+
+  @@index([parentId], map: "Category_parentId_fkey")
+}
+
+model Variant {
+  id        String   @id @default(uuid())
+  productId String
+  name      String
+  options   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  product   Product  @relation(fields: [productId], references: [id])
+
+  @@index([productId], map: "Variant_productId_fkey")
+}
+
+model Cart {
+  id        String     @id @default(uuid())
+  userId    String     @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  user      User       @relation(fields: [userId], references: [id])
+  items     CartItem[]
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  cartId    String
+  productId String
+  quantity  Int      @default(1)
+  price     Float
+  options   Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  cart      Cart     @relation(fields: [cartId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
+
+  @@index([cartId], map: "CartItem_cartId_fkey")
+  @@index([productId], map: "CartItem_productId_fkey")
+}
+
+model Wishlist {
+  id        String         @id @default(uuid())
+  userId    String         @unique
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  user      User           @relation(fields: [userId], references: [id])
+  items     WishlistItem[]
+}
+
+model WishlistItem {
+  id         String   @id @default(uuid())
+  wishlistId String
+  productId  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  product    Product  @relation(fields: [productId], references: [id])
+  wishlist   Wishlist @relation(fields: [wishlistId], references: [id])
+
+  @@index([productId], map: "WishlistItem_productId_fkey")
+  @@index([wishlistId], map: "WishlistItem_wishlistId_fkey")
+}
+
+model Order {
+  id              String               @id @default(uuid())
+  orderNumber     String               @unique
+  userId          String
+  subtotal        Float
+  tax             Float
+  shipping        Float
+  discount        Float                @default(0)
+  total           Float
+  status          OrderStatus          @default(PENDING)
+  paymentStatus   PaymentStatus
+  paymentMethod   String
+  paymentId       String?
+  shippingAddress Json
+  billingAddress  Json?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  user            User                 @relation(fields: [userId], references: [id])
+  items           OrderItem[]
+  notes           OrderNote[]
+  statusHistory   OrderStatusHistory[]
+
+  @@index([userId], map: "Order_userId_fkey")
+}
+
+model OrderItem {
+  id          String   @id @default(uuid())
+  orderId     String
+  productId   String
+  productName String
+  price       Float
+  quantity    Int
+  options     Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  order       Order    @relation(fields: [orderId], references: [id])
+  product     Product  @relation(fields: [productId], references: [id])
+
+  @@index([orderId], map: "OrderItem_orderId_fkey")
+  @@index([productId], map: "OrderItem_productId_fkey")
+}
+
+model OrderNote {
+  id        String   @id @default(uuid())
+  orderId   String
+  author    String
+  content   String
+  isPublic  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  order     Order    @relation(fields: [orderId], references: [id])
+
+  @@index([orderId], map: "OrderNote_orderId_fkey")
+}
+
+model OrderStatusHistory {
+  id        String      @id @default(uuid())
+  orderId   String
+  status    OrderStatus
+  createdAt DateTime    @default(now())
+  order     Order       @relation(fields: [orderId], references: [id])
+
+  @@index([orderId], map: "OrderStatusHistory_orderId_fkey")
+}
+
+model Review {
+  id         String   @id @default(uuid())
+  userId     String
+  productId  String
+  rating     Int
+  title      String?
+  comment    String?
+  images     Json
+  isApproved Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  product    Product  @relation(fields: [productId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@index([productId], map: "Review_productId_fkey")
+  @@index([userId], map: "Review_userId_fkey")
+}
+
+model SellerApplication {
+  id              String            @id @default(uuid())
+  userId          String            @unique
+  businessName    String
+  businessType    String
+  description     String
+  phone           String?
+  address         String?
+  website         String?
+  taxId           String?
+  businessLicense String?
+  status          ApplicationStatus @default(PENDING)
+  adminNotes      String?
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  submittedAt     DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  user            User              @relation(fields: [userId], references: [id])
 }
 
 enum Role {
   ADMIN
   CUSTOMER
   SELLER
-}
-
-
-model Address {
-  id          String   @id @default(uuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  type        String   
-  street      String
-  city        String
-  state       String?
-  postalCode  String
-  country     String
-  isDefault   Boolean  @default(false)
-  phone       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-
-model Product {
-  id            String     @id @default(uuid())
-  name          String
-  slug          String     @unique
-  description   String
-  price         Float
-  comparePrice  Float?
-  cost          Float?
-  sku           String?    @unique
-  barcode       String?
-  quantity      Int        @default(0)
-  isActive      Boolean    @default(true)
-  isFeatured    Boolean    @default(false)
-  images        Json       
-  ARModelUrl    String?
-  objModelUrl   String?    
-  sellerId      String?
-  seller        User?       @relation("SellerProducts", fields: [sellerId], references: [id])
-  categories    Category[] @relation("ProductCategories")
-  variants      Variant[]
-  reviews       Review[]
-  orderItems    OrderItem[]
-  cartItems     CartItem[]  
-  wishlistItems WishlistItem[]
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-}
-
-
-model Category {
-  id          String    @id @default(uuid())
-  name        String
-  slug        String    @unique
-  description String?
-  image       String?
-  parentId    String?
-  parent      Category? @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children    Category[] @relation("CategoryHierarchy")
-  products    Product[]  @relation("ProductCategories")
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-}
-
-model Variant {
-  id          String   @id @default(uuid())
-  productId   String
-  product     Product  @relation(fields: [productId], references: [id])
-  name        String   
-  options     Json     
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-
-model Cart {
-  id        String    @id @default(uuid())
-  userId    String    @unique
-  user      User      @relation(fields: [userId], references: [id])
-  items     CartItem[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-}
-
-model CartItem {
-  id        String   @id @default(uuid())
-  cartId    String
-  cart      Cart     @relation(fields: [cartId], references: [id])
-  productId String
-  product   Product  @relation(fields: [productId], references: [id])
-  quantity  Int      @default(1)
-  price     Float
-  options   Json?    
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-
-model Wishlist {
-  id        String         @id @default(uuid())
-  userId    String         @unique
-  user      User           @relation(fields: [userId], references: [id])
-  items     WishlistItem[]
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-}
-
-model WishlistItem {
-  id         String   @id @default(uuid())
-  wishlistId String
-  wishlist   Wishlist @relation(fields: [wishlistId], references: [id])
-  productId  String
-  product    Product  @relation(fields: [productId], references: [id])
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-}
-
-
-model Order {
-  id              String      @id @default(uuid())
-  orderNumber     String      @unique
-  userId          String
-  user            User        @relation(fields: [userId], references: [id])
-  items           OrderItem[]
-  subtotal        Float
-  tax             Float
-  shipping        Float
-  discount        Float       @default(0)
-  total           Float
-  status          OrderStatus @default(PENDING)
-  paymentStatus   PaymentStatus
-  paymentMethod   String
-  paymentId       String?
-  shippingAddress Json
-  billingAddress  Json?
-  notes           OrderNote[]
-  statusHistory   OrderStatusHistory[]
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-}
-
-model OrderItem {
-  id          String   @id @default(uuid())
-  orderId     String
-  order       Order    @relation(fields: [orderId], references: [id])
-  productId   String
-  product     Product  @relation(fields: [productId], references: [id])
-  productName String
-  price       Float
-  quantity    Int
-  options     Json?    
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model OrderNote {
-  id        String   @id @default(uuid())
-  orderId   String
-  order     Order    @relation(fields: [orderId], references: [id])
-  author    String
-  content   String
-  isPublic  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model OrderStatusHistory {
-  id        String     @id @default(uuid())
-  orderId   String
-  order     Order      @relation(fields: [orderId], references: [id])
-  status    OrderStatus
-  createdAt DateTime   @default(now())
 }
 
 enum OrderStatus {
@@ -227,42 +275,6 @@ enum PaymentStatus {
   FAILED
   REFUNDED
   PARTIALLY_REFUNDED
-}
-
-model Review {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  productId String
-  product   Product  @relation(fields: [productId], references: [id])
-  rating    Int
-  title     String?
-  comment   String?
-  images    Json     
-  isApproved Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-
-model SellerApplication {
-  id            String   @id @default(uuid())
-  userId        String   @unique
-  user          User     @relation(fields: [userId], references: [id])
-  businessName  String
-  businessType  String
-  description   String
-  phone         String?
-  address       String?
-  website       String?
-  taxId         String?
-  businessLicense String?
-  status        ApplicationStatus @default(PENDING)
-  adminNotes    String?
-  reviewedBy    String?  
-  reviewedAt    DateTime?
-  submittedAt   DateTime @default(now())
-  updatedAt     DateTime @updatedAt
 }
 
 enum ApplicationStatus {

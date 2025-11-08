@@ -4,7 +4,7 @@ import { Drawer } from 'expo-router/drawer';
 import { DrawerContentScrollView } from '@react-navigation/drawer';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { router } from 'expo-router';
+import { router, usePathname } from 'expo-router';
 import { 
   LayoutDashboard, 
   Users, 
@@ -24,51 +24,50 @@ import { Text } from 'react-native-paper';
 const DrawerContent = (props: any) => {
   const { theme } = useTheme();
   const { user, logout } = useAuth();
+  const pathname = usePathname();
 
   const menuItems = [
     { 
       label: 'Dashboard', 
       icon: LayoutDashboard, 
-      onPress: () => router.push('/seller'),
+      path: '/seller',
       roles: ['seller']
     },
-    // { 
-    //   label: 'Seller Requests', 
-    //   icon: UserCheck, 
-    //   onPress: () => router.push('/seller/seller-requests'),
-    //   roles: ['seller']
-    // },
     { 
       label: 'Revenue Streams', 
       icon: BarChart2, 
-      onPress: () => router.push('/seller/revenue'),
+      path: '/seller/revenue',
       roles: ['seller']
     },
     { 
       label: 'Products', 
       icon: Package, 
-      onPress: () => router.push('/seller/products'),
-      roles: ['seller', 'seller']
+      path: '/seller/products',
+      roles: ['seller']
     },
     { 
       label: 'Orders', 
       icon: ShoppingCart, 
-      onPress: () => router.push('/seller/orders/'),
-      roles: ['seller', 'seller']
+      path: '/seller/orders',
+      roles: ['seller']
     },
     { 
       label: 'Sellers', 
       icon: Store, 
-      onPress: () => router.push('/seller/sellers'),
+      path: '/seller/sellers',
       roles: ['seller']
     },
     { 
       label: 'Settings', 
       icon: Settings, 
-      onPress: () => router.push('/seller/settings'),
-      roles: ['seller', 'seller']
+      path: '/seller/settings',
+      roles: ['seller']
     },
   ];
+
+  const isActive = (path: string) => {
+    return pathname.startsWith(path);
+  };
 
   const filteredMenuItems = menuItems.filter(item => 
     item.roles.includes(user?.role || 'customer')
@@ -95,14 +94,18 @@ const DrawerContent = (props: any) => {
       </View>
 
       <View style={styles.menuContainer}>
-        {filteredMenuItems.map((item, index) => (
+        {menuItems.filter(item => item.roles.includes(user?.role || '')).map((item, index) => (
           <TouchableOpacity
             key={index}
-            style={[styles.menuItem, { borderBottomColor: theme.colors.border }]}
             onPress={() => {
-              item.onPress();
-              props.navigation.closeDrawer();
+              router.push(item.path as any);
+              props.navigation?.closeDrawer?.();
             }}
+            style={[
+              styles.menuItem, 
+              { borderBottomColor: theme.colors.border },
+              isActive(item.path) && { backgroundColor: theme.colors.primary + '20' }
+            ]}
           >
             <View style={styles.menuItemContent}>
               <item.icon size={20} color={theme.colors.primary} />

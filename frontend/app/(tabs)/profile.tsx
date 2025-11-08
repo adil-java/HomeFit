@@ -111,7 +111,7 @@ export default function ProfileScreen() {
             onPress={() => router.push('/orders')}
           >
             <ShoppingBag size={24} color={theme.colors.primary} />
-            <Text style={[styles.statNumber, { color: theme.colors.text }]}>12</Text>
+            <Text style={[styles.statNumber, { color: theme.colors.text }]}>1</Text>
             <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Orders</Text>
           </TouchableOpacity>
           
@@ -122,18 +122,18 @@ export default function ProfileScreen() {
             <View style={[styles.statIcon, { backgroundColor: theme.colors.accent + '20' }]}>
               <Text style={styles.heartIcon}>♥</Text>
             </View>
-            <Text style={[styles.statNumber, { color: theme.colors.text }]}>8</Text>
+            <Text style={[styles.statNumber, { color: theme.colors.text }]}>2</Text>
             <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Wishlist</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={[styles.statCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
             onPress={() => router.push('/wallet')}
           >
             <Wallet size={24} color={theme.colors.success} />
             <Text style={[styles.statNumber, { color: theme.colors.text }]}>Rs. 250</Text>
             <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Wallet</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
 
         {/* Settings Options */}
@@ -161,12 +161,12 @@ export default function ProfileScreen() {
             onPress={() => router.push('/profile/payment-methods')}
           />
           
-          <ProfileOption
+          {/* <ProfileOption
             icon={Wallet}
             title="Wallet"
             subtitle="Balance: Rs. 250.00"
             onPress={() => router.push('/wallet')}
-          />
+          /> */}
         </View>
 
         <View style={styles.section}>
@@ -309,10 +309,10 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: -4,
   },
   heartIcon: {
-    fontSize: 16,
+    fontSize: 26,
     color: '#f97316',
   },
   statNumber: {

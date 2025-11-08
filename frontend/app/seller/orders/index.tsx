@@ -14,6 +14,8 @@ import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
+import { BackHandler } from 'react-native';
+import { useEffect } from 'react';
 
 const statusConfig = {
   pending: { icon: Clock, color: '#f59e0b', label: 'Pending' },
@@ -35,9 +37,63 @@ const filterOptions = [
 export default function OrdersScreen() {
   const { theme } = useTheme();
   const { orders } = useSelector((state: RootState) => state.orders);
+
+  // Mock orders fallback for Manage Orders
+  const mockOrders = [
+    {
+      id: '1001',
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      customerName: 'Ali Khan',
+      customerEmail: 'ali.khan@example.com',
+      items: [
+        { name: 'Modern Sofa', price: 499.99, quantity: 1, image: 'https://picsum.photos/seed/sofa/200/200' },
+        { name: 'Side Table', price: 89.99, quantity: 2, image: 'https://picsum.photos/seed/table/200/200' },
+      ],
+      paymentStatus: 'paid',
+      paymentMethod: 'Credit Card',
+      subtotal: 679.97,
+      shippingCost: 0,
+      discount: 20,
+      total: 659.97,
+    },
+    {
+      id: '1002',
+      status: 'processing',
+      createdAt: new Date(Date.now() - 86400000).toISOString(),
+      customerName: 'Sara Ahmed',
+      customerEmail: 's.ahmed@example.com',
+      items: [
+        { name: 'Dining Set', price: 899.0, quantity: 1, image: 'https://picsum.photos/seed/dining/200/200' },
+      ],
+      paymentStatus: 'unpaid',
+      paymentMethod: 'Cash on Delivery',
+      subtotal: 899.0,
+      shippingCost: 10,
+      discount: 0,
+      total: 909.0,
+    },
+    {
+      id: '1003',
+      status: 'delivered',
+      createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
+      customerName: 'John Doe',
+      customerEmail: 'john.doe@example.com',
+      items: [
+        { name: 'Office Chair', price: 129.99, quantity: 2, image: 'https://picsum.photos/seed/chair/200/200' },
+      ],
+      paymentStatus: 'paid',
+      paymentMethod: 'PayPal',
+      subtotal: 259.98,
+      shippingCost: 0,
+      discount: 0,
+      total: 259.98,
+    },
+  ];
+  const dataSource = orders && orders.length ? orders : mockOrders;
   const [selectedFilter, setSelectedFilter] = useState('All');
 
-  const filteredOrders = orders.filter(order => 
+  const filteredOrders = dataSource.filter(order => 
     selectedFilter === 'All' || order.status === selectedFilter.toLowerCase()
   );
 
@@ -118,8 +174,12 @@ export default function OrdersScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <ArrowLeft size={24} color={theme.colors.text} />
+        <TouchableOpacity 
+          onPress={() => router.replace('/(tabs)')}
+          style={[styles.backButton, { backgroundColor: theme.colors.surface }]}
+          activeOpacity={0.8}
+        >
+          <ArrowLeft size={20} color={theme.colors.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Manage Orders</Text>
         <TouchableOpacity>
@@ -206,6 +266,16 @@ export default function OrdersScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  backButton: {
+    padding: 8,
+    borderRadius: 12,
+    marginRight: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   header: {
     flexDirection: 'row',

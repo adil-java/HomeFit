@@ -47,9 +47,74 @@ export default function OrderDetailScreen() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState('');
   
-  const order = useSelector((state: RootState) => 
-    state.orders.orders.find(o => o.id === id)
-  );
+  const ordersFromStore = useSelector((state: RootState) => state.orders.orders);
+  // Mock orders fallback for order detail
+  const mockOrders = [
+    {
+      id: '1001',
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      customerName: 'Ali Khan',
+      customerEmail: 'ali.khan@example.com',
+      items: [
+        { name: 'Modern Sofa', price: 499.99, quantity: 1, image: 'https://picsum.photos/seed/sofa/200/200' },
+        { name: 'Side Table', price: 89.99, quantity: 2, image: 'https://picsum.photos/seed/table/200/200' },
+      ],
+      paymentStatus: 'paid',
+      paymentMethod: 'Credit Card',
+      subtotal: 679.97,
+      shippingCost: 0,
+      discount: 20,
+      total: 659.97,
+      shippingAddress: { name: 'Ali Khan', address: '123 Model Town', city: 'Lahore', state: 'PB', zipCode: '54000', country: 'Pakistan', phone: '+92 300 1111111' },
+      billingAddress: null,
+      notes: [ { author: 'System', date: new Date().toISOString(), content: 'Order created.' } ],
+      statusTimeline: ['order_placed'],
+      paidAt: new Date().toISOString(),
+    },
+    {
+      id: '1002',
+      status: 'processing',
+      createdAt: new Date(Date.now() - 86400000).toISOString(),
+      customerName: 'Sara Ahmed',
+      customerEmail: 's.ahmed@example.com',
+      items: [
+        { name: 'Dining Set', price: 899.0, quantity: 1, image: 'https://picsum.photos/seed/dining/200/200' },
+      ],
+      paymentStatus: 'unpaid',
+      paymentMethod: 'Cash on Delivery',
+      subtotal: 899.0,
+      shippingCost: 10,
+      discount: 0,
+      total: 909.0,
+      shippingAddress: { name: 'Sara Ahmed', address: '45 Clifton', city: 'Karachi', state: 'SD', zipCode: '75500', country: 'Pakistan', phone: '+92 333 2222222' },
+      billingAddress: null,
+      notes: [],
+      statusTimeline: ['order_placed', 'payment_confirmed', 'order_processed'],
+    },
+    {
+      id: '1003',
+      status: 'delivered',
+      createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
+      customerName: 'John Doe',
+      customerEmail: 'john.doe@example.com',
+      items: [
+        { name: 'Office Chair', price: 129.99, quantity: 2, image: 'https://picsum.photos/seed/chair/200/200' },
+      ],
+      paymentStatus: 'paid',
+      paymentMethod: 'PayPal',
+      subtotal: 259.98,
+      shippingCost: 0,
+      discount: 0,
+      total: 259.98,
+      shippingAddress: { name: 'John Doe', address: '742 Evergreen', city: 'Springfield', state: 'IL', zipCode: '62701', country: 'USA', phone: '+1 555 987 6543' },
+      billingAddress: { name: 'John Doe', address: '742 Evergreen', city: 'Springfield', state: 'IL', zipCode: '62701', country: 'USA', phone: '+1 555 987 6543' },
+      notes: [ { author: 'Admin', date: new Date().toISOString(), content: 'Delivered to customer.' } ],
+      statusTimeline: ['order_placed', 'payment_confirmed', 'order_processed', 'shipped', 'delivered'],
+      deliveredAt: new Date().toISOString(),
+    },
+  ];
+  const order = (ordersFromStore && ordersFromStore.length ? ordersFromStore : mockOrders).find(o => o.id === id);
 
   const handleStatusUpdate = async (newStatus: string) => {
     try {

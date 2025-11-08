@@ -36,20 +36,49 @@ import {
 // Mock data - replace with actual API calls
 const mockProducts = [
   {
-    id: '1',
-    name: 'Wireless Headphones',
-    category: 'Electronics',
-    price: 99.99,
-    stock: 45,
-    sku: 'WH-001',
+    id: '040f98bf-73ce-4ee0-abff-c90ee08b3b9d',
+    name: 'Velvet Chesterfield Sofa',
+    category: 'Sofas',
+    price: 1499.99,
+    stock: 12,
+    sku: 'SOFA-VC-01',
     status: 'published',
-    image: 'https://via.placeholder.com/80',
+    image: 'https://res.cloudinary.com/dmpinsiam/image/upload/v1760469014/ecommerce/products/zea2mvkeguferzogxjfq.jpg'
   },
-  // Add more mock products...
+  {
+    id: 'f676bf63-db27-4eda-9b68-ee1ee3c591ec',
+    name: 'Industrial Metal Canopy Bed',
+    category: 'Beds',
+    price: 999.99,
+    stock: 18,
+    sku: 'BED-IMC-02',
+    status: 'draft',
+    image: 'https://res.cloudinary.com/dmpinsiam/image/upload/v1760470454/ecommerce/products/khlt31mjw6ejdwmrz28t.jpg'
+  },
+  {
+    id: 'c143a48f-cfb8-4c92-80cd-441beb447fa0',
+    name: 'Modern Oak Dining Table',
+    category: 'Dining',
+    price: 899.99,
+    stock: 15,
+    sku: 'DIN-MOD-03',
+    status: 'published',
+    image: 'https://res.cloudinary.com/dmpinsiam/image/upload/v1760467967/ecommerce/products/uwutybzwqdyzbbnizsic.jpg'
+  },
+  {
+    id: '7d38a558-5d35-496e-84ea-d5216a6f9dfc',
+    name: 'Upholstered Linen Platform Bed',
+    category: 'Beds',
+    price: 749.99,
+    stock: 25,
+    sku: 'BED-ULP-04',
+    status: 'archived',
+    image: 'https://res.cloudinary.com/dmpinsiam/image/upload/v1760468327/ecommerce/products/vxhlmqpx0wlkqmg8yeyj.webp'
+  },
 ];
 
 export default function ProductsScreen() {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const [products, setProducts] = useState(mockProducts);
   const [filteredProducts, setFilteredProducts] = useState(mockProducts);
   const [searchQuery, setSearchQuery] = useState('');
@@ -142,21 +171,31 @@ export default function ProductsScreen() {
   };
 
   const renderProductItem = ({ item }) => (
-    <View style={[styles.productCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-      <View style={styles.productImageContainer}>
+    <View style={[styles.productCard, { 
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : theme.colors.surface, 
+      borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : theme.colors.border 
+    }]}>
+      <View style={[
+        styles.productImageContainer,
+        { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#f5f5f5' }
+      ]}>
         <Image source={{ uri: item.image }} style={styles.productImage} />
       </View>
       <View style={styles.productInfo}>
         <View>
-          <Text style={[styles.productName, { color: theme.colors.text }]}>{item.name}</Text>
-          <Text style={[styles.productSku, { color: theme.colors.textSecondary }]}>SKU: {item.sku}</Text>
+          <Text style={[styles.productName, { color: isDark ? '#FFFFFF' : theme.colors.text }]}>{item.name}</Text>
+          <Text style={[styles.productSku, { color: isDark ? 'rgba(255, 255, 255, 0.6)' : theme.colors.textSecondary }]}>SKU: {item.sku}</Text>
           <View style={styles.productMeta}>
-            <Text style={[styles.productCategory, { backgroundColor: `${theme.colors.primary}10` }]}>
+            <Text style={[styles.productCategory, { 
+              backgroundColor: `${theme.colors.primary}${isDark ? '25' : '10'}`,
+              color: isDark ? '#FFFFFF' : theme.colors.text 
+            }]}>
               {item.category}
             </Text>
             <View style={[styles.statusBadge, { 
-              backgroundColor: item.status === 'published' ? '#10B98120' : 
-                              item.status === 'draft' ? '#F59E0B20' : '#EF444420',
+              backgroundColor: item.status === 'published' ? (isDark ? '#10B98125' : '#10B98120') : 
+                              item.status === 'draft' ? (isDark ? '#F59E0B25' : '#F59E0B20') : 
+                              (isDark ? '#EF444425' : '#EF444420'),
               borderColor: item.status === 'published' ? '#10B981' : 
                           item.status === 'draft' ? '#F59E0B' : '#EF4444',
             }]}>
@@ -181,20 +220,20 @@ export default function ProductsScreen() {
         </View>
       </View>
       <View style={styles.productActions}>
-        <TouchableOpacity 
-          style={[styles.actionButton, { backgroundColor: `${theme.colors.primary}10` }]}
+        {/* <TouchableOpacity 
+          style={[styles.iconButton, { backgroundColor: `${theme.colors.primary}${isDark ? '20' : '10'}` }]}
           onPress={() => router.push(`/seller/products/${item.id}`)}
         >
           <Eye size={18} color={theme.colors.primary} />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
         <TouchableOpacity 
-          style={[styles.actionButton, { backgroundColor: `${theme.colors.primary}10` }]}
+          style={[styles.iconButton, { backgroundColor: `${theme.colors.primary}${isDark ? '20' : '10'}` }]}
           onPress={() => navigateToEditProduct(item.id)}
         >
           <Edit size={18} color={theme.colors.primary} />
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.actionButton, { backgroundColor: '#EF444410' }]}
+          style={[styles.iconButton, { backgroundColor: isDark ? '#EF444420' : '#EF444410' }]}
           onPress={() => handleDelete(item.id)}
         >
           <Trash2 size={18} color="#EF4444" />
@@ -214,26 +253,29 @@ export default function ProductsScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
-          Products
-        </Text>
+      <View style={[styles.header, { borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.1)' : theme.colors.border }]}>
+        <View style={styles.headerLeft}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={[styles.backButtonInline, { 
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : theme.colors.surface, 
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : theme.colors.border 
+            }]}
+            activeOpacity={0.8}
+          >
+            <ChevronLeft size={18} color={isDark ? '#FFFFFF' : theme.colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: isDark ? '#FFFFFF' : theme.colors.text }]}> 
+            Products
+          </Text>
+        </View>
         <View style={styles.headerActions}>
           <TouchableOpacity 
-            style={[styles.actionButton, { backgroundColor: theme.colors.card, marginRight: 8 }]}
-            onPress={() => setShowFilters(!showFilters)}
-          >
-            <Filter size={18} color={theme.colors.text} />
-            <Text style={[styles.actionButtonText, { color: theme.colors.text }]}>
-              {showFilters ? 'Hide Filters' : 'Filter'}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.actionButton, { backgroundColor: theme.colors.primary }]}
+            style={[styles.addButton, { backgroundColor: theme.colors.primary }]}
             onPress={navigateToAddProduct}
           >
             <Plus size={18} color="white" />
-            <Text style={[styles.actionButtonText, { color: 'white' }]}>
+            <Text style={styles.addButtonText}>
               Add Product
             </Text>
           </TouchableOpacity>
@@ -242,23 +284,29 @@ export default function ProductsScreen() {
 
       {/* Search and Filter */}
       <View style={styles.searchContainer}>
-        <View style={[styles.searchBar, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-          <Search size={18} color={theme.colors.textSecondary} style={styles.searchIcon} />
+        <View style={[styles.searchBar, { 
+          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : theme.colors.surface, 
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : theme.colors.border 
+        }]}>
+          <Search size={18} color={isDark ? 'rgba(255, 255, 255, 0.5)' : theme.colors.textSecondary} style={styles.searchIcon} />
           <TextInput
-            style={[styles.searchInput, { color: theme.colors.text }]}
+            style={[styles.searchInput, { color: isDark ? '#FFFFFF' : theme.colors.text }]}
             placeholder="Search products..."
-            placeholderTextColor={theme.colors.textSecondary}
+            placeholderTextColor={isDark ? 'rgba(255, 255, 255, 0.4)' : theme.colors.textSecondary}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
           {searchQuery ? (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <X size={18} color={theme.colors.textSecondary} />
+              <X size={18} color={isDark ? 'rgba(255, 255, 255, 0.5)' : theme.colors.textSecondary} />
             </TouchableOpacity>
           ) : null}
         </View>
         <TouchableOpacity 
-          style={[styles.filterButton, { backgroundColor: showFilters ? theme.colors.primary : theme.colors.surface, borderColor: theme.colors.border }]}
+          style={[styles.filterButton, { 
+            backgroundColor: showFilters ? theme.colors.primary : (isDark ? 'rgba(255, 255, 255, 0.05)' : theme.colors.surface), 
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : theme.colors.border 
+          }]}
           onPress={() => setShowFilters(!showFilters)}
         >
           <Sliders size={18} color={showFilters ? '#fff' : theme.colors.primary} />
@@ -267,26 +315,34 @@ export default function ProductsScreen() {
 
       {/* Filters Panel */}
       {showFilters && (
-        <View style={[styles.filtersPanel, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+        <View style={[styles.filtersPanel, { 
+          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : theme.colors.surface, 
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : theme.colors.border 
+        }]}>
         <View style={styles.filterSection}>
-          <Text style={[styles.filterLabel, { color: theme.colors.text }]}>Category</Text>
+          <Text style={[styles.filterLabel, { color: isDark ? '#FFFFFF' : theme.colors.text }]}>Category</Text>
           <View style={styles.filterOptions}>
             <TouchableOpacity 
-              style={[styles.filterOption, !filters.category && { backgroundColor: theme.colors.primary }]}
+              style={[
+                styles.filterOption,
+                { borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : theme.colors.border },
+                !filters.category && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }
+              ]}
               onPress={() => setFilters({...filters, category: ''})}
             >
-              <Text style={[styles.filterOptionText, !filters.category && { color: '#fff' }]}>All</Text>
+              <Text style={[styles.filterOptionText, { color: isDark ? '#FFFFFF' : theme.colors.text }, !filters.category && { color: '#fff' }]}>All</Text>
             </TouchableOpacity>
             {categories.map(category => (
               <TouchableOpacity 
                 key={category}
                 style={[
-                  styles.filterOption, 
-                  filters.category === category && { backgroundColor: theme.colors.primary }
+                  styles.filterOption,
+                  { borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : theme.colors.border },
+                  filters.category === category && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }
                 ]}
                 onPress={() => setFilters({...filters, category})}
               >
-                <Text style={[styles.filterOptionText, filters.category === category && { color: '#fff' }]}>
+                <Text style={[styles.filterOptionText, { color: isDark ? '#FFFFFF' : theme.colors.text }, filters.category === category && { color: '#fff' }]}>
                   {category}
                 </Text>
               </TouchableOpacity>
@@ -295,24 +351,29 @@ export default function ProductsScreen() {
         </View>
 
         <View style={styles.filterSection}>
-          <Text style={[styles.filterLabel, { color: theme.colors.text }]}>Status</Text>
+          <Text style={[styles.filterLabel, { color: isDark ? '#FFFFFF' : theme.colors.text }]}>Status</Text>
           <View style={styles.filterOptions}>
             <TouchableOpacity 
-              style={[styles.filterOption, !filters.status && { backgroundColor: theme.colors.primary }]}
+              style={[
+                styles.filterOption,
+                { borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : theme.colors.border },
+                !filters.status && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }
+              ]}
               onPress={() => setFilters({...filters, status: ''})}
             >
-              <Text style={[styles.filterOptionText, !filters.status && { color: '#fff' }]}>All</Text>
+              <Text style={[styles.filterOptionText, { color: isDark ? '#FFFFFF' : theme.colors.text }, !filters.status && { color: '#fff' }]}>All</Text>
             </TouchableOpacity>
             {statuses.map(status => (
               <TouchableOpacity 
                 key={status}
                 style={[
-                  styles.filterOption, 
-                  filters.status === status && { backgroundColor: theme.colors.primary }
+                  styles.filterOption,
+                  { borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : theme.colors.border },
+                  filters.status === status && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }
                 ]}
                 onPress={() => setFilters({...filters, status})}
               >
-                <Text style={[styles.filterOptionText, filters.status === status && { color: '#fff' }]}>
+                <Text style={[styles.filterOptionText, { color: isDark ? '#FFFFFF' : theme.colors.text }, filters.status === status && { color: '#fff' }]}> 
                   {status.charAt(0).toUpperCase() + status.slice(1)}
                 </Text>
               </TouchableOpacity>
@@ -321,26 +382,32 @@ export default function ProductsScreen() {
         </View>
 
         <View style={styles.filterSection}>
-          <Text style={[styles.filterLabel, { color: theme.colors.text }]}>Price Range</Text>
+          <Text style={[styles.filterLabel, { color: isDark ? '#FFFFFF' : theme.colors.text }]}>Price Range</Text>
           <View style={styles.priceRangeContainer}>
-            <View style={[styles.priceInputContainer, { borderColor: theme.colors.border }]}>
-              <Text style={[styles.currencySymbol, { color: theme.colors.text }]}>$</Text>
+            <View style={[styles.priceInputContainer, { 
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : theme.colors.border,
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'transparent'
+            }]}>
+              <Text style={[styles.currencySymbol, { color: isDark ? '#FFFFFF' : theme.colors.text }]}>$</Text>
               <TextInput
-                style={[styles.priceInput, { color: theme.colors.text }]}
+                style={[styles.priceInput, { color: isDark ? '#FFFFFF' : theme.colors.text }]}
                 placeholder="Min"
-                placeholderTextColor={theme.colors.textSecondary}
+                placeholderTextColor={isDark ? 'rgba(255, 255, 255, 0.4)' : theme.colors.textSecondary}
                 keyboardType="numeric"
                 value={filters.minPrice}
                 onChangeText={text => setFilters({...filters, minPrice: text})}
               />
             </View>
-            <Text style={[styles.priceRangeSeparator, { color: theme.colors.textSecondary }]}>to</Text>
-            <View style={[styles.priceInputContainer, { borderColor: theme.colors.border }]}>
-              <Text style={[styles.currencySymbol, { color: theme.colors.text }]}>$</Text>
+            <Text style={[styles.priceRangeSeparator, { color: isDark ? 'rgba(255, 255, 255, 0.5)' : theme.colors.textSecondary }]}>to</Text>
+            <View style={[styles.priceInputContainer, { 
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : theme.colors.border,
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'transparent'
+            }]}>
+              <Text style={[styles.currencySymbol, { color: isDark ? '#FFFFFF' : theme.colors.text }]}>$</Text>
               <TextInput
-                style={[styles.priceInput, { color: theme.colors.text }]}
+                style={[styles.priceInput, { color: isDark ? '#FFFFFF' : theme.colors.text }]}
                 placeholder="Max"
-                placeholderTextColor={theme.colors.textSecondary}
+                placeholderTextColor={isDark ? 'rgba(255, 255, 255, 0.4)' : theme.colors.textSecondary}
                 keyboardType="numeric"
                 value={filters.maxPrice}
                 onChangeText={text => setFilters({...filters, maxPrice: text})}
@@ -358,12 +425,12 @@ export default function ProductsScreen() {
               styles.checkbox, 
               { 
                 backgroundColor: filters.inStock ? theme.colors.primary : 'transparent',
-                borderColor: theme.colors.border,
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : theme.colors.border,
               }
             ]}>
               {filters.inStock && <CheckSquare size={14} color="#fff" />}
             </View>
-            <Text style={[styles.stockFilterText, { color: theme.colors.text }]}>
+            <Text style={[styles.stockFilterText, { color: isDark ? '#FFFFFF' : theme.colors.text }]}>
               In Stock Only
             </Text>
           </TouchableOpacity>
@@ -371,7 +438,10 @@ export default function ProductsScreen() {
 
         <View style={styles.filterActions}>
           <TouchableOpacity 
-            style={[styles.filterButton, { borderColor: theme.colors.border }]}
+            style={[styles.filterActionButton, { 
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : theme.colors.border,
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'transparent'
+            }]}
             onPress={() => setFilters({
               category: '',
               status: '',
@@ -380,10 +450,10 @@ export default function ProductsScreen() {
               inStock: false,
             })}
           >
-            <Text style={[styles.filterButtonText, { color: theme.colors.text }]}>Reset Filters</Text>
+            <Text style={[styles.filterButtonText, { color: isDark ? '#FFFFFF' : theme.colors.text }]}>Reset Filters</Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            style={[styles.filterButton, { backgroundColor: theme.colors.primary }]}
+            style={[styles.filterActionButton, { backgroundColor: theme.colors.primary }]}
             onPress={() => setShowFilters(false)}
           >
             <Text style={[styles.filterButtonText, { color: '#fff' }]}>Apply Filters</Text>
@@ -408,11 +478,11 @@ export default function ProductsScreen() {
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Package size={48} color={theme.colors.textSecondary} />
-            <Text style={[styles.emptyStateTitle, { color: theme.colors.text }]}>
+            <Package size={48} color={isDark ? 'rgba(255, 255, 255, 0.3)' : theme.colors.textSecondary} />
+            <Text style={[styles.emptyStateTitle, { color: isDark ? '#FFFFFF' : theme.colors.text }]}>
               No products found
             </Text>
-            <Text style={[styles.emptyStateText, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.emptyStateText, { color: isDark ? 'rgba(255, 255, 255, 0.5)' : theme.colors.textSecondary }]}>
               Try adjusting your search or filters
             </Text>
           </View>
@@ -420,10 +490,13 @@ export default function ProductsScreen() {
       />
 
       {/* Pagination */}
-      <View style={[styles.pagination, { borderTopColor: theme.colors.border }]}>
+      <View style={[styles.pagination, { 
+        borderTopColor: isDark ? 'rgba(255, 255, 255, 0.1)' : theme.colors.border,
+        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.02)' : 'transparent'
+      }]}>
         <TouchableOpacity style={styles.paginationButton} disabled={true}>
-          <ChevronLeft size={18} color={theme.colors.textSecondary} />
-          <Text style={[styles.paginationText, { color: theme.colors.textSecondary }]}>Previous</Text>
+          <ChevronLeft size={18} color={isDark ? 'rgba(255, 255, 255, 0.3)' : theme.colors.textSecondary} />
+          <Text style={[styles.paginationText, { color: isDark ? 'rgba(255, 255, 255, 0.3)' : theme.colors.textSecondary }]}>Previous</Text>
         </TouchableOpacity>
         <View style={styles.pageNumbers}>
           {[1, 2, 3, 4, 5].map(page => (
@@ -437,7 +510,7 @@ export default function ProductsScreen() {
               <Text style={[
                 styles.pageNumberText, 
                 page === 1 && { color: '#fff' },
-                { color: theme.colors.text }
+                { color: isDark ? '#FFFFFF' : theme.colors.text }
               ]}>
                 {page}
               </Text>
@@ -469,27 +542,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: '700',
-    marginBottom: 4,
   },
   headerActions: {
     flexDirection: 'row',
   },
-  actionButton: {
-    padding: 8,
+  addButton: {
+    height: 40,
+    paddingHorizontal: 16,
     borderRadius: 8,
-    marginLeft: 8,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
   },
-  actionButtonText: {
+  addButtonText: {
     marginLeft: 6,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
+    color: '#fff',
+  },
+  backButtonInline: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+    borderWidth: 1,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -544,7 +635,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.1)',
     margin: 4,
   },
   filterOptionText: {
@@ -598,7 +688,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 8,
   },
-  filterButton: {
+  filterActionButton: {
     flex: 1,
     height: 40,
     borderRadius: 8,
@@ -627,7 +717,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     overflow: 'hidden',
     marginRight: 12,
-    backgroundColor: '#f5f5f5',
   },
   productImage: {
     width: '100%',
@@ -687,7 +776,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginLeft: 8,
   },
-  actionButton: {
+  iconButton: {
     width: 32,
     height: 32,
     borderRadius: 8,

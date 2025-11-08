@@ -84,8 +84,44 @@ export default function HomeScreen() {
       setIsLoadingProducts(true);
       setError(null);
       const response = await apiService.getProducts();
+      // Debug: inspect raw products payload and rating-related fields
+      try {
+        console.log('[Products][Fetch] raw response keys:', response && Object.keys(response));
+        const sample = Array.isArray(response?.data) ? response.data[0] : null;
+        if (sample) {
+          console.log('[Products][Fetch] sample product fields:', {
+            id: sample.id,
+            name: sample.name,
+            rating: sample.rating,
+            averageRating: sample.averageRating,
+            averagerating: sample.averagerating,
+          });
+        }
+      } catch (e) {
+        console.log('[Products][Fetch] logging error:', e);
+      }
       if (response.success) {
-        dispatch(setProducts(response.data));
+        // Debug: map and log rating derivation for first few products
+        try {
+          const derived = (response.data || []).slice(0, 5).map((p: any) => ({
+            id: p?.id,
+            name: p?.name,
+            rating: p?.rating,
+            averageRating: p?.averageRating,
+            averagerating: p?.averagerating,
+            derivedRating: p?.rating ?? p?.averageRating ?? p?.averagerating ?? null,
+          }));
+          console.log('[Products][Fetch] derived rating preview:', derived);
+        } catch (e) {
+          console.log('[Products][Fetch] derivation logging error:', e);
+        }
+        // Normalize rating so UI consistently reads product.rating
+        const normalized = (response.data || []).map((p: any) => ({
+          ...p,
+          rating: p?.rating ?? p?.averageRating ?? p?.averagerating ?? 0,
+          inStock: p?.inStock ?? ((p?.stock ?? p?.quantity ?? 0) > 0),
+        }));
+        dispatch(setProducts(normalized));
       } else {
         setError('Failed to load products');
         console.error('Failed to load products:', response.error);

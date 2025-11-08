@@ -11,11 +11,9 @@ import {
   ActivityIndicator
 } from 'react-native';
 import { useTheme } from '@/contexts/ThemeContext';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 import { 
   ArrowLeft, 
-  Save, 
-  X, 
   Image as ImageIcon,
   Package,
   Tag,
@@ -24,7 +22,8 @@ import {
   List,
   CheckSquare,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Plus
 } from 'lucide-react-native';
 
 // Mock API function - replace with actual API calls
@@ -41,33 +40,10 @@ const saveProduct = async (productData: any, isUpdate = false) => {
     }, 1000);
   });
 };
-const getProductById = async (id: string) => {
-  // Mock data - replace with actual API call
-  const mockProduct =   {
-      id: 'f676bf63-db27-4eda-9b68-ee1ee3c591ec',
-      name: 'Industrial Metal Canopy Bed',
-      description: 'Elevated in striking modern-industrial style, this canopy bed features a bold steel frame with a matte finish.',
-      category: 'Beds',
-      price: 999.99,
-      sales: 190,
-      revenue: 189998.1,
-      growth: 18.3,
-      stock: 18,
-      rating: 4.8,
-      image: 'https://res.cloudinary.com/dmpinsiam/image/upload/v1760470454/ecommerce/products/khlt31mjw6ejdwmrz28t.jpg'
-    }
-  
-  return new Promise((resolve) => {
-    setTimeout(() => resolve(mockProduct), 500);
-  });
-};
+// No edit data fetching needed on the create screen
 
 export default function ProductForm() {
-  const { id } = useLocalSearchParams();
   const { theme } = useTheme();
-  const isEditMode = !!id;
-  
-  const [loading, setLoading] = useState(isEditMode);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
@@ -101,35 +77,7 @@ export default function ProductForm() {
   const [showColors, setShowColors] = useState(true);
   const [showCategory, setShowCategory] = useState(false);
 
-  useEffect(() => {
-    if (isEditMode) {
-      loadProduct();
-    }
-  }, [id]);
-
-  const loadProduct = async () => {
-    try {
-      setLoading(true);
-      const product = await getProductById(id as string);
-      setFormData({
-        name: product.name,
-        description: product.description || '',
-        price: product.price.toString(),
-        category: product.category,
-        stock: product.stock.toString(),
-        sku: product.sku,
-        status: product.status,
-        image: product.image,
-        sizes: [],
-        colors: [],
-      });
-    } catch (error) {
-      console.error('Error loading product:', error);
-      Alert.alert('Error', 'Failed to load product');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // No edit-mode effects or data loading for create screen
 
   const toggleSize = (size: string) => {
     setFormData(prev => ({
@@ -180,7 +128,7 @@ export default function ProductForm() {
         ...formData,
         price: parseFloat(formData.price),
         stock: parseInt(formData.stock, 10),
-      }, isEditMode);
+      }, false);
       
       if (result.success) {
         Alert.alert('Success', result.message, [
@@ -210,13 +158,7 @@ export default function ProductForm() {
     }
   };
 
-  if (loading) {
-    return (
-      <View style={[styles.container, styles.center]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
-  }
+  // No loading state on create screen
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -229,7 +171,7 @@ export default function ProductForm() {
           <ArrowLeft size={24} color={theme.colors.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
-          {isEditMode ? 'Edit Product' : 'Add New Product'}
+          Create Product
         </Text>
         <TouchableOpacity 
           onPress={handleSubmit}
@@ -239,10 +181,10 @@ export default function ProductForm() {
           {saving ? (
             <ActivityIndicator size="small" color={theme.colors.primary} />
           ) : (
-            <Save size={20} color={theme.colors.primary} />
+            <Plus size={20} color={theme.colors.primary} />
           )}
           <Text style={[styles.saveButtonText, { color: theme.colors.primary }]}>
-            {saving ? 'Saving...' : 'Save'}
+            {saving ? 'Saving...' : 'Create'}
           </Text>
         </TouchableOpacity>
       </View>

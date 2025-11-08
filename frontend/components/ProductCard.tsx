@@ -49,6 +49,22 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     }
   }, [productId]);
 
+  useEffect(() => {
+    if (product) {
+      const avg1 = (product as any)?.averageRating;
+      const avg2 = (product as any)?.averagerating;
+      const displayRating = product?.rating ?? avg1 ?? avg2 ?? null;
+      console.log('[ProductCard][Product]', {
+        id: product.id,
+        name: product.name,
+        rating: product.rating,
+        averageRating: avg1,
+        averagerating: avg2,
+        displayRating,
+      });
+    }
+  }, [product]);
+
   const fetchProduct = async () => {
     try {
       setLoading(true);
@@ -59,13 +75,27 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           // If we have a productId, find the specific product
           const foundProduct = response.data.find((p: Product) => p.id === productId);
           if (foundProduct) {
-            setProduct(foundProduct);
+            // Normalize rating so UI can use product.rating
+            const normalized = {
+              ...foundProduct,
+              rating: (foundProduct as any)?.rating ?? (foundProduct as any)?.averageRating ?? (foundProduct as any)?.averagerating ?? 0,
+              inStock: (foundProduct as any)?.inStock ?? (((foundProduct as any)?.stock ?? (foundProduct as any)?.quantity ?? 0) > 0),
+            } as Product;
+            setProduct(normalized);
           } else {
             setError('Product not found');
           }
         } else {
           // If no productId, use the first product
-          setProduct(response.data[0]);
+          const first = response.data[0];
+          const normalized = first
+            ? ({
+                ...first,
+                rating: (first as any)?.rating ?? (first as any)?.averageRating ?? (first as any)?.averagerating ?? 0,
+                inStock: (first as any)?.inStock ?? (((first as any)?.stock ?? (first as any)?.quantity ?? 0) > 0),
+              } as Product)
+            : null;
+          setProduct(normalized);
         }
       } else {
         setError(response.error || 'Failed to load product');
@@ -161,10 +191,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       ? product.images 
       : product.image || 'https://via.placeholder.com/300';
 
-  // Calculate discount percentage if comparePrice exists
-  const discountPercentage = product.comparePrice && product.price < product.comparePrice
-    ? Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)
+  // Calculate discount percentage if comparePrice is a number
+  const numericCompare = typeof (product as any)?.comparePrice === 'number' ? (product as any).comparePrice as number : null;
+  const discountPercentage = numericCompare && product.price < numericCompare
+    ? Math.round(((numericCompare - product.price) / numericCompare) * 100)
     : 0;
+
+  // Derive rating to display (respect 0)
+  const displayRating = (product as any)?.rating ?? (product as any)?.averageRating ?? (product as any)?.averagerating ?? 'N/A';
 
   return (
     <View style={[styles.container, { borderColor: theme.colors.border }, style]}>
@@ -207,7 +241,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             <View style={styles.ratingContent}>
               <Star size={14} color={theme.colors.warning} fill={theme.colors.warning} />
               <Text style={[styles.rating, { color: theme.colors.textSecondary }]}>
-                {product.rating || 'N/A'} {product.reviews ? `(${product.reviews})` : ''}
+                {displayRating} {Number(product.reviews) > 0 ? `(${Number(product.reviews)})` : ''}
               </Text>
             </View>
             <View style={styles.stockContainer}>
@@ -215,14 +249,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 style={[
                   styles.stockIndicator, 
                   { 
-                    backgroundColor: product.quantity > 0 
+                    backgroundColor: product.inStock 
                       ? theme.colors.success 
                       : theme.colors.error 
                   }
                 ]} 
               />
               <Text style={[styles.stockText, { color: theme.colors.textSecondary }]}>
-                {product.quantity > 0 ? 'In Stock' : 'Out of Stock'}
+                {product.inStock ? 'In Stock' : 'Out of Stock'}
               </Text>
             </View>
           </View>
@@ -232,14 +266,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               <Text style={[styles.price, { color: theme.colors.primary }]}>
                 Rs. {product.price?.toFixed(2) || '0.00'}
               </Text>
-              {product.comparePrice && product.comparePrice > product.price && (
+              {typeof (product as any)?.comparePrice === 'number' && (product as any).comparePrice > product.price && (
                 <Text style={[styles.originalPrice, { color: theme.colors.textSecondary }]}>
-                  Rs. {product.comparePrice.toFixed(2)}
+                  Rs. {(product as any).comparePrice.toFixed(2)}
                 </Text>
               )}
             </View>
             
-            {showAddToCart && product.quantity > 0 && (
+            {showAddToCart && product.inStock && (
               <TouchableOpacity
                 onPress={handleAddToCart}
                 style={[styles.cartButton, { backgroundColor: theme.colors.primary }]}
@@ -273,7 +307,6 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
-    resize  : 'cover',
   },
   wishlistButton: {
     position: 'absolute',
@@ -368,10 +401,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 8,
     alignItems: 'center',
-  },
-  addToCartText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
   },
 });

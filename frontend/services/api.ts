@@ -267,14 +267,18 @@ class ApiService {
     if (data && data.items) {
       return {
         ...data,
-        items: data.items.map((item: any) => ({
-          id: item.productId,
-          name: item.product?.name || 'Unknown Product',
-          price: item.product?.price || 0,
-          image: item.product?.images?.[0] || '',
-          rating: 0, // Default rating if not provided
-          product: item.product // Include full product details
-        }))
+        items: data.items.map((item: any) => {
+          const p = item.product || {};
+          const derivedRating = p?.rating ?? p?.averageRating ?? p?.averagerating ?? 0;
+          return {
+            id: item.productId,
+            name: p?.name || 'Unknown Product',
+            price: p?.price || 0,
+            image: p?.images?.[0] || '',
+            rating: derivedRating,
+            product: item.product,
+          };
+        })
       };
     }
     
