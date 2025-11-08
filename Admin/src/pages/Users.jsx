@@ -56,40 +56,7 @@ const Users = () => {
     }
   };
 
-  const columns = [
-    { header: 'Name', accessor: 'name' },
-    { header: 'Email', accessor: 'email' },
-    { header: 'Role', accessor: 'role' },
-    { header: 'Phone', accessor: 'phone' },
-    {
-      header: 'Status',
-      accessor: (row) => <StatusBadge status={row.status} />
-    },
-    { header: 'Joined Date', accessor: 'joinedDate' },
-    { header: 'Total Orders', accessor: 'totalOrders' },
-    {
-      header: 'Actions',
-      accessor: (row) => (
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleDeactivate(row.id)}
-          >
-            <Ban className="h-4 w-4 mr-1" />
-            {row.status === 'active' ? 'Deactivate' : 'Activate'}
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => handleDelete(row.id)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
+  
 
   return (
     <div>
