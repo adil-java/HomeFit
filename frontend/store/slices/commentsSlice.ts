@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction, createSelector } from '@reduxjs/toolkit';
 
 export interface Comment {
   id: string;
@@ -106,3 +106,10 @@ export const {
 } = commentsSlice.actions;
 
 export default commentsSlice.reducer;
+
+// Memoized selectors
+export const makeSelectCommentsByProductId = () =>
+  createSelector(
+    [(state: { comments: CommentsState }) => state.comments.comments, (_: any, productId: string) => productId],
+    (comments, productId) => comments.filter(c => c.productId === productId)
+  );

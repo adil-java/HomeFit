@@ -27,7 +27,13 @@ const CartService = {
   },
 
   async addItemToCart(userId, itemData) {
-    const { productId, quantity = 1, options = null } = itemData;
+    const { productId, quantity = 1 } = itemData;
+    const rawOptions = itemData.options || null;
+    const normalizedOptions = rawOptions && typeof rawOptions === 'object'
+      ? Object.fromEntries(
+          Object.entries(rawOptions).map(([k, v]) => [String(k).toLowerCase(), v])
+        )
+      : null;
 
     const productexist = await prisma.product.findUnique({
       where: { id: productId },
@@ -48,6 +54,8 @@ const CartService = {
       where: {
         cartId: cart.id,
         productId: productId,
+        // Only merge when options match exactly (including null)
+        options: normalizedOptions === null ? { equals: null } : { equals: normalizedOptions },
       },
     });
 
@@ -65,7 +73,7 @@ const CartService = {
           productId,
           quantity,
           price: productexist.price,
-          options,
+          options: normalizedOptions,
         },
       });
     }

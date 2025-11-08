@@ -26,7 +26,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store/store';
 import { addToCart } from '@/store/slices/cartSlice';
 import { addToWishlist, removeFromWishlist } from '@/store/slices/wishlistSlice';
-import { addComment, deleteComment } from '@/store/slices/commentsSlice';
+import { addComment, deleteComment, makeSelectCommentsByProductId } from '@/store/slices/commentsSlice';
 import { ARPreviewButton } from '@/components/ARPreviewButton';
 import Toast from 'react-native-toast-message';
 const { width } = Dimensions.get('window');
@@ -39,13 +39,12 @@ export default function ProductDetailScreen() {
     state.products.products.find(p => p.id === id)
   );
   const wishlist = useSelector((state: RootState) => state.wishlist.items);
-  const comments = useSelector((state: RootState) =>
-    state.comments.comments.filter(c => c.productId === id)
-  );
+  // Memoized comments selector to avoid returning a new array every render
+  const selectCommentsByProductId = React.useMemo(makeSelectCommentsByProductId, []);
+  const comments = useSelector((state: RootState) => selectCommentsByProductId(state as any, String(id)));
   
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [selectedColor, setSelectedColor] = useState('');
-  const [selectedSize, setSelectedSize] = useState('');
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [quantity, setQuantity] = useState(1);
   const [showCommentForm, setShowCommentForm] = useState(false);
   const [newComment, setNewComment] = useState('');
@@ -80,7 +79,7 @@ export default function ProductDetailScreen() {
       Toast.show({
         type: 'info',
         text1: 'Removed from wishlist',
-        position: 'bottom',
+        position: 'top',
       });
     } else {
       dispatch(addToWishlist({
@@ -93,22 +92,26 @@ export default function ProductDetailScreen() {
       Toast.show({
         type: 'success',
         text1: 'Added to wishlist',
-        position: 'bottom',
+        position: 'top',
       });
     }
   };
 
   const handleAddToCart = () => {
+    const opts = Object.fromEntries(
+      Object.entries(selectedOptions).map(([k, v]) => [String(k).toLowerCase(), v])
+    );
     const cartItem = {
       id: product.id,
       name: product.name,
       price: product.price,
       image: product.images?.[0] || '',
-      color: selectedColor,
-      size: selectedSize,
+      color: (opts as any).color,
+      size: (opts as any).size,
       sku: product.sku,
       quantity: 1,
-    };
+      options: opts,
+    } as any;
 
     for (let i = 0; i < quantity; i++) {
       dispatch(addToCart(cartItem));
@@ -118,7 +121,7 @@ export default function ProductDetailScreen() {
       type: 'success',
       text1: 'Added to cart',
       text2: `${quantity} ${quantity === 1 ? 'item' : 'items'} added`,
-      position: 'bottom',
+      position: 'top',
     });
   };
 
@@ -132,7 +135,7 @@ export default function ProductDetailScreen() {
         type: 'error',
         text1: 'Error',
         text2: 'Please enter a comment',
-        position: 'bottom',
+        position: 'top',
       });
       return;
     }
@@ -157,7 +160,7 @@ export default function ProductDetailScreen() {
     Toast.show({
       type: 'success',
       text1: 'Comment added',
-      position: 'bottom',
+      position: 'top',
     });
   };
 
@@ -166,7 +169,7 @@ export default function ProductDetailScreen() {
     Toast.show({
       type: 'info',
       text1: 'Comment deleted',
-      position: 'bottom',
+      position: 'top',
     });
   };
 
@@ -323,15 +326,12 @@ export default function ProductDetailScreen() {
                   fontSize: 12, 
                   color: theme.colors.textSecondary
                 }}>
-                  {variant.name === 'Color' && selectedColor ? selectedColor : ''}
-                  {variant.name === 'Size' && selectedSize ? selectedSize : ''}
+                  {selectedOptions[variant.name] || ''}
                 </Text>
               </View>
               <View style={styles.variantOptions}>
                 {variant.options.map((option: string, index: number) => {
-                  const isSelected = 
-                    (variant.name === 'Color' && selectedColor === option) ||
-                    (variant.name === 'Size' && selectedSize === option);
+                  const isSelected = selectedOptions[variant.name] === option;
                   
                   return (
                     <TouchableOpacity
@@ -352,11 +352,7 @@ export default function ProductDetailScreen() {
                         },
                       ]}
                       onPress={() => {
-                        if (variant.name === 'Color') {
-                          setSelectedColor(option);
-                        } else if (variant.name === 'Size') {
-                          setSelectedSize(option);
-                        }
+                        setSelectedOptions(prev => ({ ...prev, [variant.name]: option }));
                       }}
                     >
                       {(

@@ -1,33 +1,53 @@
-import React from 'react';
+import React, { useCallback, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   FlatList,
+  RefreshControl,
+  ActivityIndicator,
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ShoppingBag, Minus, Plus, Trash2 } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '@/store/store';
-import { updateQuantity, removeFromCart } from '@/store/slices/cartSlice';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { updateQuantity, removeFromCart, fetchCart } from '@/store/slices/cartSlice';
 import { CartItem } from '@/components/CartItem';
 import Toast from 'react-native-toast-message';
 
 export default function CartScreen() {
   const { theme } = useTheme();
-  const dispatch = useDispatch();
-  const { items, total, itemCount } = useSelector((state: RootState) => state.cart);
+  const dispatch = useAppDispatch();
+  const { items, total, itemCount, loading, error, isInitialized } = useAppSelector((state) => state.cart);
+
+  // Fetch cart on initial load if not already initialized
+  useEffect(() => {
+    if (!isInitialized) {
+      dispatch(fetchCart());
+    }
+  }, [dispatch, isInitialized]);
+
+  // Pull-to-refresh
+  const onRefresh = useCallback(() => {
+    dispatch(fetchCart());
+  }, [dispatch]);
+
+  // Handle errors
+  useEffect(() => {
+    if (error) {
+      Toast.show({ type: 'error', text1: error, position: 'bottom' });
+    }
+  }, [error]);
 
   const handleRemoveItem = (id: string) => {
     dispatch(removeFromCart(id));
     Toast.show({
       type: 'info',
       text1: 'Item removed from cart',
-      position: 'bottom',
+      position: 'top',
     });
   };
 
@@ -41,15 +61,28 @@ export default function CartScreen() {
         type: 'error',
         text1: 'Cart is empty',
         text2: 'Add some items to your cart first',
-        position: 'bottom',
+        position: 'top',
       });
       return;
     }
     router.push('/checkout');
   };
 
+  // Show loading state only on initial load
+  if (!isInitialized && loading) {
+    return (
+      <SafeAreaView style={[styles.container, { 
+        backgroundColor: theme.colors.background,
+        justifyContent: 'center',
+        alignItems: 'center',
+      }]}> 
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}> 
       {items.length === 0 ? (
         <View style={styles.emptyContainer}>
           <ShoppingBag size={64} color={theme.colors.textSecondary} />
@@ -61,7 +94,7 @@ export default function CartScreen() {
           </Text>
           <TouchableOpacity
             style={[styles.continueShoppingButton, { backgroundColor: theme.colors.primary }]}
-            onPress={() => router.push('/(tabs)/')}
+            onPress={() => router.push('/(tabs)')}
           >
             <Text style={styles.continueShoppingText}>Continue Shopping</Text>
           </TouchableOpacity>
@@ -70,7 +103,14 @@ export default function CartScreen() {
         <>
           <FlatList
             data={items}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => {
+              const optionKey = Object.keys(item.options || {})
+                .map(k => k.trim().toLowerCase())
+                .sort()
+                .map(k => `${k}:${String((item.options as any)[k]).trim().toLowerCase()}`)
+                .join('|');
+              return item.cartItemId || `${item.id}::${optionKey}`;
+            }}
             renderItem={({ item }) => (
               <CartItem
                 item={item}
@@ -80,6 +120,14 @@ export default function CartScreen() {
             )}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={loading && isInitialized}
+                onRefresh={onRefresh}
+                colors={[theme.colors.primary]}
+                tintColor={theme.colors.primary}
+              />
+            }
           />
           <View style={[styles.footer, { borderTopColor: theme.colors.border }]}>
             <View style={styles.totalContainer}>

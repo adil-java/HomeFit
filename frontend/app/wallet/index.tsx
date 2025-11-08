@@ -78,7 +78,7 @@ export default function WalletScreen() {
         type: 'error',
         text1: 'Invalid amount',
         text2: 'Please enter a valid amount',
-        position: 'bottom',
+        position: 'top',
       });
       return;
     }
@@ -88,7 +88,7 @@ export default function WalletScreen() {
         type: 'error',
         text1: 'Amount too high',
         text2: 'Maximum top-up amount is Rs. 1000',
-        position: 'bottom',
+        position: 'top',
       });
       return;
     }
@@ -103,7 +103,7 @@ export default function WalletScreen() {
         type: 'success',
         text1: 'Top-up successful!',
         text2: `Rs. ${amount.toFixed(2)} added to your wallet`,
-        position: 'bottom',
+        position: 'top',
       });
     }, 1000);
   };

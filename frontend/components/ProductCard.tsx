@@ -118,7 +118,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       Toast.show({
         type: 'info',
         text1: 'Removed from wishlist',
-        position: 'bottom',
+        position: 'top',
       });
     } else {
       dispatch(addToWishlist({
@@ -131,7 +131,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       Toast.show({
         type: 'success',
         text1: 'Added to wishlist',
-        position: 'bottom',
+        position: 'top',
       });
     }
   };
@@ -150,7 +150,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     Toast.show({
       type: 'success',
       text1: 'Added to cart',
-      position: 'bottom',
+      position: 'top',
     });
   };
 

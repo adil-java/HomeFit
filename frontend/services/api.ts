@@ -366,8 +366,86 @@ class ApiService {
 
 
   //Cart methods
-  async getCart(){
-    
+  async getCart() {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}/cart`, {
+      method: 'GET',
+      headers,
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const message = (data as any)?.message || 'Failed to fetch cart';
+      throw new Error(message);
+    }
+
+    return data;
+  }
+
+  async addToCart(productId: string, quantity: number = 1, options: any = null) {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}/cart/items`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ productId, quantity, options }),
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const message = (data as any)?.message || 'Failed to add item to cart';
+      throw new Error(message);
+    }
+
+    return data;
+  }
+
+  async updateCartItem(itemId: string, quantity: number) {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}/cart/items/${itemId}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ quantity }),
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const message = (data as any)?.message || 'Failed to update cart item';
+      throw new Error(message);
+    }
+
+    return data;
+  }
+
+  async removeCartItem(itemId: string) {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}/cart/items/${itemId}`, {
+      method: 'DELETE',
+      headers,
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const message = (data as any)?.message || 'Failed to remove cart item';
+      throw new Error(message);
+    }
+
+    return data;
+  }
+
+  async clearCart() {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}/cart`, {
+      method: 'DELETE',
+      headers,
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const message = (data as any)?.message || 'Failed to clear cart';
+      throw new Error(message);
+    }
+
+    return data;
   }
 }
 

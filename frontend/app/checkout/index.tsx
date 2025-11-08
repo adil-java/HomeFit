@@ -88,13 +88,13 @@ export default function CheckoutScreen() {
         type: 'success',
         text1: 'Coupon applied!',
         text2: `You saved Rs. ${validCoupons[couponCode.toUpperCase() as keyof typeof validCoupons]}`,
-        position: 'bottom',
+        position: 'top',
       });
     } else {
       Toast.show({
         type: 'error',
         text1: 'Invalid coupon code',
-        position: 'bottom',
+        position: 'top',
       });
     }
     setCouponCode('');
@@ -105,7 +105,7 @@ export default function CheckoutScreen() {
     Toast.show({
       type: 'info',
       text1: 'Coupon removed',
-      position: 'bottom',
+      position: 'top',
     });
   };
 
@@ -114,7 +114,7 @@ export default function CheckoutScreen() {
       Toast.show({
         type: 'error',
         text1: 'Cart is empty',
-        position: 'bottom',
+        position: 'top',
       });
       return;
     }
@@ -124,7 +124,7 @@ export default function CheckoutScreen() {
         type: 'error',
         text1: 'Insufficient wallet balance',
         text2: 'Please select another payment method',
-        position: 'bottom',
+        position: 'top',
       });
       return;
     }
@@ -191,7 +191,7 @@ export default function CheckoutScreen() {
         type: 'success',
         text1: 'Order placed successfully!',
         text2: `Order #${order.id}`,
-        position: 'bottom',
+        position: 'top',
       });
 
       router.replace(`/orders/${order.id}`);
@@ -200,7 +200,7 @@ export default function CheckoutScreen() {
         type: 'error',
         text1: 'Order failed',
         text2: error instanceof Error ? error.message : 'Please try again',
-        position: 'bottom',
+        position: 'top',
       });
     } finally {
       setIsProcessing(false);

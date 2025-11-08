@@ -47,7 +47,7 @@ export default function WishlistScreen() {
       Toast.show({
         type: 'error',
         text1: error,
-        position: 'bottom',
+        position: 'top',
       });
     }
   }, [error]);
@@ -70,7 +70,7 @@ export default function WishlistScreen() {
     Toast.show({
       type: 'success',
       text1: 'Added to cart',
-      position: 'bottom',
+      position: 'top',
     });
   };
 

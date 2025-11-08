@@ -13,7 +13,13 @@ export const getCart = asyncHandler(async (req, res) => {
 
 export const addItemToCart = asyncHandler(async (req, res) => {
   try {
-    const { productId, quantity = 1, options = null } = req.body;
+    const { productId, quantity = 1 } = req.body;
+    const rawOptions = req.body.options || null;
+    const options = rawOptions && typeof rawOptions === 'object'
+      ? Object.fromEntries(
+          Object.entries(rawOptions).map(([k, v]) => [String(k).toLowerCase(), v])
+        )
+      : null;
     
     if (!productId) {
       res.status(400);

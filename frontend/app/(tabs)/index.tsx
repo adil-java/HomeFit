@@ -18,6 +18,7 @@ import { ProductCard } from '@/components/ProductCard';
 import { CategoryCard } from '@/components/CategoryCard';
 import { useFocusEffect } from '@react-navigation/native';
 import { fetchWishlist } from '@/store/slices/wishlistSlice';
+import { fetchCart } from '@/store/slices/cartSlice';
 import { apiService } from '@/services/api';
 import { setProducts, setCategories, Category } from '@/store/slices/productsSlice';
 import { Product } from '@/types';
@@ -48,8 +49,9 @@ export default function HomeScreen() {
     } else if (user) {
       fetchProducts();
       fetchCategories();
-      // Initial wishlist fetch
-      dispatch(fetchWishlist()).catch(console.error);
+      // Initial wishlist & cart fetch (force a fresh sync on app open)
+      dispatch(fetchWishlist({ forceRefresh: true }) as any).catch(console.error);
+      dispatch(fetchCart() as any).catch(console.error);
     }
   }, [user, isLoading]);
 
@@ -57,7 +59,8 @@ export default function HomeScreen() {
   useFocusEffect(
     React.useCallback(() => {
       if (user) {
-        dispatch(fetchWishlist()).catch(console.error);
+        // Refresh lightweightly when returning to Home
+        dispatch(fetchWishlist({ forceRefresh: false }) as any).catch(console.error);
       }
     }, [user])
   );
