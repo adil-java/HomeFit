@@ -55,6 +55,8 @@ const AdminLayout = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-background w-full">
+      {/* decorative top accent */}
+      <div className="hidden lg:block absolute inset-x-0 top-0 h-40 bg-gradient-to-r from-primary/8 via-accent/6 to-transparent pointer-events-none" />
       {/* Sidebar for desktop */}
       <aside className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
         <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-sidebar px-6 pb-4">
@@ -185,7 +187,9 @@ const AdminLayout = ({ children }) => {
 
         {/* Page content */}
         <main className="py-8">
-          <div className="px-4 sm:px-6 lg:px-8">{children}</div>
+          <div className="px-4 sm:px-6 lg:px-8">
+            <div className="app-container-card p-6">{children}</div>
+          </div>
         </main>
       </div>
     </div>

@@ -86,7 +86,6 @@ export const getProductById = async (id) => {
     include: {
       categories: true,
       variants: true,
-      tags: true, 
       reviews: {
         include: {
           user: {
@@ -100,10 +99,6 @@ export const getProductById = async (id) => {
       },
     },
   });
-
-  if (product && product.tags) {
-    product.tags = product.tags.map(tag => tag.name);
-  }
 
   if (!product) {
     return {

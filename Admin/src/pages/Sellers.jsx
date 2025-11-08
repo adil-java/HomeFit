@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import PageHeader from '@/components/PageHeader';
-import DataTable from '@/components/DataTable';
 import StatusBadge from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -114,7 +113,47 @@ const Sellers = () => {
         </div>
       </div>
 
-      <DataTable data={filteredSellers} columns={columns} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredSellers.length === 0 ? (
+          <div className="col-span-full text-center text-muted-foreground">No sellers found</div>
+        ) : (
+          filteredSellers.map((s) => (
+            <div key={s.id} className="app-container-card p-4 flex flex-col justify-between">
+              <div>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h4 className="text-sm font-semibold">{s.name}</h4>
+                    <p className="text-xs text-muted-foreground">{s.email}</p>
+                    <p className="text-xs text-muted-foreground">{s.phone}</p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-semibold">Products: {s.productsCount}</div>
+                    <div className="text-xs text-muted-foreground">Joined: {s.joinedDate}</div>
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center gap-2">
+                  <StatusBadge status={s.status} />
+                  <div className="text-xs text-muted-foreground">Rating: {s.rating}</div>
+                </div>
+              </div>
+
+              <div className="mt-4 flex items-center justify-between">
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => handleSuspend(s.id)}>
+                    <Ban className="h-4 w-4 mr-1" />
+                    {s.status === 'active' ? 'Suspend' : 'Activate'}
+                  </Button>
+                </div>
+                <div>
+                  <Button variant="destructive" size="sm" onClick={() => handleDelete(s.id)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 };

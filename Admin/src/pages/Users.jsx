@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import PageHeader from '@/components/PageHeader';
-import DataTable from '@/components/DataTable';
 import StatusBadge from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -111,7 +110,47 @@ const Users = () => {
         </div>
       </div>
 
-      <DataTable data={filteredUsers} columns={columns} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredUsers.length === 0 ? (
+          <div className="col-span-full text-center text-muted-foreground">No users found</div>
+        ) : (
+          filteredUsers.map((user) => (
+            <div key={user.id} className="app-container-card p-4 flex flex-col justify-between">
+              <div>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h4 className="text-sm font-semibold">{user.name}</h4>
+                    <p className="text-xs text-muted-foreground">{user.email}</p>
+                    <p className="text-xs text-muted-foreground">{user.phone}</p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-semibold">{user.role}</div>
+                    <div className="text-xs text-muted-foreground">Joined: {user.joinedDate}</div>
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center gap-2">
+                  <StatusBadge status={user.status} />
+                  <div className="text-xs text-muted-foreground">Orders: {user.totalOrders}</div>
+                </div>
+              </div>
+
+              <div className="mt-4 flex items-center justify-between">
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => handleDeactivate(user.id)}>
+                    <Ban className="h-4 w-4 mr-1" />
+                    {user.status === 'active' ? 'Deactivate' : 'Activate'}
+                  </Button>
+                </div>
+                <div>
+                  <Button variant="destructive" size="sm" onClick={() => handleDelete(user.id)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 };

@@ -8,10 +8,10 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 210 31% 98%; /* soft off-white */
     --foreground: 222 47% 11%;
 
-    --card: 0 0% 100%;
+  --card: 210 100% 100%; /* card base (white-ish) */
     --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
@@ -58,7 +58,7 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 224 71% 4%;
+    --background: 224 71% 6%;
     --foreground: 210 40% 98%;
 
     --card: 224 71% 6%;
@@ -113,5 +113,15 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    /* subtle radial accent in the background */
+    background-image: radial-gradient( circle at 10% 10%, rgba(239,68,68,0.03), transparent 10%), radial-gradient( circle at 90% 80%, rgba(59,130,246,0.03), transparent 12% );
+  }
+
+  /* make container cards stand out */
+  .app-container-card {
+    background-color: hsl(var(--card));
+    border-radius: calc(var(--radius) + 0.25rem);
+    box-shadow: 0 6px 18px rgba(16,24,40,0.06);
+    border: 1px solid hsl(var(--border));
   }
 }

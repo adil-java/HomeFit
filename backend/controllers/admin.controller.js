@@ -230,16 +230,20 @@ export const listSellerRequests = async (req, res) => {
 export const approveSellerRequest = async (req, res) => {
   const { id } = req.params;
   try {
+    const reviewerId = req.user?.id || req.user?.uid || null;
+
     const application = await prisma.sellerApplication.update({
       where: { id },
-      data: { status: 'APPROVED', reviewedBy: req.user.id, reviewedAt: new Date() },
+      data: { status: 'APPROVED', reviewedBy: reviewerId, reviewedAt: new Date() },
       include: { user: true },
     });
 
-    await prisma.user.update({
-      where: { id: application.userId },
-      data: { role: Role.SELLER },
-    });
+    if (application?.userId) {
+      await prisma.user.update({
+        where: { id: application.userId },
+        data: { role: Role.SELLER },
+      });
+    }
 
     res.status(200).json({ success: true, data: application });
   } catch (error) {
@@ -252,9 +256,11 @@ export const approveSellerRequest = async (req, res) => {
 export const rejectSellerRequest = async (req, res) => {
   const { id } = req.params;
   try {
+    const reviewerId = req.user?.id || req.user?.uid || null;
+
     const application = await prisma.sellerApplication.update({
       where: { id },
-      data: { status: 'REJECTED', reviewedBy: req.user.id, reviewedAt: new Date() },
+      data: { status: 'REJECTED', reviewedBy: reviewerId, reviewedAt: new Date() },
     });
 
     res.status(200).json({ success: true, data: application });

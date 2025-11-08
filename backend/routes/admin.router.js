@@ -13,6 +13,7 @@ import {
   revenueMonthly,
   topProducts
 } from '../controllers/admin.controller.js';
+import { toggleProductStatus } from '../controllers/product.controller.js';
 import { adminJwtVerify } from '../middlewares/authMiddleware.js';
 // import {  checkAdmin } from '../middlewares/authMiddleware.js';
 const router = express.Router();
@@ -35,5 +36,8 @@ router.route('/seller-requests/:id/reject', adminJwtVerify).post(rejectSellerReq
 router.route('/analytics/summary', adminJwtVerify).get(analyticsSummary);
 router.route('/analytics/revenue-monthly', adminJwtVerify).get(revenueMonthly);
 router.route('/analytics/top-products', adminJwtVerify).get(topProducts);
+
+// Admin-only product status toggle (allows admin to change isActive / isFeatured)
+router.route('/products/:id/status', adminJwtVerify).patch(toggleProductStatus);
 
 export default router;

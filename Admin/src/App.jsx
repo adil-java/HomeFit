@@ -13,6 +13,7 @@ import Users from "./pages/Users";
 import Sellers from "./pages/Sellers";
 import SellerRequests from "./pages/SellerRequests";
 import Products from "./pages/Products";
+import ProductDetails from "./pages/ProductDetails";
 import Orders from "./pages/Orders";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
@@ -78,6 +79,16 @@ const App = () => (
                   <ProtectedRoute>
                     <AdminLayout>
                       <Products />
+                    </AdminLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/products/:id"
+                element={
+                  <ProtectedRoute>
+                    <AdminLayout>
+                      <ProductDetails />
                     </AdminLayout>
                   </ProtectedRoute>
                 }
