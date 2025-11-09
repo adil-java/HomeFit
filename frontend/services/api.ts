@@ -99,6 +99,30 @@ class ApiService {
     }
   }
 
+  async createProduct(formData: FormData) {
+    try {
+      const headers = await this.getAuthHeaders();
+      // Remove the Content-Type header to let the browser set it with the correct boundary
+      delete headers['Content-Type'];
+      
+      const response = await fetch(`${API_BASE_URL}/products/`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to create product');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating product:', error);
+      throw error;
+    }
+  }
+
   async getProfile() {
     try {
       const headers = await this.getAuthHeaders();
@@ -221,6 +245,28 @@ class ApiService {
   }
 
   async getCategories() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/categories`, {
+        method: 'GET',
+        headers: await this.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to fetch categories');
+      }
+
+      const data = await response.json();
+      // Return the categories array directly as the data property
+      return { data };
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      // Return an empty array in case of error to prevent UI breaking
+      return { data: [] };
+    }
+  }
+
+    async getCategoriesWithImages() {
     try {
       const response = await fetch(`${API_BASE_URL}/categories`, {
         method: 'GET',
@@ -450,6 +496,51 @@ class ApiService {
     }
 
     return data;
+  }
+
+  async getSellerProducts(sellerId: string, page: number = 1, limit: number = 10) {
+    try {
+      const headers = await this.getAuthHeaders();
+      const response = await fetch(
+        `${API_BASE_URL}/products/seller/${sellerId}?page=${page}&limit=${limit}`,
+        { headers }
+      );
+
+      const json = await response.json();
+      if (!response.ok) {
+        const message = json?.error || 'Failed to fetch products';
+        throw new Error(message);
+      }
+
+      return json;
+    } catch (error) {
+      console.error('Error fetching seller products:', error);
+      throw error;
+    }
+  }
+
+  async deleteProduct(productId: string) {
+    try {
+      const headers = await this.getAuthHeaders();
+      const response = await fetch(
+        `${API_BASE_URL}/products/${productId}`,
+        {
+          method: 'DELETE',
+          headers
+        }
+      );
+
+      const json = await response.json();
+      if (!response.ok) {
+        const message = json?.error || 'Failed to delete product';
+        throw new Error(message);
+      }
+
+      return json;
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      throw error;
+    }
   }
 }
 

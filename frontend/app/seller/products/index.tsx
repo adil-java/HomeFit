@@ -10,7 +10,9 @@ import {
   Image,
   RefreshControl,
   ActivityIndicator,
-  Alert,
+  Modal,
+  Pressable,
+  Dimensions,
 } from 'react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { router } from 'expo-router';
@@ -33,54 +35,41 @@ import {
   ChevronRight as ChevronRightIcon,
 } from 'lucide-react-native';
 
-// Mock data - replace with actual API calls
-const mockProducts = [
-  {
-    id: '040f98bf-73ce-4ee0-abff-c90ee08b3b9d',
-    name: 'Velvet Chesterfield Sofa',
-    category: 'Sofas',
-    price: 1499.99,
-    stock: 12,
-    sku: 'SOFA-VC-01',
-    status: 'published',
-    image: 'https://res.cloudinary.com/dmpinsiam/image/upload/v1760469014/ecommerce/products/zea2mvkeguferzogxjfq.jpg'
-  },
-  {
-    id: 'f676bf63-db27-4eda-9b68-ee1ee3c591ec',
-    name: 'Industrial Metal Canopy Bed',
-    category: 'Beds',
-    price: 999.99,
-    stock: 18,
-    sku: 'BED-IMC-02',
-    status: 'draft',
-    image: 'https://res.cloudinary.com/dmpinsiam/image/upload/v1760470454/ecommerce/products/khlt31mjw6ejdwmrz28t.jpg'
-  },
-  {
-    id: 'c143a48f-cfb8-4c92-80cd-441beb447fa0',
-    name: 'Modern Oak Dining Table',
-    category: 'Dining',
-    price: 899.99,
-    stock: 15,
-    sku: 'DIN-MOD-03',
-    status: 'published',
-    image: 'https://res.cloudinary.com/dmpinsiam/image/upload/v1760467967/ecommerce/products/uwutybzwqdyzbbnizsic.jpg'
-  },
-  {
-    id: '7d38a558-5d35-496e-84ea-d5216a6f9dfc',
-    name: 'Upholstered Linen Platform Bed',
-    category: 'Beds',
-    price: 749.99,
-    stock: 25,
-    sku: 'BED-ULP-04',
-    status: 'archived',
-    image: 'https://res.cloudinary.com/dmpinsiam/image/upload/v1760468327/ecommerce/products/vxhlmqpx0wlkqmg8yeyj.webp'
-  },
-];
+import { apiService } from '@/services/api';
+import { useAuth, User } from '@/contexts/AuthContext';
+
+interface Product {
+  id: string;
+  name: string;
+  categories: any[];
+  price: number;
+  quantity: number;
+  sku: string;
+  description: string;
+  images: string[];
+  averageRating: number;
+  ARModelUrl: string | null;
+  objModelUrl: string | null;
+  barcode: string;
+  comparePrice: number;
+  cost: number;
+  isActive: boolean;
+  isFeatured: boolean;
+  slug: string;
+  sellerId: string;
+  variants: any[];
+  createdAt: string;
+  updatedAt: string;
+}
 
 export default function ProductsScreen() {
   const { theme, isDark } = useTheme();
-  const [products, setProducts] = useState(mockProducts);
-  const [filteredProducts, setFilteredProducts] = useState(mockProducts);
+  const { user } = useAuth();
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -93,6 +82,53 @@ export default function ProductsScreen() {
     inStock: false,
   });
   
+  const fetchProducts = async () => {
+    if (!user?.uid) {
+      console.log('No user UID found', user);
+      return;
+    }
+    
+    try {
+      console.log('Fetching products for user:', user.uid);
+      setLoading(true);
+      const result = await apiService.getSellerProducts(user.uid);
+      console.log('API Response:', result);
+      
+      if (result && result.success && Array.isArray(result.data)) {
+        console.log(`Found ${result.data.length} products`);
+        setProducts(result.data);
+        setFilteredProducts(result.data);
+      } else {
+        console.log('No products found or invalid response format');
+        setProducts([]);
+        setFilteredProducts([]);
+      }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      console.error('Failed to fetch products:', {
+        error: errorMessage,
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      Alert.alert('Error', errorMessage);
+      setProducts([]);
+      setFilteredProducts([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, [user?.uid]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchProducts();
+    // await new Promise(resolve => setTimeout(resolve, 1000));
+    setRefreshing(false);
+  };
+
   const navigateToAddProduct = () => {
     router.push('/seller/products/new');
   };
@@ -145,77 +181,92 @@ export default function ProductsScreen() {
     setFilteredProducts(result);
   };
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setRefreshing(false);
+  const handleDelete = (id: string) => {
+    setProductToDelete(id);
+    setDeleteModalVisible(true);
   };
 
-  const handleDelete = (id: string) => {
-    Alert.alert(
-      'Delete Product',
-      'Are you sure you want to delete this product?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            // In a real app, you would make an API call here
-            setProducts(products.filter(p => p.id !== id));
-          },
-        },
-      ]
-    );
+  const confirmDelete = async () => {
+    if (!productToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      const result = await apiService.deleteProduct(productToDelete);
+      if (result.success) {
+        // Update local state to remove the deleted product
+        setProducts(products.filter(p => p.id !== productToDelete));
+        setFilteredProducts(filteredProducts.filter(p => p.id !== productToDelete));
+        // Show success message
+        setDeleteModalVisible(false);
+        // You can add a toast or other success feedback here
+      } else {
+        console.error('Delete failed:', result.error);
+      }
+    } catch (error) {
+      console.error('Delete product error:', error);
+    } finally {
+      setIsDeleting(false);
+      setProductToDelete(null);
+    }
+  };
+
+  const cancelDelete = () => {
+    setDeleteModalVisible(false);
+    setProductToDelete(null);
   };
 
   const renderProductItem = ({ item }) => (
-    <View style={[styles.productCard, { 
-      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : theme.colors.surface, 
+    <View key={item.id} style={[styles.productCard, { 
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : theme.colors.surface,
       borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : theme.colors.border 
     }]}>
       <View style={[
         styles.productImageContainer,
         { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#f5f5f5' }
       ]}>
-        <Image source={{ uri: item.image }} style={styles.productImage} />
+        {item.images && item.images.length > 0 && (
+          <Image 
+            source={{ uri: item.images[0] }} 
+            style={styles.productImage} 
+            resizeMode="cover"
+          />
+        )}
       </View>
       <View style={styles.productInfo}>
         <View>
-          <Text style={[styles.productName, { color: isDark ? '#FFFFFF' : theme.colors.text }]}>{item.name}</Text>
-          <Text style={[styles.productSku, { color: isDark ? 'rgba(255, 255, 255, 0.6)' : theme.colors.textSecondary }]}>SKU: {item.sku}</Text>
+          <Text style={[styles.productName, { color: isDark ? '#FFFFFF' : theme.colors.text }]}>
+            {item.name}
+          </Text>
+          <Text style={[styles.productSku, { color: isDark ? 'rgba(255, 255, 255, 0.6)' : theme.colors.textSecondary }]}>
+            SKU: {item.sku}
+          </Text>
+          
           <View style={styles.productMeta}>
-            <Text style={[styles.productCategory, { 
-              backgroundColor: `${theme.colors.primary}${isDark ? '25' : '10'}`,
-              color: isDark ? '#FFFFFF' : theme.colors.text 
-            }]}>
-              {item.category}
-            </Text>
-            <View style={[styles.statusBadge, { 
-              backgroundColor: item.status === 'published' ? (isDark ? '#10B98125' : '#10B98120') : 
-                              item.status === 'draft' ? (isDark ? '#F59E0B25' : '#F59E0B20') : 
-                              (isDark ? '#EF444425' : '#EF444420'),
-              borderColor: item.status === 'published' ? '#10B981' : 
-                          item.status === 'draft' ? '#F59E0B' : '#EF4444',
-            }]}>
-              <Text style={[styles.statusText, {
-                color: item.status === 'published' ? '#10B981' : 
-                       item.status === 'draft' ? '#F59E0B' : '#EF4444',
+            {item.categories && item.categories.length > 0 && (
+              <Text style={[styles.productCategory, { 
+                backgroundColor: `${theme.colors.primary}${isDark ? '25' : '10'}`,
+                color: isDark ? '#FFFFFF' : theme.colors.text 
               }]}>
-                {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                {item.categories[0].name || 'Uncategorized'}
+              </Text>
+            )}
+            
+            <View style={styles.ratingContainer}>
+              <Text style={[styles.ratingText, { color: isDark ? '#FBBF24' : '#F59E0B' }]}>
+                ★ {item.averageRating?.toFixed(1) || 'N/A'}
               </Text>
             </View>
           </View>
         </View>
+        
         <View style={styles.productFooter}>
           <Text style={[styles.productPrice, { color: theme.colors.primary }]}>
-            ${item.price.toFixed(2)}
+            Rs. {item.price.toLocaleString('en-IN')}
           </Text>
           <Text style={[styles.productStock, { 
-            color: item.stock > 10 ? '#10B981' : item.stock > 0 ? '#F59E0B' : '#EF4444' 
+            color: item.quantity > 10 ? '#10B981' : item.quantity > 0 ? '#F59E0B' : '#EF4444' 
           }]}>
-            {item.stock} in stock
+            {item.quantity} in stock
           </Text>
         </View>
       </View>
@@ -522,14 +573,116 @@ export default function ProductsScreen() {
           <ChevronRightIcon size={18} color={theme.colors.primary} />
         </TouchableOpacity>
       </View>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={deleteModalVisible}
+        onRequestClose={cancelDelete}
+      >
+        <Pressable 
+          style={styles.modalOverlay}
+          onPress={cancelDelete}
+        >
+          <Pressable style={[styles.modalContent, { 
+            backgroundColor: isDark ? theme.colors.surface : '#fff',
+            shadowColor: isDark ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.2)'
+          }]}>
+            <Text style={[styles.modalTitle, { color: isDark ? '#fff' : '#1a1a1a' }]}>
+              Delete Product
+            </Text>
+            <Text style={[styles.modalMessage, { color: isDark ? 'rgba(255, 255, 255, 0.7)' : '#666' }]}>
+              Are you sure you want to delete this product? This action cannot be undone.
+            </Text>
+            <View style={styles.modalButtons}>
+              <Pressable 
+                style={[styles.modalButton, styles.cancelButton, { borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : '#e0e0e0' }]}
+                onPress={cancelDelete}
+                disabled={isDeleting}
+              >
+                <Text style={[styles.buttonText, { color: isDark ? '#fff' : '#1a1a1a' }]}>Cancel</Text>
+              </Pressable>
+              <Pressable 
+                style={[styles.modalButton, styles.deleteButton, { opacity: isDeleting ? 0.7 : 1 }]}
+                onPress={confirmDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.deleteButtonText}>Delete</Text>
+                )}
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: 12,
+    padding: 24,
+    elevation: 5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  modalMessage: {
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+  },
+  modalButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    minWidth: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 44,
+  },
+  cancelButton: {
+    borderWidth: 1,
+  },
+  deleteButton: {
+    backgroundColor: '#ff3b30',
+  },
+  buttonText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  deleteButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
   container: {
     flex: 1,
-    paddingTop:50
+    paddingTop: 50,
   },
   loadingContainer: {
     flex: 1,
@@ -739,15 +892,29 @@ const styles = StyleSheet.create({
   productMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginTop: 6,
+    justifyContent: 'space-between',
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(251, 191, 36, 0.1)',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  ratingText: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 2,
   },
   productCategory: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '600',
+    paddingHorizontal: 8,
     paddingVertical: 2,
-    paddingHorizontal: 6,
     borderRadius: 4,
-    marginRight: 6,
+    overflow: 'hidden',
   },
   statusBadge: {
     paddingVertical: 2,

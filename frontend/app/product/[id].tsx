@@ -143,7 +143,7 @@ export default function ProductDetailScreen() {
     const comment = {
       id: Date.now().toString(),
       productId: product.id,
-      userId: 'current_user', // In a real app, this would come from authentication
+      userId: 'current_user', 
       userName: 'You',
       userAvatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=64&h=64&fit=crop&crop=face',
       rating: newCommentRating,

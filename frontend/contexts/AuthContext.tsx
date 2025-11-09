@@ -22,6 +22,7 @@ interface User {
   email: string;
   name: string;
   role: string;
+  uid: string;
 }
 
 interface AuthContextType {
@@ -78,6 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             
             const user: User = {
               id: firebaseUser.uid, // Use firebaseUser.uid as the source of truth
+              uid: userData.id,
               email: firebaseUser.email || "",
               name: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "",
               role: role
@@ -148,6 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         const user: User = {
           id: userCredential.user.uid,
+          uid: userData.id,
           email: userCredential.user.email || '',
           name: userCredential.user.displayName || (userCredential.user.email?.split('@')[0] || ''),
           role: role,
@@ -195,6 +198,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const userData = backendResponse.user || backendResponse; // Handle different response formats
         const user: User = {
           id: userCredential.user.uid,
+          uid: userData.id,
           email: userCredential.user.email || '',
           name: name || userCredential.user.displayName || (userCredential.user.email?.split('@')[0] || ''),
           role: userData.role || (userCredential.user.email?.includes('seller') ? 'seller' : 'customer'),

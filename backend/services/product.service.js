@@ -1,8 +1,54 @@
 import { PrismaClient } from '@prisma/client';
 import slugify from 'slugify';
 import { uploadToCloudinary, deleteFromCloudinary } from '../utils/cloudinary.js';
+import { v4 as uuidv4 } from 'uuid';
 
 const prisma = new PrismaClient();
+
+// Generate a unique SKU
+const generateUniqueSKU = async (name) => {
+  const prefix = name
+    .substring(0, 3)
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '');
+  
+  const random = Math.floor(1000 + Math.random() * 9000);
+  const sku = `${prefix}${random}`;
+  
+  // Check if SKU already exists
+  const existingProduct = await prisma.product.findUnique({
+    where: { sku },
+    select: { id: true }
+  });
+  
+  // If SKU exists, generate a new one
+  return existingProduct ? generateUniqueSKU(name + 'X') : sku;
+};
+
+// Generate a unique barcode (EAN-13 format)
+const generateUniqueBarcode = async () => {
+  // Generate a 12-digit number
+  const random12 = Math.floor(100000000000 + Math.random() * 900000000000);
+  
+  // Calculate check digit (EAN-13 algorithm)
+  const digits = random12.toString().split('').map(Number);
+  let sum = 0;
+  for (let i = 0; i < 12; i++) {
+    sum += digits[i] * (i % 2 === 0 ? 1 : 3);
+  }
+  const checkDigit = (10 - (sum % 10)) % 10;
+  
+  const barcode = `${random12}${checkDigit}`;
+  
+  // Check if barcode already exists
+  const existingProduct = await prisma.product.findFirst({
+    where: { barcode },
+    select: { id: true }
+  });
+  
+  // If barcode exists, generate a new one
+  return existingProduct ? generateUniqueBarcode() : barcode;
+};
 
 
 const generateSlug = (name) => {
@@ -261,10 +307,24 @@ export const createProduct = async (productData, userId, files = []) => {
     console.log('Processing categories...');
     const validCategoryIds = [];
     if (categoryIds && categoryIds.length > 0) {
-      console.log('Categories provided but skipping as they may not exist in database');
+      // Verify that the categories exist
+      const existingCategories = await prisma.category.findMany({
+        where: {
+          id: { in: categoryIds }
+        }
+      });
+      
+      validCategoryIds.push(...existingCategories.map(cat => cat.id));
+      console.log(`Found ${validCategoryIds.length} valid categories out of ${categoryIds.length} provided`);
     }
 
     console.log('Building product data object...');
+    // Generate unique SKU and barcode
+    const [generatedSKU, generatedBarcode] = await Promise.all([
+      sku || generateUniqueSKU(name),
+      barcode || generateUniqueBarcode()
+    ]);
+
     const productDataObj = {
       name,
       slug,
@@ -272,8 +332,8 @@ export const createProduct = async (productData, userId, files = []) => {
       price: parseFloat(price),
       comparePrice: comparePrice ? parseFloat(comparePrice) : null,
       cost: cost ? parseFloat(cost) : null,
-      sku,
-      barcode,
+      sku: generatedSKU,
+      barcode: generatedBarcode,
       quantity: parseInt(quantity),
       isActive,
       isFeatured,
@@ -293,13 +353,26 @@ export const createProduct = async (productData, userId, files = []) => {
     }
 
     if (variants && variants.length > 0) {
+      // Group variants by name to create variant types with options
+      const variantGroups = variants.reduce((acc, variant) => {
+        if (!acc[variant.name]) {
+          acc[variant.name] = {
+            name: variant.name,
+            options: new Set()
+          };
+        }
+        // For colors, we're now storing the color name instead of hex
+        acc[variant.name].options.add(variant.name === 'Color' ? variant.value : variant.value);
+        return acc;
+      }, {});
+
       productDataObj.variants = {
-        create: variants.map((variant) => ({
-          name: variant.name,
-          options: variant.options,
-        })),
+        create: Object.values(variantGroups).map(group => ({
+          name: group.name,
+          options: Array.from(group.options)
+        }))
       };
-      console.log('Adding variants to product');
+      console.log('Adding variants to product:', JSON.stringify(productDataObj.variants, null, 2));
     }
 
     console.log('Creating product in database...');
@@ -326,21 +399,95 @@ export const createProduct = async (productData, userId, files = []) => {
   }
 };
 
-export const deleteProductService = async (id) => {
+export const deleteProductService = async (id, sellerId) => {
   try {
-    const product = await prisma.product.delete({
+    // First, verify the product exists and belongs to the seller
+    // First get the product with just the ID to verify ownership
+    const product = await prisma.product.findUnique({
       where: { id },
+      select: {
+        id: true,
+        sellerId: true,
+        images: true  // images is a JSON field, not a relation
+      },
     });
-    return {
-      success: true,
-      data: product,
-    };
+
+    if (!product) {
+      return {
+        success: false,
+        error: 'Product not found.',
+      };
+    }
+
+    if (product.sellerId !== sellerId) {
+      return {
+        success: false,
+        error: 'Unauthorized action.',
+      };
+    }
+
+    // Delete related records in a transaction to ensure data consistency
+    await prisma.$transaction([
+      // Delete variants
+      prisma.variant.deleteMany({
+        where: { productId: id },
+      }),
+      
+      // Remove from categories (many-to-many relation)
+      prisma.product.update({
+        where: { id },
+        data: {
+          categories: {
+            set: []  // This removes all category relations
+          }
+        }
+      }),
+      
+      // Remove from wishlists
+      prisma.wishlistItem.deleteMany({
+        where: { productId: id },
+      }),
+      
+      // Remove from cart items
+      prisma.cartItem.deleteMany({
+        where: { productId: id },
+      }),
+      
+      // Delete the product
+      prisma.product.delete({
+        where: { id },
+      })
+    ]);
+
+    // Delete images from cloud storage if they exist
+    if (product.images) {
+      try {
+        const images = typeof product.images === 'string' 
+          ? JSON.parse(product.images) 
+          : Array.isArray(product.images) 
+            ? product.images 
+            : [];
+            
+        await Promise.all(
+          images.map(img => 
+            img?.public_id && deleteFromCloudinary(img.public_id).catch(e => 
+              console.error('Error deleting image from cloud:', e)
+            )
+          )
+        );
+      } catch (error) {
+        console.error('Error cleaning up product images:', error);
+        // Don't fail the entire operation if image deletion fails
+      }
+    }
+
+    return { success: true, message: 'Product and all related data deleted successfully' };
   } catch (error) {
     console.error('Error deleting product:', error);
-    console.error('Error stack:', error.stack);
     return {
       success: false,
       error: `Failed to delete product: ${error.message}`,
+      details: process.env.NODE_ENV === 'development' ? error : undefined
     };
   }
 };
@@ -641,3 +788,4 @@ export const getProductStats = async (sellerId = null) => {
     };
   }
 };
+

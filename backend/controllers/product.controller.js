@@ -211,7 +211,12 @@ export const createProduct = async (req, res) => {
     if (req.body.productData && typeof req.body.productData === 'string') {
       try {
         productData = JSON.parse(req.body.productData);
-        console.log('Parsed product data:', productData);
+        console.log('Parsed product data:', JSON.stringify(productData, null, 2));
+        
+        // Log the variants being received
+        if (productData.variants) {
+          console.log('Variants received:', JSON.stringify(productData.variants, null, 2));
+        }
       } catch (error) {
         console.error('Error parsing productData JSON:', error);
         return res.status(400).json({
@@ -365,10 +370,11 @@ export const getProductStats = async (req, res) => {
 export const deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await deleteProductService(id);
+    const sellerId = req.user.id; 
+    const result = await deleteProductService(id, sellerId);
 
     if (!result.success) {
-      return res.status(400).json(result);
+      return res.status(403).json(result);
     }
 
     res.status(200).json(result);

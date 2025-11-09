@@ -1,83 +1,118 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
-  TextInput, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
   Image,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  Switch
 } from 'react-native';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { router } from 'expo-router';
-import { 
-  ArrowLeft, 
+import {
+  ArrowLeft,
   Image as ImageIcon,
   Package,
   Tag,
   DollarSign,
   Hash,
-  List,
-  CheckSquare,
-  XCircle,
-  AlertCircle,
-  Plus
+  Plus,
+  ChevronDown,
+  Check,
+  XCircle
 } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { Platform } from 'react-native';
+import { apiService } from '@/services/api';
 
-// Mock API function - replace with actual API calls
-const saveProduct = async (productData: any, isUpdate = false) => {
-  console.log('Saving product:', productData);
-  // Simulate API call
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        success: true,
-        message: isUpdate ? 'Product updated successfully' : 'Product created successfully',
-        data: { ...productData, id: isUpdate ? productData.id : Math.random().toString() }
-      });
-    }, 1000);
+interface Category {
+  id: string;
+  name: string;
+}
+
+interface ProductFormData {
+  name: string;
+  description: string;
+  price: string;
+  comparePrice: string;
+  cost: string;
+  sku: string;
+  barcode: string;
+  quantity: string;
+  isActive: boolean;
+  isFeatured: boolean;
+  categoryIds: string[];
+  generate3D: boolean;
+  sizes: string[];
+  colors: string[];
+}
+
+const createFormData = (data: any, files: any[] = []) => {
+  const formData = new FormData();
+  formData.append('productData', JSON.stringify(data));
+
+  files.forEach((file, index) => {
+    formData.append('files', {
+      uri: file.uri,
+      name: `image_${Date.now()}_${index}.jpg`,
+      type: 'image/jpeg',
+    } as any);
   });
-};
-// No edit data fetching needed on the create screen
 
-export default function ProductForm() {
+  return formData;
+};
+
+function ProductForm() {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    price: '',
-    category: '',
-    stock: '',
-    sku: '',
-    status: 'draft',
-    image: '',
-    sizes: [] as string[],
-    colors: [] as string[],
-  });
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [images, setImages] = useState<{ uri: string; name: string; type: string }[]>([]);
+  const [showSizes, setShowSizes] = useState(false);
+  const [showColors, setShowColors] = useState(false);
 
   const sizeOptions = ['Twin', 'Full', 'Queen', 'King', 'Small', 'Medium', 'Large'];
   const colorOptions = [
-    { name: 'Black', value: '#111827' },
-    { name: 'White', value: '#F9FAFB' },
-    { name: 'Gray', value: '#6B7280' },
-    { name: 'Blue', value: '#3B82F6' },
-    { name: 'Green', value: '#10B981' },
-    { name: 'Brown', value: '#8B5E3C' },
-    { name: 'Beige', value: '#D1BFA3' },
-    { name: 'Walnut', value: '#773F1A' },
+    { name: 'Black', hex: '#111827' },
+    { name: 'White', hex: '#F9FAFB' },
+    { name: 'Gray', hex: '#6B7280' },
+    { name: 'Blue', hex: '#3B82F6' },
+    { name: 'Green', hex: '#10B981' },
+    { name: 'Brown', hex: '#8B5E3C' },
+    { name: 'Beige', hex: '#D1BFA3' },
+    { name: 'Walnut', hex: '#773F1A' },
   ];
-  const categoryOptions = ['Beds', 'Sofas', 'Dining', 'Chairs', 'Tables'];
+  
+  // Get color hex by name
+  const getColorHex = (colorName: string) => {
+    const color = colorOptions.find(c => c.name === colorName);
+    return color ? color.hex : '#FFFFFF';
+  };
 
-  const [showSizes, setShowSizes] = useState(false);
-  const [showColors, setShowColors] = useState(true);
-  const [showCategory, setShowCategory] = useState(false);
-
-  // No edit-mode effects or data loading for create screen
+  const [formData, setFormData] = useState<ProductFormData>({
+    name: '',
+    description: '',
+    price: '',
+    comparePrice: '',
+    cost: '',
+    sku: '', // Will be auto-generated in the backend
+    barcode: '', // Will be auto-generated in the backend
+    quantity: '1',
+    isActive: true,
+    isFeatured: false,
+    categoryIds: [],
+    generate3D: false,
+    sizes: [],
+    colors: [],
+  });
 
   const toggleSize = (size: string) => {
     setFormData(prev => ({
@@ -88,69 +123,210 @@ export default function ProductForm() {
     }));
   };
 
-  const toggleColor = (color: string) => {
-    setFormData(prev => ({
-      ...prev,
-      colors: prev.colors.includes(color)
-        ? prev.colors.filter(c => c !== color)
-        : [...prev.colors, color]
-    }));
+  const toggleColor = (colorName: string) => {
+    setFormData(prev => {
+      const newColors = prev.colors.includes(colorName)
+        ? prev.colors.filter(c => c !== colorName)
+        : [...prev.colors, colorName];
+      
+      console.log('Updated colors:', newColors); // Debug log
+      return {
+        ...prev,
+        colors: newColors
+      };
+    });
   };
 
-  const selectCategory = (category: string) => {
-    setFormData(prev => ({ ...prev, category }));
-    setShowCategory(false);
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await apiService.getCategories();
+        setCategories(response.data || []);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        Alert.alert('Error', 'Failed to load categories');
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      if (Platform.OS !== 'web') {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission required', 'We need camera roll permissions to upload images');
+        }
+      }
+    })();
+  }, []);
+
+  const handleSelectCategory = (category: Category) => {
+    setSelectedCategory(category);
+    setFormData(prev => ({
+      ...prev,
+      categoryIds: [category.id]
+    }));
+    setShowCategoryDropdown(false);
+  };
+
+  const handlePickImages = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsMultipleSelection: true,
+        quality: 0.5,
+        allowsEditing: false,
+      });
+
+      if (!result.canceled) {
+        const newImages = result.assets.map((asset, index) => {
+          // Ensure we're using the string URI
+          const uri = typeof asset.uri === 'string' ? asset.uri : asset.uri?.uri || '';
+          return {
+            uri,
+            name: `image_${Date.now()}_${index}.jpg`,
+            type: 'image/jpeg',
+          };
+        }).filter(img => img.uri); // Filter out any invalid URIs
+        
+        if (newImages.length > 0) {
+          setImages(prev => [...prev, ...newImages]);
+        }
+      }
+    } catch (error) {
+      console.error('Error picking images:', error);
+      Alert.alert('Error', 'Failed to pick images');
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setImages(prev => prev.filter((_, i) => i !== index));
   };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    
+
     if (!formData.name.trim()) newErrors.name = 'Product name is required';
-    if (!formData.price) newErrors.price = 'Price is required';
-    if (isNaN(Number(formData.price)) || Number(formData.price) <= 0) 
+
+    if (!formData.price) {
+      newErrors.price = 'Price is required';
+    } else if (isNaN(Number(formData.price)) || Number(formData.price) <= 0) {
       newErrors.price = 'Please enter a valid price';
-    if (!formData.category) newErrors.category = 'Category is required';
-    if (!formData.stock) newErrors.stock = 'Stock is required';
-    if (isNaN(Number(formData.stock)) || !Number.isInteger(Number(formData.stock)) || Number(formData.stock) < 0)
-      newErrors.stock = 'Please enter a valid stock number';
-    if (!formData.sku) newErrors.sku = 'SKU is required';
-    
+    }
+
+    if (formData.comparePrice && (isNaN(Number(formData.comparePrice)) || Number(formData.comparePrice) <= 0)) {
+      newErrors.comparePrice = 'Please enter a valid compare price';
+    }
+
+    if (formData.cost && (isNaN(Number(formData.cost)) || Number(formData.cost) < 0)) {
+      newErrors.cost = 'Please enter a valid cost';
+    }
+
+    if (!formData.quantity) {
+      newErrors.quantity = 'Quantity is required';
+    } else if (isNaN(Number(formData.quantity)) || !Number.isInteger(Number(formData.quantity)) || Number(formData.quantity) < 0) {
+      newErrors.quantity = 'Please enter a valid quantity';
+    }
+
+    if (images.length === 0) {
+      newErrors.images = 'At least one image is required';
+    }
+
+    if (formData.categoryIds.length === 0) {
+      newErrors.category = 'Please select a category';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async () => {
-    if (!validateForm()) return;
-    
+    if (!validateForm() || !user) return;
+
     try {
       setSaving(true);
-      const result = await saveProduct({
-        ...formData,
+
+      // Prepare variants array from sizes and colors
+      const variants = [
+        ...formData.sizes.map(size => ({
+          name: 'Size',
+          value: size
+        })),
+        ...formData.colors.map(color => ({
+          name: 'Color',
+          value: color
+        }))
+      ];
+
+      const productData = {
+        name: formData.name.trim(),
+        description: formData.description.trim(),
         price: parseFloat(formData.price),
-        stock: parseInt(formData.stock, 10),
-      }, false);
-      
-      if (result.success) {
-        Alert.alert('Success', result.message, [
-          { text: 'OK', onPress: () => router.back() }
+        comparePrice: formData.comparePrice ? parseFloat(formData.comparePrice) : undefined,
+        cost: formData.cost ? parseFloat(formData.cost) : undefined,
+        // SKU and barcode will be auto-generated in the backend
+        quantity: parseInt(formData.quantity, 10),
+        isActive: formData.isActive,
+        isFeatured: formData.isFeatured,
+        categoryIds: formData.categoryIds,
+        generate3D: formData.generate3D,
+        variants: variants,
+      };
+
+      const formDataToSend = createFormData(productData, images);
+      const response = await apiService.createProduct(formDataToSend);
+
+      if (response.success) {
+        Alert.alert('Success', 'Product created successfully!', [
+          {
+            text: 'OK',
+            onPress: () => router.replace('/seller/products')
+          },
+          {
+            text: 'Add Another',
+            onPress: () => {
+              setFormData({
+                name: '',
+                description: '',
+                price: '',
+                comparePrice: '',
+                cost: '',
+                sku: '',
+                barcode: '',
+                quantity: '1',
+                isActive: true,
+                isFeatured: false,
+                categoryIds: [],
+                generate3D: false,
+                sizes: [],
+                colors: [],
+              });
+              setSelectedCategory(null);
+              setImages([]);
+            },
+            style: 'default',
+          },
         ]);
+      } else {
+        throw new Error(response.error || 'Failed to create product');
       }
-    } catch (error) {
-      console.error('Error saving product:', error);
-      Alert.alert('Error', 'Failed to save product');
+    } catch (error: any) {
+      console.error('Error creating product:', error);
+      Alert.alert('Error', error.message || 'Failed to create product');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleChange = (field: string, value: string) => {
+  const handleChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
-    
-    // Clear error when field is edited
-    if (errors[field]) {
+
+    if (errors[field as keyof typeof errors]) {
       setErrors(prev => ({
         ...prev,
         [field]: ''
@@ -158,13 +334,17 @@ export default function ProductForm() {
     }
   };
 
-  // No loading state on create screen
+  const toggleSwitch = (field: 'isActive' | 'isFeatured' | 'generate3D') => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: !prev[field]
+    }));
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {/* Header */}
       <View style={[styles.header, { borderBottomColor: theme.colors.border }]}>
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => router.back()}
           style={styles.backButton}
         >
@@ -173,7 +353,7 @@ export default function ProductForm() {
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
           Create Product
         </Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={handleSubmit}
           disabled={saving}
           style={[styles.saveButton, { opacity: saving ? 0.6 : 1 }]}
@@ -189,328 +369,538 @@ export default function ProductForm() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Product Image */}
-        <View style={styles.imageSection}>
-          <View style={[styles.imagePlaceholder, { backgroundColor: theme.colors.surface }]}>
-            {formData.image ? (
-              <Image 
-                source={{ uri: formData.image }} 
-                style={styles.image}
-                resizeMode="cover"
-              />
-            ) : (
-              <ImageIcon size={40} color={theme.colors.text} />
-            )}
-          </View>
-          <TouchableOpacity 
-            style={[styles.uploadButton, { backgroundColor: theme.colors.primary }]}
-            onPress={() => {/* Implement image upload */}}
-          >
-            <Text style={styles.uploadButtonText}>Upload Image</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Product Details */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-            Product Information
+            Product Images *
           </Text>
-          
-          {/* Name */}
-          <View style={styles.inputGroup}>
-            <View style={styles.inputLabelContainer}>
-              <Package size={16} color={theme.colors.text} style={styles.inputIcon} />
-              <Text style={[styles.inputLabel, { color: theme.colors.text }]}>
-                Product Name
-              </Text>
-            </View>
+          <View style={styles.imageGrid}>
+            {images.map((image, index) => (
+              <View key={index} style={styles.imagePreviewContainer}>
+                <Image
+                  source={{ uri: image.uri }}
+                  style={styles.imagePreview}
+                  resizeMode="cover"
+                  onError={(e) => console.log('Failed to load image:', e.nativeEvent.error)}
+                />
+                <TouchableOpacity
+                  style={styles.removeImageButton}
+                  onPress={() => removeImage(index)}
+                >
+                  <XCircle size={20} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            ))}
+            {images.length < 10 && (
+              <TouchableOpacity
+                style={[styles.addImageButton, { borderColor: theme.colors.primary }]}
+                onPress={handlePickImages}
+                disabled={saving}
+              >
+                <Plus size={24} color={theme.colors.primary} />
+                <Text style={[styles.addImageText, { color: theme.colors.primary }]}>
+                  Add Image
+                </Text>
+                <Text style={[styles.imageLimitText, { color: theme.colors.text }]}>
+                  {images.length}/10
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          {errors.images && (
+            <Text style={[styles.errorText, { color: theme.colors.error }]}>
+              {errors.images}
+            </Text>
+          )}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+            Basic Information
+          </Text>
+
+          <View style={styles.inputContainer}>
+            <Text style={[styles.label, { color: theme.colors.text }]}>Product Name *</Text>
             <TextInput
               style={[
-                styles.input, 
-                { 
+                styles.input,
+                {
                   backgroundColor: theme.colors.surface,
                   color: theme.colors.text,
                   borderColor: errors.name ? theme.colors.error : theme.colors.border
                 }
               ]}
               placeholder="Enter product name"
-              placeholderTextColor={theme.colors.text + '80'}
+              placeholderTextColor={theme.dark ? '#666' : '#999'}
               value={formData.name}
               onChangeText={(text) => handleChange('name', text)}
+              editable={!saving}
             />
             {errors.name && (
-              <View style={styles.errorContainer}>
-                <AlertCircle size={14} color={theme.colors.error} />
-                <Text style={[styles.errorText, { color: theme.colors.error }]}>
-                  {errors.name}
-                </Text>
-              </View>
+              <Text style={[styles.errorText, { color: theme.colors.error }]}>
+                {errors.name}
+              </Text>
             )}
           </View>
 
-          {/* Description */}
-          <View style={styles.inputGroup}>
-            <View style={styles.inputLabelContainer}>
-              <List size={16} color={theme.colors.text} style={styles.inputIcon} />
-              <Text style={[styles.inputLabel, { color: theme.colors.text }]}>
-                Description
-              </Text>
-            </View>
+          <View style={styles.inputContainer}>
+            <Text style={[styles.label, { color: theme.colors.text }]}>Description</Text>
             <TextInput
               style={[
-                styles.textArea, 
-                { 
+                styles.textArea,
+                {
                   backgroundColor: theme.colors.surface,
                   color: theme.colors.text,
                   borderColor: theme.colors.border
                 }
               ]}
               placeholder="Enter product description"
-              placeholderTextColor={theme.colors.text + '80'}
+              placeholderTextColor={theme.dark ? '#666' : '#999'}
               value={formData.description}
               onChangeText={(text) => handleChange('description', text)}
               multiline
               numberOfLines={4}
+              textAlignVertical="top"
+              editable={!saving}
             />
           </View>
 
-          {/* Price */}
-          <View style={styles.inputGroup}>
-            <View style={styles.inputLabelContainer}>
-              <DollarSign size={16} color={theme.colors.text} style={styles.inputIcon} />
-              <Text style={[styles.inputLabel, { color: theme.colors.text }]}>
-                Price
-              </Text>
-            </View>
-            <TextInput
+          <View style={styles.inputContainer}>
+            <Text style={[styles.label, { color: theme.colors.text }]}>Category *</Text>
+            <TouchableOpacity
               style={[
-                styles.input, 
-                { 
+                styles.selectInput,
+                {
                   backgroundColor: theme.colors.surface,
-                  color: theme.colors.text,
-                  borderColor: errors.price ? theme.colors.error : theme.colors.border
+                  borderColor: errors.category ? theme.colors.error : theme.colors.border
                 }
               ]}
-              placeholder="0.00"
-              placeholderTextColor={theme.colors.text + '80'}
-              value={formData.price}
-              onChangeText={(text) => handleChange('price', text.replace(/[^0-9.]/g, ''))}
-              keyboardType="decimal-pad"
-            />
-            {errors.price && (
-              <View style={styles.errorContainer}>
-                <AlertCircle size={14} color={theme.colors.error} />
-                <Text style={[styles.errorText, { color: theme.colors.error }]}>
-                  {errors.price}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {/* Sizes */}
-          <View style={styles.inputGroup}>
-            <View style={styles.inputLabelContainer}>
-              <Tag size={16} color={theme.colors.text} style={styles.inputIcon} />
-              <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Sizes</Text>
-            </View>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => setShowSizes(!showSizes)}
-              style={[styles.selectContainer, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+              onPress={() => setShowCategoryDropdown(!showCategoryDropdown)}
+              disabled={saving}
             >
-              <Text style={[styles.selectInput, { color: theme.colors.text }]}>
-                {formData.sizes.length ? formData.sizes.join(', ') : 'Select sizes'}
+              <Text style={[styles.selectText, {
+                color: selectedCategory ? theme.colors.text : (theme.dark ? '#666' : '#999')
+              }]}>
+                {selectedCategory ? selectedCategory.name : 'Select a category'}
               </Text>
+              <ChevronDown size={20} color={theme.colors.text} />
             </TouchableOpacity>
-            {showSizes && (
-              <View style={[styles.dropdownPanel, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}> 
-                <View style={styles.chipsWrap}>
-                  {sizeOptions.map(sz => (
+            {showCategoryDropdown && (
+              <View style={[styles.dropdown, {
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.border,
+                shadowColor: theme.colors.text
+              }]}>
+                <ScrollView style={styles.dropdownScroll}>
+                  {categories.map((category) => (
                     <TouchableOpacity
-                      key={sz}
-                      onPress={() => toggleSize(sz)}
-                      style={[styles.chip, formData.sizes.includes(sz) && { backgroundColor: theme.colors.primary }]}
+                      key={category.id}
+                      style={[
+                        styles.dropdownItem,
+                        selectedCategory?.id === category.id && {
+                          backgroundColor: `${theme.colors.primary}20`
+                        }
+                      ]}
+                      onPress={() => handleSelectCategory(category)}
                     >
-                      <Text style={[styles.chipText, { color: formData.sizes.includes(sz) ? '#fff' : theme.colors.text }]}>{sz}</Text>
+                      <Text style={[styles.dropdownItemText, { color: theme.colors.text }]}>
+                        {category.name}
+                      </Text>
+                      {selectedCategory?.id === category.id && (
+                        <Check size={16} color={theme.colors.primary} />
+                      )}
                     </TouchableOpacity>
                   ))}
-                </View>
-              </View>
-            )}
-          </View>
-          
-
-          {/* Colors */}
-          <View style={styles.inputGroup}>
-            <View style={styles.inputLabelContainer}>
-              <Tag size={16} color={theme.colors.text} style={styles.inputIcon} />
-              <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Colors</Text>
-            </View>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => setShowColors(!showColors)}
-              style={[styles.selectContainer, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                {formData.colors.length ? (
-                  <>
-                    {formData.colors.slice(0, 3).map(c => (
-                      <View key={c} style={[styles.colorDot, { backgroundColor: c }]} />
-                    ))}
-                    {formData.colors.length > 3 && (
-                      <Text style={{ color: theme.colors.text }}>+{formData.colors.length - 3}</Text>
-                    )}
-                  </>
-                ) : null}
-                <Text style={[styles.selectInput, { color: theme.colors.text }]}> 
-                  {formData.colors.length ? 'Selected colors' : 'Select colors'}
-                </Text>
-              </View>
-            </TouchableOpacity>
-            {showColors && (
-              <View style={[styles.dropdownPanel, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}> 
-                <View style={styles.colorsWrap}>
-                  {colorOptions.map(c => (
-                    <TouchableOpacity key={c.value} style={[styles.colorItem, formData.colors.includes(c.value) && { borderColor: theme.colors.primary }]} onPress={() => toggleColor(c.value)}>
-                      <View style={[styles.colorSwatch, { backgroundColor: c.value, borderColor: formData.colors.includes(c.value) ? theme.colors.primary : 'rgba(0,0,0,0.1)' }]} />
-                      <Text style={[styles.colorName, { color: theme.colors.text }]}>{c.name}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-            )}
-          </View>
-
-
-          {/* Category */}
-          <View style={styles.inputGroup}>
-            <View style={styles.inputLabelContainer}>
-              <Tag size={16} color={theme.colors.text} style={styles.inputIcon} />
-              <Text style={[styles.inputLabel, { color: theme.colors.text }]}>
-                Category
-              </Text>
-            </View>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => setShowCategory(!showCategory)}
-              style={[styles.selectContainer, { backgroundColor: theme.colors.surface, borderColor: errors.category ? theme.colors.error : theme.colors.border }]}
-            >
-              <Text style={[styles.selectInput, { color: theme.colors.text }]}>
-                {formData.category ? formData.category : 'Select category'}
-              </Text>
-            </TouchableOpacity>
-            {showCategory && (
-              <View style={[styles.dropdownPanel, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}> 
-                {categoryOptions.map(opt => (
-                  <TouchableOpacity key={opt} style={styles.optionItem} onPress={() => selectCategory(opt)}>
-                    <Text style={[styles.optionText, { color: theme.colors.text }]}>{opt}</Text>
-                  </TouchableOpacity>
-                ))}
+                </ScrollView>
               </View>
             )}
             {errors.category && (
-              <View style={styles.errorContainer}>
-                <AlertCircle size={14} color={theme.colors.error} />
-                <Text style={[styles.errorText, { color: theme.colors.error }]}> 
-                  {errors.category}
-                </Text>
-              </View>
+              <Text style={[styles.errorText, { color: theme.colors.error }]}>
+                {errors.category}
+              </Text>
             )}
           </View>
+        </View>
 
-          {/* Stock */}
-          <View style={styles.inputGroup}>
-            <View style={styles.inputLabelContainer}>
-              <Hash size={16} color={theme.colors.text} style={styles.inputIcon} />
-              <Text style={[styles.inputLabel, { color: theme.colors.text }]}>
-                Stock Quantity
-              </Text>
-            </View>
-            <TextInput
-              style={[
-                styles.input, 
-                { 
-                  backgroundColor: theme.colors.surface,
-                  color: theme.colors.text,
-                  borderColor: errors.stock ? theme.colors.error : theme.colors.border
-                }
-              ]}
-              placeholder="0"
-              placeholderTextColor={theme.colors.text + '80'}
-              value={formData.stock}
-              onChangeText={(text) => handleChange('stock', text.replace(/\D/g, ''))}
-              keyboardType="numeric"
-            />
-            {errors.stock && (
-              <View style={styles.errorContainer}>
-                <AlertCircle size={14} color={theme.colors.error} />
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+            Pricing
+          </Text>
+
+          <View style={styles.row}>
+            <View style={[styles.inputContainer, { flex: 1, marginRight: 12 }]}>
+              <Text style={[styles.label, { color: theme.colors.text }]}>Price (Rs.) *</Text>
+              <View style={[styles.inputWithIcon, {
+                backgroundColor: theme.colors.surface,
+                borderColor: errors.price ? theme.colors.error : theme.colors.border
+              }]}>
+                <DollarSign size={18} color={theme.colors.text} style={styles.iconMargin} />
+                <TextInput
+                  style={[styles.inputInside, { color: theme.colors.text }]}
+                  placeholder="0.00"
+                  placeholderTextColor={theme.dark ? '#666' : '#999'}
+                  value={formData.price}
+                  onChangeText={(text) => handleChange('price', text.replace(/[^0-9.]/g, ''))}
+                  keyboardType="decimal-pad"
+                  editable={!saving}
+                />
+              </View>
+              {errors.price && (
                 <Text style={[styles.errorText, { color: theme.colors.error }]}>
-                  {errors.stock}
+                  {errors.price}
                 </Text>
+              )}
+            </View>
+
+            <View style={[styles.inputContainer, { flex: 1 }]}>
+              <Text style={[styles.label, { color: theme.colors.text }]}>Compare at Price (Rs.)</Text>
+              <View style={[styles.inputWithIcon, {
+                backgroundColor: theme.colors.surface,
+                borderColor: errors.comparePrice ? theme.colors.error : theme.colors.border
+              }]}>
+                <DollarSign size={18} color={theme.colors.text} style={styles.iconMargin} />
+                <TextInput
+                  style={[styles.inputInside, { color: theme.colors.text }]}
+                  placeholder="0.00"
+                  placeholderTextColor={theme.dark ? '#666' : '#999'}
+                  value={formData.comparePrice}
+                  onChangeText={(text) => handleChange('comparePrice', text.replace(/[^0-9.]/g, ''))}
+                  keyboardType="decimal-pad"
+                  editable={!saving}
+                />
               </View>
-            )}
+              {errors.comparePrice && (
+                <Text style={[styles.errorText, { color: theme.colors.error }]}>
+                  {errors.comparePrice}
+                </Text>
+              )}
+            </View>
           </View>
 
-          {/* SKU */}
-          <View style={styles.inputGroup}>
-            <View style={styles.inputLabelContainer}>
-              <Tag size={16} color={theme.colors.text} style={styles.inputIcon} />
-              <Text style={[styles.inputLabel, { color: theme.colors.text }]}>
-                SKU (Stock Keeping Unit)
-              </Text>
+          <View style={styles.row}>
+            <View style={[styles.inputContainer, { flex: 1, marginRight: 12 }]}>
+              <Text style={[styles.label, { color: theme.colors.text }]}>Cost per item (Rs.)</Text>
+              <View style={[styles.inputWithIcon, {
+                backgroundColor: theme.colors.surface,
+                borderColor: errors.cost ? theme.colors.error : theme.colors.border
+              }]}>
+                <DollarSign size={18} color={theme.colors.text} style={styles.iconMargin} />
+                <TextInput
+                  style={[styles.inputInside, { color: theme.colors.text }]}
+                  placeholder="0.00"
+                  placeholderTextColor={theme.dark ? '#666' : '#999'}
+                  value={formData.cost}
+                  onChangeText={(text) => handleChange('cost', text.replace(/[^0-9.]/g, ''))}
+                  keyboardType="decimal-pad"
+                  editable={!saving}
+                />
+              </View>
+              {errors.cost && (
+                <Text style={[styles.errorText, { color: theme.colors.error }]}>
+                  {errors.cost}
+                </Text>
+              )}
             </View>
-            <TextInput
-              style={[
-                styles.input, 
-                { 
-                  backgroundColor: theme.colors.surface,
-                  color: theme.colors.text,
-                  borderColor: errors.sku ? theme.colors.error : theme.colors.border
-                }
-              ]}
-              placeholder="SKU-12345"
-              placeholderTextColor={theme.colors.text + '80'}
-              value={formData.sku}
-              onChangeText={(text) => handleChange('sku', text)}
-            />
-            {errors.sku && (
-              <View style={styles.errorContainer}>
-                <AlertCircle size={14} color={theme.colors.error} />
+
+            <View style={[styles.inputContainer, { flex: 1 }]}>
+              <Text style={[styles.label, { color: theme.colors.text }]}>Quantity *</Text>
+              <View style={[styles.inputWithIcon, {
+                backgroundColor: theme.colors.surface,
+                borderColor: errors.quantity ? theme.colors.error : theme.colors.border
+              }]}>
+                <Package size={18} color={theme.colors.text} style={styles.iconMargin} />
+                <TextInput
+                  style={[styles.inputInside, { color: theme.colors.text }]}
+                  placeholder="0"
+                  placeholderTextColor={theme.dark ? '#666' : '#999'}
+                  value={formData.quantity}
+                  onChangeText={(text) => handleChange('quantity', text.replace(/[^0-9]/g, ''))}
+                  keyboardType="number-pad"
+                  editable={!saving}
+                />
+              </View>
+              {errors.quantity && (
+                <Text style={[styles.errorText, { color: theme.colors.error }]}>
+                  {errors.quantity}
+                </Text>
+              )}
+            </View>
+          </View>
+        </View>
+
+        {/* <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+            Inventory
+          </Text>
+
+          <View style={styles.row}>
+            <View style={[styles.inputContainer, { flex: 1, marginRight: 12 }]}>
+              <Text style={[styles.label, { color: theme.colors.text }]}>SKU *</Text>
+              <View style={[styles.inputWithIcon, {
+                backgroundColor: theme.colors.surface,
+                borderColor: errors.sku ? theme.colors.error : theme.colors.border
+              }]}>
+                <Hash size={18} color={theme.colors.text} style={styles.iconMargin} />
+                <TextInput
+                  style={[styles.inputInside, { color: theme.colors.text }]}
+                  placeholder="SKU-001"
+                  placeholderTextColor={theme.dark ? '#666' : '#999'}
+                  value={formData.sku}
+                  onChangeText={(text) => handleChange('sku', text)}
+                  editable={!saving}
+                />
+              </View>
+              {errors.sku && (
                 <Text style={[styles.errorText, { color: theme.colors.error }]}>
                   {errors.sku}
                 </Text>
+              )}
+            </View>
+
+            <View style={[styles.inputContainer, { flex: 1 }]}>
+              <Text style={[styles.label, { color: theme.colors.text }]}>Barcode</Text>
+              <View style={[styles.inputWithIcon, {
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.border
+              }]}>
+                <Hash size={18} color={theme.colors.text} style={styles.iconMargin} />
+                <TextInput
+                  style={[styles.inputInside, { color: theme.colors.text }]}
+                  placeholder="123456789012"
+                  placeholderTextColor={theme.dark ? '#666' : '#999'}
+                  value={formData.barcode}
+                  onChangeText={(text) => handleChange('barcode', text)}
+                  editable={!saving}
+                />
+              </View>
+            </View>
+          </View>
+        </View> */}
+
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+            Variants
+          </Text>
+
+          <View style={styles.inputContainer}>
+            <Text style={[styles.label, { color: theme.colors.text }]}>Sizes</Text>
+            <TouchableOpacity
+              style={[styles.selectInput, {
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.border
+              }]}
+              onPress={() => setShowSizes(!showSizes)}
+              disabled={saving}
+            >
+              <Text style={[styles.selectText, {
+                color: formData.sizes.length ? theme.colors.text : (theme.dark ? '#666' : '#999')
+              }]}>
+                {formData.sizes.length ? formData.sizes.join(', ') : 'Select sizes'}
+              </Text>
+              <ChevronDown size={20} color={theme.colors.text} />
+            </TouchableOpacity>
+            {showSizes && (
+              <View style={[styles.dropdown, {
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.border
+              }]}>
+                <View style={styles.chipsContainer}>
+                  {sizeOptions.map(size => (
+                    <TouchableOpacity
+                      key={size}
+                      style={[
+                        styles.chip,
+                        { borderColor: theme.colors.border },
+                        formData.sizes.includes(size) && {
+                          backgroundColor: theme.colors.primary,
+                          borderColor: theme.colors.primary
+                        }
+                      ]}
+                      onPress={() => toggleSize(size)}
+                    >
+                      <Text style={[
+                        styles.chipText,
+                        { color: theme.colors.text },
+                        formData.sizes.includes(size) && { color: '#fff' }
+                      ]}>
+                        {size}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
               </View>
             )}
           </View>
 
-          {/* Status */}
-          <View style={styles.inputGroup}>
-            <View style={styles.inputLabelContainer}>
-              <CheckSquare size={16} color={theme.colors.text} style={styles.inputIcon} />
-              <Text style={[styles.inputLabel, { color: theme.colors.text }]}>
-                Status
-              </Text>
-            </View>
-            <View style={[
-              styles.selectContainer, 
-              { 
+          <View style={styles.inputContainer}>
+            <Text style={[styles.label, { color: theme.colors.text }]}>Colors</Text>
+            <TouchableOpacity
+              style={[styles.selectInput, {
                 backgroundColor: theme.colors.surface,
                 borderColor: theme.colors.border
-              }
-            ]}>
-              <TextInput
-                style={[styles.selectInput, { color: theme.colors.text }]}
-                value={formData.status}
-                onChangeText={(text) => handleChange('status', text)}
-                placeholder="Select status"
-                placeholderTextColor={theme.colors.text + '80'}
-              />
-              {/* In a real app, you'd have a dropdown/picker here */}
+              }]}
+              onPress={() => setShowColors(!showColors)}
+              disabled={saving}
+            >
+              <View style={[styles.colorPreview, { flex: 1 }]}>
+                {formData.colors.length > 0 ? (
+                  <View style={{ 
+                    flex: 1, 
+                    flexDirection: 'row', 
+                    alignItems: 'center', 
+                    gap: 6, 
+                    flexWrap: 'wrap',
+                    maxHeight: 60,
+                    overflow: 'hidden'
+                  }}>
+                    {formData.colors.slice(0, 2).map((colorName, index) => {
+                      const color = colorOptions.find(c => c.name === colorName);
+                      if (!color) return null;
+                      
+                      return (
+                        <View key={index} style={[styles.selectedColorChip, { borderColor: theme.colors.border }]}>
+                          <View style={[styles.colorDot, { backgroundColor: color.hex }]} />
+                          <Text 
+                            style={[{
+                              fontSize: 14,
+                              marginLeft: 6,
+                              color: theme.colors.text
+                            }]}
+                            numberOfLines={1}
+                          >
+                            {color.name}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                    {formData.colors.length > 2 && (
+                      <View style={[styles.moreColorsBadge, { backgroundColor: theme.colors.primary }]}>
+                        <Text style={{ color: 'white', fontSize: 12, fontWeight: '600' }}>
++{formData.colors.length - 2}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                ) : (
+                  <Text style={[styles.selectText, {
+                    color: theme.dark ? '#666' : '#999'
+                  }]}>
+                    Select colors
+                  </Text>
+                )}
+              </View>
+              <ChevronDown size={20} color={theme.colors.text} />
+            </TouchableOpacity>
+            {showColors && (
+              <View style={[styles.dropdown, {
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.border,
+                shadowColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+              }]}>
+                <View style={styles.colorsContainer}>
+                  {colorOptions.map((color, index) => {
+                    const isSelected = formData.colors.includes(color.name);
+                    return (
+                      <TouchableOpacity
+                        key={index}
+                        style={[
+                          styles.colorOption,
+                          isSelected && styles.selectedColor,
+                          { borderColor: theme.colors.border }
+                        ]}
+                        onPress={() => toggleColor(color.name)}
+                        activeOpacity={0.8}
+                      >
+                        <View style={[
+                          styles.colorSwatch,
+                          { backgroundColor: color.hex }
+                        ]} />
+                        <Text style={styles.colorName}>
+                          {color.name}
+                        </Text>
+                        {isSelected && (
+                          <View style={styles.colorCheck}>
+                            <Check size={10} color="white" />
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+            Product Status
+          </Text>
+
+          <View style={[styles.settingRow, {
+            backgroundColor: theme.colors.surface,
+            borderColor: theme.colors.border
+          }]}>
+            <View style={styles.settingInfo}>
+              <Text style={[styles.settingTitle, { color: theme.colors.text }]}>
+                Active
+              </Text>
+              <Text style={[styles.settingDescription, { color: theme.colors.text }]}>
+                When active, this product will be visible to customers.
+              </Text>
             </View>
+            <Switch
+              value={formData.isActive}
+              onValueChange={() => toggleSwitch('isActive')}
+              disabled={saving}
+              trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
+              thumbColor={theme.colors.background}
+            />
+          </View>
+
+          <View style={[styles.settingRow, {
+            backgroundColor: theme.colors.surface,
+            borderColor: theme.colors.border
+          }]}>
+            <View style={styles.settingInfo}>
+              <Text style={[styles.settingTitle, { color: theme.colors.text }]}>
+                Featured
+              </Text>
+              <Text style={[styles.settingDescription, { color: theme.colors.text }]}>
+                Featured products will be shown on the homepage.
+              </Text>
+            </View>
+            <Switch
+              value={formData.isFeatured}
+              onValueChange={() => toggleSwitch('isFeatured')}
+              disabled={saving}
+              trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
+              thumbColor={theme.colors.background}
+            />
+          </View>
+
+          <View style={[styles.settingRow, {
+            backgroundColor: theme.colors.surface,
+            borderColor: theme.colors.border
+          }]}>
+            <View style={styles.settingInfo}>
+              <Text style={[styles.settingTitle, { color: theme.colors.text }]}>
+                Generate 3D Model
+              </Text>
+              <Text style={[styles.settingDescription, { color: theme.colors.text }]}>
+                Enable to generate a 3D model from the first uploaded image.
+              </Text>
+            </View>
+            <Switch
+              value={formData.generate3D}
+              onValueChange={() => toggleSwitch('generate3D')}
+              disabled={saving}
+              trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
+              thumbColor={theme.colors.background}
+            />
           </View>
         </View>
       </ScrollView>
@@ -518,27 +908,26 @@ export default function ProductForm() {
   );
 }
 
+export default ProductForm;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  center: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    padding: 14,
     borderBottomWidth: 1,
-    paddingTop: 50,
+    marginTop:44,
+    marginBottom:4,
   },
   backButton: {
     padding: 8,
     marginRight: 16,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     flex: 1,
   },
@@ -551,7 +940,8 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     marginLeft: 8,
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: '600',
   },
   scrollView: {
     flex: 1,
@@ -559,163 +949,284 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 32,
   },
-  imageSection: {
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
-  },
-  imagePlaceholder: {
-    width: 150,
-    height: 150,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-    overflow: 'hidden',
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  uploadButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-  },
-  uploadButtonText: {
-    color: 'white',
-    fontWeight: '500',
-  },
   section: {
     padding: 16,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     marginBottom: 16,
   },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  inputLabelContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  inputIcon: {
-    marginRight: 8,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-  },
-  textArea: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    minHeight: 100,
-    textAlignVertical: 'top',
-  },
-  selectContainer: {
-    borderWidth: 1,
-    borderRadius: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingRight: 12,
-  },
-  selectInput: {
-    flex: 1,
-    padding: 12,
-    fontSize: 16,
-  },
-  dropdownPanel: {
-    marginTop: 8,
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-  },
-  optionItem: {
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-  },
-  optionText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  chipsWrap: {
+  imageGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginHorizontal: -4,
   },
-  chip: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'transparent',
+  imagePreviewContainer: {
+    width: '31.33%',
+    aspectRatio: 1,
+    padding: 4,
+    position: 'relative',
+  },
+  imagePreview: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
+    backgroundColor: '#f5f5f5',
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addImageButton: {
+    width: '31.33%',
+    aspectRatio: 1,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
     margin: 4,
   },
-  chipText: {
-    fontSize: 12,
-    fontWeight: '600',
+  addImageText: {
+    marginTop: 8,
+    fontSize: 13,
+    fontWeight: '500',
+    textAlign: 'center',
   },
-  colorsWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginHorizontal: -6,
+  imageLimitText: {
+    fontSize: 11,
+    marginTop: 4,
+    opacity: 0.6,
   },
-  colorItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    margin: 6,
-    borderWidth: 1,
-    borderColor: 'transparent',
+  inputContainer: {
+    marginBottom: 16,
   },
-  colorSwatch: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.1)',
-  },
-  colorName: {
-    fontSize: 12,
+  label: {
+    fontSize: 14,
+    marginBottom: 8,
     fontWeight: '500',
   },
-  colorDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    marginLeft: 12,
+  input: {
+    height: 48,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    fontSize: 16,
+  },
+  inputWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    height: 48,
+  },
+  iconMargin: {
+    marginRight: 8,
+    opacity: 0.7,
+  },
+  inputInside: {
+    flex: 1,
+    fontSize: 16,
+    height: '100%',
+  },
+  textArea: {
+    minHeight: 100,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    textAlignVertical: 'top',
+  },
+  selectInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 48,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  selectText: {
+    fontSize: 16,
+  },
+  dropdown: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    marginTop: 8,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    maxHeight: 280,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    zIndex: 1000,
+  },
+  dropdownScroll: {
+    maxHeight: 200,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderRadius: 6,
+  },
+  dropdownItemText: {
+    fontSize: 16,
+    flex: 1,
+  },
+  row: {
+    flexDirection: 'row',
+  },
+  chipsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  chipText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  colorPreview: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: 32,
+    flexWrap: 'wrap',
+    marginRight: 8,
+    overflow: 'hidden',
+  },
+  selectedColorChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    borderWidth: 1,
     marginRight: 6,
+    marginBottom: 4,
+    backgroundColor: 'rgba(0,0,0,0.03)',
+    maxWidth: '30%',
+  },
+  moreColorsBadge: {
+    minWidth: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    marginLeft: 'auto',
+  },
+  colorDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.1)',
   },
-  errorContainer: {
+  colorsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    padding: 4,
+  },
+  colorOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
+    padding: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
+    gap: 8,
+    minWidth: 100,
+    backgroundColor: 'white',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  colorSwatch: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.5,
+    elevation: 2,
+  },
+  colorName: {
+    fontSize: 14,
+    fontWeight: '500',
+    flex: 1,
+    color: '#333',
+    marginLeft: 4,
+  },
+  selectedColor: {
+    borderColor: '#3B82F6',
+    backgroundColor: '#EFF6FF',
+    borderWidth: 2,
+  },
+  colorCheck: {
+    position: 'absolute',
+    right: 8,
+    top: 8,
+    backgroundColor: '#3B82F6',
+    borderRadius: 10,
+    width: 16,
+    height: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  settingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  settingInfo: {
+    flex: 1,
+    marginRight: 16,
+  },
+  settingTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  settingDescription: {
+    fontSize: 14,
+    opacity: 0.7,
   },
   errorText: {
     fontSize: 12,
-    marginLeft: 4,
+    marginTop: 4,
   },
 });

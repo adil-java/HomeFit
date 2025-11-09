@@ -68,7 +68,7 @@ export default function HomeScreen() {
   const fetchCategories = async () => {
     try {
       setIsLoadingCategories(true);
-      const categories = await apiService.getCategories();
+      const categories = await apiService.getCategoriesWithImages();
       // Update Redux state with full category objects
       dispatch(setCategories(categories));
     } catch (err) {
@@ -297,7 +297,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 1,
   },
   productsContent: {
-    paddingHorizontal: 1,
+    paddingHorizontal: 5,
+    paddingVertical: 5,
+    gap: 6,
+    flexDirection: 'row',
   },
   endPadding: {
     width: 20,

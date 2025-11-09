@@ -290,6 +290,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
+    width: 180, // Fixed width for consistency
     borderRadius: 16,
     borderWidth: 1,
     marginRight: 12,
@@ -323,6 +324,9 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  
+  
+  
   discountBadge: {
     position: 'absolute',
     top: 8,
