@@ -154,12 +154,12 @@ export default function ProfileScreen() {
             onPress={() => router.push('/profile/addresses')}
           />
           
-          <ProfileOption
+          {/* <ProfileOption
             icon={CreditCard}
             title="Payment Methods"
             subtitle="Cards and payment options"
             onPress={() => router.push('/profile/payment-methods')}
-          />
+          /> */}
           
           {/* <ProfileOption
             icon={Wallet}
