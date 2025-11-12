@@ -25,6 +25,13 @@ model User {
   reviews           Review[]
   sellerApplication SellerApplication?
   wishlist          Wishlist?
+  
+  // Stripe Connect fields
+  stripeConnectId        String?  @unique
+  stripeOnboarded        Boolean  @default(false)
+  stripeDetailsSubmitted Boolean  @default(false)
+  sellerOrders           Order[]         @relation("SellerOrders")
+  payouts                SellerPayout[]  @relation("SellerPayouts")
 }
 
 model Address {
@@ -60,10 +67,11 @@ model Product {
   isFeatured    Boolean        @default(false)
   images        Json
   ARModelUrl    String?
-  objModelUrl   String?        // 3D model URL for AR/3D preview
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   sellerId      String?
+  objModelUrl   String?
+  averageRating Float?         @default(0) @db.Float
   cartItems     CartItem[]
   orderItems    OrderItem[]
   seller        User?          @relation("SellerProducts", fields: [sellerId], references: [id])
@@ -71,7 +79,6 @@ model Product {
   variants      Variant[]
   wishlistItems WishlistItem[]
   categories    Category[]     @relation("ProductCategories")
-  averageRating Float?         @default(0) // Average rating of the product
 
   @@index([sellerId], map: "Product_sellerId_fkey")
 }
@@ -172,8 +179,93 @@ model Order {
   items           OrderItem[]
   notes           OrderNote[]
   statusHistory   OrderStatusHistory[]
+  
+  // Stripe payment fields
+  stripePaymentIntent String?       @unique
+  platformFee        Float?
+  sellerAmount       Float?
+  sellerId           String?
+  seller             User?          @relation("SellerOrders", fields: [sellerId], references: [id])
+  feeCalculatedAt    DateTime?      // When fee was calculated
+  paymentConfirmedAt DateTime?      // When payment was confirmed
+  
+  transactions       Transaction[]  // Payment transaction log
+  refunds            Refund[]       // Refund history
+  payoutOrders       PayoutOrder[]  @relation("OrderPayouts") // Payouts this order is included in
 
   @@index([userId], map: "Order_userId_fkey")
+  @@index([sellerId], map: "Order_sellerId_fkey")
+}
+
+model Transaction {
+  id                 String   @id @default(uuid())
+  orderId            String
+  type               TransactionType // CHARGE, TRANSFER, FEE, REFUND
+  amount             Float
+  currency           String   @default("usd")
+  stripeTransferId   String?  @unique // For seller transfers
+  stripeFeeId        String?  // For platform fee tracking
+  status             TransactionStatus @default(PENDING)
+  description        String?
+  metadata           Json?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  order              Order    @relation(fields: [orderId], references: [id])
+
+  @@index([orderId], map: "Transaction_orderId_fkey")
+  @@index([stripeTransferId], map: "Transaction_stripeTransferId_fkey")
+}
+
+model SellerPayout {
+  id                 String   @id @default(uuid())
+  sellerId           String
+  amount             Float
+  currency           String   @default("usd")
+  status             PayoutStatus @default(PENDING)
+  stripePayout       String?       @unique // Stripe payout ID
+  scheduledDate      DateTime      // When payout is scheduled
+  processedDate      DateTime?     // When actually paid
+  failureReason      String?       // If failed
+  payoutOrders       PayoutOrder[] @relation("SellerPayouts")
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime @updatedAt
+  seller             User     @relation("SellerPayouts", fields: [sellerId], references: [id])
+
+  @@index([sellerId], map: "SellerPayout_sellerId_fkey")
+  @@index([stripePayout], map: "SellerPayout_stripePayout_fkey")
+}
+
+model PayoutOrder {
+  id          String        @id @default(uuid())
+  payoutId    String
+  orderId     String
+  amount      Float         // Amount included in this payout
+  createdAt   DateTime      @default(now())
+  payout      SellerPayout  @relation("SellerPayouts", fields: [payoutId], references: [id])
+  order       Order         @relation("OrderPayouts", fields: [orderId], references: [id])
+
+  @@unique([payoutId, orderId])
+  @@index([payoutId], map: "PayoutOrder_payoutId_fkey")
+  @@index([orderId], map: "PayoutOrder_orderId_fkey")
+}
+
+model Refund {
+  id                String   @id @default(uuid())
+  orderId           String
+  amount            Float
+  reason            RefundReason
+  status            RefundStatus @default(PENDING)
+  stripeRefundId    String?  @unique
+  sellerReversalId  String?  // If seller amount was reversed
+  notes             String?
+  requestedAt       DateTime
+  processedAt       DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  order             Order    @relation(fields: [orderId], references: [id])
+
+  @@index([orderId], map: "Refund_orderId_fkey")
+  @@index([stripeRefundId], map: "Refund_stripeRefundId_fkey")
 }
 
 model OrderItem {
@@ -281,4 +373,45 @@ enum ApplicationStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum TransactionType {
+  CHARGE        // Customer charged
+  TRANSFER      // Amount transferred to seller
+  FEE           // Platform fee deducted
+  REFUND        // Refund processed
+  REVERSAL      // Seller amount reversed
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum PayoutStatus {
+  PENDING
+  SCHEDULED
+  IN_TRANSIT
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum RefundReason {
+  CUSTOMER_REQUEST
+  PRODUCT_DEFECTIVE
+  NOT_AS_DESCRIBED
+  DUPLICATE
+  FRAUD
+  OTHER
+}
+
+enum RefundStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+  PARTIALLY_COMPLETED
 }

@@ -85,6 +85,13 @@ export default function SellerLayout() {
             title: 'Settings',
           }}
         />
+        <Stack.Screen
+          name="onboarding"
+          options={{
+            headerShown: false,
+            title: 'Payment Setup',
+          }}
+        />
       </SellerDrawer>
     </View>
   );

@@ -1,4 +1,5 @@
 import { auth } from '../firebaseConfig';
+import { Platform } from 'react-native';
 
 const API_BASE_URL =
   (process.env.EXPO_PUBLIC_API_BASE_URL as string) || 'http://192.168.0.112:8080/api';
@@ -525,7 +526,7 @@ class ApiService {
       const response = await fetch(
         `${API_BASE_URL}/products/${productId}`,
         {
-          method: 'DELETE',
+        method: 'DELETE',
           headers
         }
       );
@@ -539,6 +540,130 @@ class ApiService {
       return json;
     } catch (error) {
       console.error('Error deleting product:', error);
+      throw error;
+    }
+  }
+
+  async startSellerOnboarding(businessName: string, email: string) {
+    try {
+      const headers = await this.getAuthHeaders();
+      const response = await fetch(`${API_BASE_URL}/Stripe/connect/onboard`, {
+        method: 'POST',
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          businessName, 
+          email,
+          isMobile: Platform.OS !== 'web' 
+        }),
+      });
+
+      const responseData = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(
+          responseData.error || 
+          responseData.message || 
+          'Failed to start onboarding. Please try again.'
+        );
+      }
+
+      if (!responseData.data?.onboardingUrl && !responseData.data?.isOnboarded) {
+        throw new Error('No onboarding URL received from server');
+      }
+
+      return responseData.data;
+    } catch (error) {
+      console.error('Start seller onboarding error:', error);
+      throw error;
+    }
+  }
+
+  async getSellerStatus(sellerId: string) {
+    try {
+      const headers = await this.getAuthHeaders();
+      const response = await fetch(`${API_BASE_URL}/Stripe/connect/status/${sellerId}`, {
+        method: 'GET',
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const responseData = await response.json().catch(() => ({}));
+      
+      // Handle 401 Unauthorized - user is not a seller yet
+      if (response.status === 401) {
+        return {
+          isOnboarded: false,
+          chargesEnabled: false,
+          detailsSubmitted: false,
+          requirements: ['Complete seller registration']
+        };
+      }
+      
+      if (!response.ok) {
+        throw new Error(
+          responseData.message || 
+          responseData.error || 
+          'Failed to fetch seller status. Please try again.'
+        );
+      }
+
+      if (!responseData.success) {
+        throw new Error(responseData.error || 'Invalid response from server');
+      }
+
+      return {
+        isOnboarded: true,
+        chargesEnabled: responseData.data?.chargesEnabled || false,
+        detailsSubmitted: responseData.data?.detailsSubmitted || false,
+        requirements: responseData.data?.requirements || [],
+        ...responseData.data
+      };
+    } catch (error) {
+      console.error('Get seller status error:', error);
+      throw error;
+    }
+  }
+
+  async getSellerBalance() {
+    try {
+      const headers = await this.getAuthHeaders();
+      const response = await fetch(`${API_BASE_URL}/Stripe/balance`, {
+        headers,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch seller balance');
+      }
+
+      return response.json();
+    } catch (error) {
+      console.error('Get seller balance error:', error);
+      throw error;
+    }
+  }
+
+  async createPaymentIntentnew(orderId: string, amount: number, sellerId: string) {
+    try {
+      const headers = await this.getAuthHeaders();
+      const response = await fetch(`${API_BASE_URL}/Stripe/payment-intent`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ orderId, totalAmount: amount, sellerId }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to create payment intent');
+      }
+
+      return response.json();
+    } catch (error) {
+      console.error('Create payment intent error:', error);
       throw error;
     }
   }

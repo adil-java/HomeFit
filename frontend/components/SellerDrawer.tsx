@@ -17,7 +17,9 @@ import {
   BarChart2,
   UserCheck,
   Settings,
-  Store
+  Store,
+  CreditCard,
+  ShieldCheck
 } from 'lucide-react-native';
 import { Text } from 'react-native-paper';
 
@@ -49,6 +51,12 @@ const DrawerContent = (props: any) => {
       label: 'Orders', 
       icon: ShoppingCart, 
       path: '/seller/orders',
+      roles: ['seller']
+    },
+    { 
+      label: 'Payment Setup', 
+      icon: CreditCard, 
+      path: '/seller/onboarding',
       roles: ['seller']
     },
     { 

@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Home, Search, ShoppingCart, Heart, User, LayoutDashboard, Bell } from 'lucide-react-native';
-import { BarChart2, Package, ShoppingBag, Users, BarChart, PackagePlus, Tag, LayoutTemplate, Settings, Shield, LogOut } from 'lucide-react-native';
+import { BarChart2, Package, ShoppingBag, Users, BarChart, PackagePlus, Tag, LayoutTemplate, Settings, Shield, LogOut, CreditCard } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
@@ -125,6 +125,25 @@ export default function TabLayout() {
                     </Text>
                     <Text style={[styles.menuSubtext, { color: theme.colors.textSecondary }]}>
                       Process & track orders
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Payment Setup */}
+                <TouchableOpacity 
+                  style={styles.menuItem}
+                  onPress={() => {
+                    router.push('/seller/onboarding');
+                    setShowSellerMenu(false);
+                  }}
+                >
+                  <CreditCard size={20} color={theme.colors.primary} style={styles.menuIcon} />
+                  <View style={styles.menuTextContainer}>
+                    <Text style={[styles.menuText, { color: theme.colors.text }]}>
+                      Payment Setup
+                    </Text>
+                    <Text style={[styles.menuSubtext, { color: theme.colors.textSecondary }]}>
+                      Connect your payment account
                     </Text>
                   </View>
                 </TouchableOpacity>
