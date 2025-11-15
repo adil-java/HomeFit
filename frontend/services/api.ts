@@ -867,5 +867,88 @@ class ApiService {
       throw error;
     }
   }
+
+  // Seller Dashboard API methods
+  async getSellerDashboardStats() {
+    try {
+      const headers = await this.getAuthHeaders();
+      const response = await fetch(`${API_BASE_URL}/sellerDashboard/stats`, {
+        headers,
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to fetch dashboard stats');
+      }
+      
+      const responseData = await response.json();
+      return responseData.data || responseData;
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+      throw error;
+    }
+  }
+
+  async getRevenueByCategory() {
+    try {
+      const headers = await this.getAuthHeaders();
+      const response = await fetch(`${API_BASE_URL}/sellerDashboard/revenue-by-category`, {
+        headers,
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to fetch revenue by category');
+      }
+      
+      const responseData = await response.json();
+      return responseData.data || responseData;
+    } catch (error) {
+      console.error('Error fetching revenue by category:', error);
+      throw error;
+    }
+  }
+
+  async getMonthlyRevenue() {
+    try {
+      const headers = await this.getAuthHeaders();
+      const response = await fetch(`${API_BASE_URL}/sellerDashboard/monthly-revenue`, {
+        headers,
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to fetch monthly revenue');
+      }
+      
+      const responseData = await response.json();
+      return responseData.data || responseData;
+    } catch (error) {
+      console.error('Error fetching monthly revenue:', error);
+      throw error;
+    }
+  }
+
+  async getTopProducts() {
+    try {
+      const headers = await this.getAuthHeaders();
+      const response = await fetch(`${API_BASE_URL}/sellerDashboard/top-products`, {
+        headers,
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to fetch top products');
+      }
+      
+      const responseData = await response.json();
+      return responseData.data || responseData;
+    } catch (error) {
+      console.error('Error fetching top products:', error);
+      throw error;
+    }
+  }
+
 }
+
 export const apiService = new ApiService();
