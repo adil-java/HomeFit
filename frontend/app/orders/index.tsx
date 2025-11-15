@@ -1,66 +1,157 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   FlatList,
   Image,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, Package, Truck, CircleCheck as CheckCircle, Clock, Circle as XCircle, Filter } from 'lucide-react-native';
+import { 
+  ArrowLeft, 
+  Package, 
+  Truck, 
+  CircleCheck as CheckCircle, 
+  Clock, 
+  Circle as XCircle, 
+  Filter,
+  AlertCircle
+} from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
+import { apiService } from '@/services/api';
+import { format } from 'date-fns';
 
 const statusConfig = {
-  pending: { icon: Clock, color: '#f59e0b', label: 'Pending' },
-  processing: { icon: Package, color: '#3b82f6', label: 'Processing' },
-  shipped: { icon: Truck, color: '#8b5cf6', label: 'Shipped' },
-  delivered: { icon: CheckCircle, color: '#10b981', label: 'Delivered' },
-  cancelled: { icon: XCircle, color: '#ef4444', label: 'Cancelled' },
+  PENDING: { icon: Clock, color: '#f59e0b', label: 'Pending' },
+  PROCESSING: { icon: Package, color: '#3b82f6', label: 'Processing' },
+  SHIPPED: { icon: Truck, color: '#8b5cf6', label: 'Shipped' },
+  DELIVERED: { icon: CheckCircle, color: '#10b981', label: 'Delivered' },
+  CANCELLED: { icon: XCircle, color: '#ef4444', label: 'Cancelled' },
+  REFUNDED: { icon: AlertCircle, color: '#8b5cf6', label: 'Refunded' },
 };
 
 const filterOptions = [
   { key: 'All', label: 'All' },
-  { key: 'Pending', label: 'Pending' },
-  { key: 'Processing', label: 'Processing' },
-  { key: 'Shipped', label: 'Shipped' },
-  { key: 'Delivered', label: 'Delivered' },
-  { key: 'Cancelled', label: 'Cancelled' },
+  { key: 'PENDING', label: 'Pending' },
+  { key: 'PROCESSING', label: 'Processing' },
+  { key: 'SHIPPED', label: 'Shipped' },
+  { key: 'DELIVERED', label: 'Delivered' },
+  { key: 'CANCELLED', label: 'Cancelled' },
+  { key: 'REFUNDED', label: 'Refunded' },
 ];
+
+const ITEMS_PER_PAGE = 10;
 
 export default function OrdersScreen() {
   const { theme } = useTheme();
-  const { orders } = useSelector((state: RootState) => state.orders);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter] = useState('All');
+  const [pagination, setPagination] = useState({
+    page: 1,
+    total: 0,
+    limit: ITEMS_PER_PAGE,
+    totalPages: 1,
+  });
 
-  const filteredOrders = orders.filter(order => 
-    selectedFilter === 'All' || order.status === selectedFilter.toLowerCase()
+  const fetchOrders = useCallback(async (page: number = 1, isRefreshing = false) => {
+    try {
+      setLoading(true);
+      if (!isRefreshing) {
+        setRefreshing(true);
+      }
+      
+      const status = selectedFilter === 'All' ? undefined : selectedFilter;
+      const response = await apiService.getUserOrders({
+        status,
+        page,
+        limit: ITEMS_PER_PAGE,
+      });
+
+      setPagination({
+        page: response.page || 1,
+        total: response.total || 0,
+        limit: response.limit || ITEMS_PER_PAGE,
+        totalPages: response.totalPages || 1,
+      });
+
+      setOrders(prev => (page === 1 ? response.data : [...prev, ...response.data]));
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching orders:', err);
+      setError('Failed to load orders. Please try again.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [selectedFilter]);
+
+  useEffect(() => {
+    fetchOrders(1);
+  }, [fetchOrders]);
+
+  const handleRefresh = () => {
+    fetchOrders(1, true);
+  };
+
+  const handleLoadMore = () => {
+    if (!loading && pagination.page < pagination.totalPages) {
+      fetchOrders(pagination.page + 1);
+    }
+  };
+
+  const renderFooter = () => {
+    if (!loading) return null;
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="small" color={theme.colors.primary} />
+      </View>
+    );
+  };
+
+  const renderEmpty = () => (
+    <View style={styles.emptyContainer}>
+      <Package size={48} color={theme.colors.text} />
+      <Text style={[styles.emptyText, { color: theme.colors.text }]}>
+        {error || 'No orders found'}
+      </Text>
+      {error && (
+        <TouchableOpacity 
+          style={[styles.retryButton, { backgroundColor: theme.colors.primary }]}
+          onPress={handleRefresh}
+        >
+          <Text style={styles.retryText}>Retry</Text>
+        </TouchableOpacity>
+      )}
+    </View>
   );
 
   const OrderCard = ({ order }: { order: any }) => {
-    const StatusIcon = statusConfig[order.status as keyof typeof statusConfig].icon;
-    const statusColor = statusConfig[order.status as keyof typeof statusConfig].color;
-    const statusLabel = statusConfig[order.status as keyof typeof statusConfig].label;
+    const statusKey = order.status as keyof typeof statusConfig;
+    const statusInfo = statusConfig[statusKey] || { icon: Package, color: '#6b7280', label: order.status };
+    const StatusIcon = statusInfo.icon;
+    const statusColor = statusInfo.color;
+    const statusLabel = statusInfo.label;
+    
+    const firstItem = order.items?.[0];
+    const itemCount = order.items?.length || 0;
 
     return (
       <TouchableOpacity
+        style={[styles.orderCard, { backgroundColor: theme.colors.card }]}
         onPress={() => router.push(`/orders/${order.id}`)}
-        style={[styles.orderCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
       >
         <View style={styles.orderHeader}>
-          <View>
-            <Text style={[styles.orderId, { color: theme.colors.text }]}>
-              Order #{order.id}
-            </Text>
-            <Text style={[styles.orderDate, { color: theme.colors.textSecondary }]}>
-              {new Date(order.createdAt).toLocaleDateString()}
-            </Text>
-          </View>
-          <View style={[styles.statusBadge, { backgroundColor: statusColor + '20' }]}>
+          <Text style={[styles.orderId, { color: theme.colors.text }]}>
+            Order #{order.orderNumber}
+          </Text>
+          <View style={[styles.statusBadge, { backgroundColor: `${statusColor}20` }]}>
             <StatusIcon size={14} color={statusColor} />
             <Text style={[styles.statusText, { color: statusColor }]}>
               {statusLabel}
@@ -68,31 +159,40 @@ export default function OrdersScreen() {
           </View>
         </View>
 
-        <View style={styles.orderItems}>
-          {order.items.slice(0, 2).map((item: any, index: number) => (
-            <View key={index} style={styles.orderItem}>
-              <Image source={{ uri: item.image }} style={styles.itemImage} />
-              <View style={styles.itemInfo}>
-                <Text style={[styles.itemName, { color: theme.colors.text }]} numberOfLines={1}>
-                  {item.name}
-                </Text>
-                <Text style={[styles.itemDetails, { color: theme.colors.textSecondary }]}>
-                  Qty: {item.quantity} • ${item.price}
-                </Text>
-              </View>
-            </View>
-          ))}
-          {order.items.length > 2 && (
-            <Text style={[styles.moreItems, { color: theme.colors.textSecondary }]}>
-              +{order.items.length - 2} more items
-            </Text>
+        <View style={styles.orderItem}>
+          {firstItem?.product?.images?.[0] ? (
+            <Image
+              source={{ uri: firstItem.product.images[0] }}
+              style={styles.productImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={[styles.productImage, { backgroundColor: theme.colors.border }]} />
           )}
+          <View style={styles.orderItemDetails}>
+            <Text style={[styles.productName, { color: theme.colors.text }]} numberOfLines={1}>
+              {firstItem?.productName || 'Product'}
+            </Text>
+            <Text style={[styles.productPrice, { color: theme.colors.text }]}>
+              ${firstItem?.price?.toFixed(2) || '0.00'} × {firstItem?.quantity || 1}
+            </Text>
+            {itemCount > 1 && (
+              <Text style={[styles.additionalItems, { color: theme.colors.text }]}>
+                +{itemCount - 1} more item{itemCount > 2 ? 's' : ''}
+              </Text>
+            )}
+          </View>
         </View>
 
         <View style={styles.orderFooter}>
-          <Text style={[styles.orderTotal, { color: theme.colors.text }]}>
-            Total: ${order.total.toFixed(2)}
-          </Text>
+          <View>
+            <Text style={[styles.orderDate, { color: theme.colors.text }]}>
+              {format(new Date(order.createdAt), 'MMM d, yyyy')}
+            </Text>
+            <Text style={[styles.orderTotal, { color: theme.colors.text }]}>
+              Total: ${order.total.toFixed(2)}
+            </Text>
+          </View>
           <Text style={[styles.viewDetails, { color: theme.colors.primary }]}>
             View Details
           </Text>
@@ -100,6 +200,16 @@ export default function OrdersScreen() {
       </TouchableOpacity>
     );
   };
+
+  if (loading && !refreshing && orders.length === 0) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -109,31 +219,31 @@ export default function OrdersScreen() {
           <ArrowLeft size={24} color={theme.colors.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>My Orders</Text>
-        <TouchableOpacity>
-          <Filter size={24} color={theme.colors.text} />
-        </TouchableOpacity>
+        <View style={{ width: 24 }} />
       </View>
 
       {/* Filter Tabs */}
       <View style={styles.filterContainer}>
-        <ScrollView 
-          horizontal 
+        <FlatList
+          data={filterOptions}
+          horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filterContent}
-        >
-          {filterOptions.map((filter) => (
+          keyExtractor={(item) => item.key}
+          renderItem={({ item }) => (
             <TouchableOpacity
-              key={filter.key}
-              onPress={() => setSelectedFilter(filter.key)}
+              onPress={() => {
+                if (selectedFilter !== item.key) {
+                  setSelectedFilter(item.key);
+                  setOrders([]);
+                  setPagination(prev => ({ ...prev, page: 1 }));
+                }
+              }}
               style={[
                 styles.filterTab,
                 {
-                  backgroundColor: selectedFilter === filter.key 
-                    ? theme.colors.primary 
-                    : 'transparent',
-                  borderColor: selectedFilter === filter.key 
-                    ? theme.colors.primary 
-                    : theme.colors.border,
+                  backgroundColor: selectedFilter === item.key ? theme.colors.primary : 'transparent',
+                  borderColor: selectedFilter === item.key ? theme.colors.primary : theme.colors.border,
                 },
               ]}
               activeOpacity={0.7}
@@ -142,56 +252,37 @@ export default function OrdersScreen() {
                 style={[
                   styles.filterText,
                   {
-                    color: selectedFilter === filter.key 
-                      ? '#fff' 
-                      : theme.colors.text,
-                    fontWeight: selectedFilter === filter.key ? '600' : '400',
+                    color: selectedFilter === item.key ? '#fff' : theme.colors.text,
                   },
                 ]}
               >
-                {filter.label}
+                {item.label}
               </Text>
             </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
-      {/* Results Count */}
-      <View style={styles.resultsContainer}>
-        <Text style={[styles.resultsText, { color: theme.colors.textSecondary }]}>
-          {filteredOrders.length} orders found
-        </Text>
+          )}
+        />
       </View>
 
       {/* Orders List */}
-      {filteredOrders.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Package size={80} color={theme.colors.textSecondary} />
-          <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>
-            No orders found
-          </Text>
-          <Text style={[styles.emptySubtitle, { color: theme.colors.textSecondary }]}>
-            {selectedFilter === 'All' 
-              ? 'You haven\'t placed any orders yet'
-              : `No ${selectedFilter.toLowerCase()} orders found`
-            }
-          </Text>
-          <TouchableOpacity
-            style={[styles.shopButton, { backgroundColor: theme.colors.primary }]}
-            onPress={() => router.push('/search')}
-          >
-            <Text style={styles.shopButtonText}>Start Shopping</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <FlatList
-          data={filteredOrders}
-          renderItem={({ item }) => <OrderCard order={item} />}
-          keyExtractor={(item) => item.id}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.ordersList}
-        />
-      )}
+      <FlatList
+        data={orders}
+        keyExtractor={(item, index) => `${item.id}-${index}`}
+        renderItem={({ item }) => <OrderCard order={item} />}
+        contentContainerStyle={styles.ordersList}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[theme.colors.primary]}
+            tintColor={theme.colors.primary}
+          />
+        }
+        ListEmptyComponent={renderEmpty}
+        ListFooterComponent={renderFooter}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
+      />
     </SafeAreaView>
   );
 }
@@ -199,6 +290,32 @@ export default function OrdersScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyText: {
+    marginTop: 16,
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  retryText: {
+    color: '#fff',
+    fontWeight: '600',
   },
   header: {
     flexDirection: 'row',
@@ -230,40 +347,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  resultsContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 8,
-  },
-  resultsText: {
-    fontSize: 14,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 40,
-  },
-  emptyTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginTop: 20,
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 32,
-  },
-  shopButton: {
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 12,
-  },
-  shopButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
-  },
   ordersList: {
     paddingHorizontal: 20,
     paddingBottom: 20,
@@ -285,9 +368,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 2,
   },
-  orderDate: {
-    fontSize: 14,
-  },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -300,32 +380,29 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
   },
-  orderItems: {
-    marginBottom: 12,
-  },
   orderItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
   },
-  itemImage: {
+  productImage: {
     width: 40,
     height: 40,
     borderRadius: 8,
     marginRight: 12,
   },
-  itemInfo: {
+  orderItemDetails: {
     flex: 1,
   },
-  itemName: {
+  productName: {
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 2,
   },
-  itemDetails: {
+  productPrice: {
     fontSize: 12,
   },
-  moreItems: {
+  additionalItems: {
     fontSize: 12,
     fontStyle: 'italic',
     marginLeft: 52,
@@ -334,9 +411,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#e5e5e5',
+    marginTop: 12,
     paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  orderDate: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginBottom: 4,
   },
   orderTotal: {
     fontSize: 16,

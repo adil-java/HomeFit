@@ -1,29 +1,31 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Image,
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  ScrollView, 
+  TouchableOpacity, 
+  Image, 
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
-  ArrowLeft, 
+  Clock, 
   Package, 
   Truck, 
   CheckCircle, 
-  Clock,
-  XCircle,
-  MapPin,
-  CreditCard,
+  XCircle, 
+  MapPin, 
+  CreditCard, 
+  MessageCircle, 
+  ArrowLeft,
   Phone,
-  MessageCircle
 } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
+import { apiService } from '@/services/api';
 
 const statusConfig = {
   pending: { icon: Clock, color: '#f59e0b', label: 'Order Pending' },
@@ -33,14 +35,106 @@ const statusConfig = {
   cancelled: { icon: XCircle, color: '#ef4444', label: 'Cancelled' },
 };
 
-export default function OrderDetailScreen() {
-  const { id } = useLocalSearchParams();
-  const { theme } = useTheme();
-  const order = useSelector((state: RootState) => 
-    state.orders.orders.find(o => o.id === id)
-  );
+interface OrderItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  productId: string;
+  options?: {
+    imageUrl?: string;
+    [key: string]: any;
+  };
+}
 
-  if (!order) {
+interface OrderStatusHistory {
+  status: string;
+  timestamp: string;
+  message?: string;
+}
+
+export interface Order {
+  id: string;
+  orderNumber: string;
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  total: number;
+  currency: string;
+  items: OrderItem[];
+  shippingAddress: {
+    name: string;
+    street: string;
+    city: string;
+    postalCode: string;
+    country: string;
+    phone: string;
+    email: string;
+  };
+  paymentMethod: string;
+  createdAt: string;
+  statusHistory?: OrderStatusHistory[];
+  shippingFee?: number;
+}
+
+export default function OrderDetailScreen() {
+  const params = useLocalSearchParams();
+  const { theme } = useTheme();
+  const [order, setOrder] = React.useState<Order | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+
+  // Log the params to see what we're getting
+  React.useEffect(() => {
+    console.log('Route params:', params);
+  }, [params]);
+
+  // Ensure id is always a string and handle array case
+  const orderId = React.useMemo(() => {
+    if (!params?.id) return null;
+    return Array.isArray(params.id) ? params.id[0] : params.id;
+  }, [params?.id]);
+
+  const fetchOrderDetails = async () => {
+    if (!orderId) {
+      console.error('No order ID available for fetching');
+      setError('Order ID is missing');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      console.log('Fetching order with ID:', orderId);
+      setLoading(true);
+      setError(null);
+      
+      const orderData = await apiService.getOrderDetails(orderId);
+      console.log('Order data received:', orderData);
+      
+      if (!orderData) {
+        throw new Error('No order data received');
+      }
+      
+      setOrder(orderData);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load order';
+      console.error('Failed to fetch order:', err);
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    if (orderId) {
+      console.log('Order ID changed, fetching details...');
+      fetchOrderDetails();
+    } else {
+      console.error('No order ID provided in route params');
+      setError('Order ID is missing');
+      setLoading(false);
+    }
+  }, [orderId]);
+
+  if (loading || !order) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <View style={styles.header}>
@@ -50,15 +144,44 @@ export default function OrderDetailScreen() {
           <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Order Details</Text>
         </View>
         <View style={styles.centeredContainer}>
-          <Text style={[styles.errorText, { color: theme.colors.text }]}>Order not found</Text>
+          {loading ? (
+            <>
+              <ActivityIndicator size="large" color={theme.colors.primary} />
+              <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>
+                Loading order details...
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={[styles.errorText, { color: theme.colors.text }]}>
+                {error || 'Failed to load order details'}
+              </Text>
+              <TouchableOpacity 
+                style={[styles.retryButton, { backgroundColor: theme.colors.primary }]}
+                onPress={fetchOrderDetails}
+              >
+                <Text style={styles.retryButtonText}>Retry</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </SafeAreaView>
     );
   }
 
-  const StatusIcon = statusConfig[order.status as keyof typeof statusConfig].icon;
-  const statusColor = statusConfig[order.status as keyof typeof statusConfig].color;
-  const statusLabel = statusConfig[order.status as keyof typeof statusConfig].label;
+  const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0);
+  const statusInfo = statusConfig[order.status as keyof typeof statusConfig] || statusConfig.pending;
+  const StatusIcon = statusInfo.icon;
+  const statusColor = statusInfo.color;
+  const statusLabel = statusInfo.label;
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -80,16 +203,19 @@ export default function OrderDetailScreen() {
                 {statusLabel}
               </Text>
               <Text style={[styles.orderId, { color: theme.colors.text }]}>
-                Order #{order.id}
+                Order #{order.orderNumber || order.id?.substring(0, 8).toUpperCase()}
               </Text>
               <Text style={[styles.orderDate, { color: theme.colors.textSecondary }]}>
-                Placed on {new Date(order.createdAt).toLocaleDateString()}
+                Placed on {formatDate(order.createdAt)}
               </Text>
             </View>
           </View>
           
           {order.status === 'shipped' && (
-            <TouchableOpacity style={[styles.trackButton, { backgroundColor: theme.colors.primary }]}>
+            <TouchableOpacity 
+              style={[styles.trackButton, { backgroundColor: theme.colors.primary }]}
+              onPress={() => router.push('/track-order')}
+            >
               <Truck size={16} color="#fff" />
               <Text style={styles.trackButtonText}>Track Package</Text>
             </TouchableOpacity>
@@ -99,24 +225,27 @@ export default function OrderDetailScreen() {
         {/* Order Items */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-            Items ({order.items.length})
+            Items ({totalItems})
           </Text>
           
           {order.items.map((item, index) => (
             <View
-              key={index}
+              key={item.id || index}
               style={[styles.itemCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
             >
-              <Image source={{ uri: item.image }} style={styles.itemImage} />
+              <Image 
+                source={{ uri: item.options?.imageUrl || 'https://via.placeholder.com/60' }} 
+                style={styles.itemImage} 
+              />
               <View style={styles.itemInfo}>
                 <Text style={[styles.itemName, { color: theme.colors.text }]} numberOfLines={2}>
                   {item.name}
                 </Text>
                 <Text style={[styles.itemPrice, { color: theme.colors.text }]}>
-                  ${item.price} × {item.quantity}
+                  {order.currency} {item.price.toFixed(2)} × {item.quantity}
                 </Text>
                 <Text style={[styles.itemTotal, { color: theme.colors.textSecondary }]}>
-                  Total: ${(item.price * item.quantity).toFixed(2)}
+                  Total: {order.currency} {(item.price * item.quantity).toFixed(2)}
                 </Text>
               </View>
             </View>
@@ -136,13 +265,16 @@ export default function OrderDetailScreen() {
                 {order.shippingAddress.name}
               </Text>
               <Text style={[styles.addressText, { color: theme.colors.textSecondary }]}>
-                {order.shippingAddress.address}
+                {order.shippingAddress.street}
               </Text>
               <Text style={[styles.addressText, { color: theme.colors.textSecondary }]}>
-                {order.shippingAddress.city}, {order.shippingAddress.zipCode}
+                {order.shippingAddress.city}, {order.shippingAddress.postalCode}
               </Text>
               <Text style={[styles.addressText, { color: theme.colors.textSecondary }]}>
                 {order.shippingAddress.country}
+              </Text>
+              <Text style={[styles.addressPhone, { color: theme.colors.primary }]}>
+                {order.shippingAddress.phone}
               </Text>
             </View>
           </View>
@@ -176,10 +308,10 @@ export default function OrderDetailScreen() {
           <View style={[styles.summaryCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
             <View style={styles.summaryRow}>
               <Text style={[styles.summaryLabel, { color: theme.colors.textSecondary }]}>
-                Subtotal
+                Subtotal ({totalItems} items)
               </Text>
               <Text style={[styles.summaryValue, { color: theme.colors.text }]}>
-                ${order.total.toFixed(2)}
+                {order.currency} {order.total.toFixed(2)}
               </Text>
             </View>
             
@@ -188,7 +320,7 @@ export default function OrderDetailScreen() {
                 Shipping
               </Text>
               <Text style={[styles.summaryValue, { color: theme.colors.text }]}>
-                Free
+                {order.shippingFee ? `${order.currency} ${order.shippingFee.toFixed(2)}` : 'Free'}
               </Text>
             </View>
             
@@ -197,7 +329,7 @@ export default function OrderDetailScreen() {
                 Total
               </Text>
               <Text style={[styles.totalValue, { color: theme.colors.text }]}>
-                ${order.total.toFixed(2)}
+                {order.currency} {(order.total + (order.shippingFee || 0)).toFixed(2)}
               </Text>
             </View>
           </View>
@@ -210,14 +342,20 @@ export default function OrderDetailScreen() {
           </Text>
           
           <View style={styles.supportActions}>
-            <TouchableOpacity style={[styles.supportButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+            <TouchableOpacity 
+              style={[styles.supportButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+              onPress={() => router.push('/support')}
+            >
               <Phone size={20} color={theme.colors.primary} />
               <Text style={[styles.supportButtonText, { color: theme.colors.text }]}>
                 Call Support
               </Text>
             </TouchableOpacity>
             
-            <TouchableOpacity style={[styles.supportButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+            <TouchableOpacity 
+              style={[styles.supportButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+              onPress={() => router.push('/support')}
+            >
               <MessageCircle size={20} color={theme.colors.primary} />
               <Text style={[styles.supportButtonText, { color: theme.colors.text }]}>
                 Live Chat
@@ -249,10 +387,26 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
   },
   errorText: {
     fontSize: 16,
     fontWeight: '500',
+    marginBottom: 16,
+  },
+  retryButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   statusSection: {
     margin: 20,
@@ -352,6 +506,11 @@ const styles = StyleSheet.create({
   addressText: {
     fontSize: 14,
     marginBottom: 2,
+  },
+  addressPhone: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginTop: 4,
   },
   paymentCard: {
     flexDirection: 'row',

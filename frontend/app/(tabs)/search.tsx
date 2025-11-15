@@ -241,9 +241,18 @@ export default function SearchScreen() {
             
             <FlatList
               data={filteredProducts}
-              renderItem={({ item }) => <ProductCard product={item} showAddToCart />}
+              renderItem={({ item }) => (
+                <View style={styles.productCardWrapper}>
+                  <ProductCard 
+                    product={item} 
+                    showAddToCart 
+                    style={styles.productCard}
+                  />
+                </View>
+              )}
               keyExtractor={(item) => item.id}
-              numColumns={1}
+              numColumns={2}
+              columnWrapperStyle={styles.columnWrapper}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.productsContainer}
             />
@@ -366,6 +375,19 @@ const styles = StyleSheet.create({
   },
   productsContainer: {
     paddingBottom: 20,
-    paddingHorizontal: 0,
+    paddingHorizontal: 2,
+    marginLeft: -4,
+  },
+  productCardWrapper: {
+    width: '50%',
+    padding: 2,
+  },
+  productCard: {
+    margin: 0,
+    width: '100%',
+  },
+  columnWrapper: {
+    justifyContent: 'space-between',
+    gap: 4,
   },
 });

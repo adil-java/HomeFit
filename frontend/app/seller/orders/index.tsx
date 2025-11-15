@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,16 +7,44 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Package, Truck, CircleCheck as CheckCircle, Clock, Circle as XCircle, Filter, MessageCircle, Edit } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
-import { BackHandler } from 'react-native';
-import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState, AppDispatch } from '@/store/store';
+import { setOrders } from '@/store/slices/ordersSlice';
+import { apiService } from '@/services/api';
 
+// Helper function to safely get status config with fallback
+const getStatusConfig = (status: string) => {
+  const statusLower = status.toLowerCase();
+  
+  // Map of all possible status values from the API to our config
+  const statusMap: Record<string, { icon: any; color: string; label: string }> = {
+    'pending': { icon: Clock, color: '#f59e0b', label: 'Pending' },
+    'processing': { icon: Package, color: '#3b82f6', label: 'Processing' },
+    'shipped': { icon: Truck, color: '#8b5cf6', label: 'Shipped' },
+    'delivered': { icon: CheckCircle, color: '#10b981', label: 'Delivered' },
+    'cancelled': { icon: XCircle, color: '#ef4444', label: 'Cancelled' },
+    // Map any other possible statuses from the API
+    'completed': { icon: CheckCircle, color: '#10b981', label: 'Completed' },
+    'refunded': { icon: XCircle, color: '#ef4444', label: 'Refunded' },
+    'failed': { icon: XCircle, color: '#ef4444', label: 'Failed' },
+  };
+  
+  // Return the status config or a default one if status is not recognized
+  return statusMap[statusLower] || { 
+    icon: Package, 
+    color: '#6b7280', 
+    label: status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
+  };
+};
+
+// For backward compatibility
 const statusConfig = {
   pending: { icon: Clock, color: '#f59e0b', label: 'Pending' },
   processing: { icon: Package, color: '#3b82f6', label: 'Processing' },
@@ -36,71 +64,108 @@ const filterOptions = [
 
 export default function OrdersScreen() {
   const { theme } = useTheme();
-  const { orders } = useSelector((state: RootState) => state.orders);
-
-  // Mock orders fallback for Manage Orders
-  const mockOrders = [
-    {
-      id: '1001',
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-      customerName: 'Ali Khan',
-      customerEmail: 'ali.khan@example.com',
-      items: [
-        { name: 'Modern Sofa', price: 499.99, quantity: 1, image: 'https://picsum.photos/seed/sofa/200/200' },
-        { name: 'Side Table', price: 89.99, quantity: 2, image: 'https://picsum.photos/seed/table/200/200' },
-      ],
-      paymentStatus: 'paid',
-      paymentMethod: 'Credit Card',
-      subtotal: 679.97,
-      shippingCost: 0,
-      discount: 20,
-      total: 659.97,
-    },
-    {
-      id: '1002',
-      status: 'processing',
-      createdAt: new Date(Date.now() - 86400000).toISOString(),
-      customerName: 'Sara Ahmed',
-      customerEmail: 's.ahmed@example.com',
-      items: [
-        { name: 'Dining Set', price: 899.0, quantity: 1, image: 'https://picsum.photos/seed/dining/200/200' },
-      ],
-      paymentStatus: 'unpaid',
-      paymentMethod: 'Cash on Delivery',
-      subtotal: 899.0,
-      shippingCost: 10,
-      discount: 0,
-      total: 909.0,
-    },
-    {
-      id: '1003',
-      status: 'delivered',
-      createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
-      customerName: 'John Doe',
-      customerEmail: 'john.doe@example.com',
-      items: [
-        { name: 'Office Chair', price: 129.99, quantity: 2, image: 'https://picsum.photos/seed/chair/200/200' },
-      ],
-      paymentStatus: 'paid',
-      paymentMethod: 'PayPal',
-      subtotal: 259.98,
-      shippingCost: 0,
-      discount: 0,
-      total: 259.98,
-    },
-  ];
-  const dataSource = orders && orders.length ? orders : mockOrders;
+  const dispatch = useDispatch<AppDispatch>();
+  const { orders, loading } = useSelector((state: RootState) => state.orders);
+  const [error, setError] = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter] = useState('All');
+  const [refreshing, setRefreshing] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const limit = 10;
 
-  const filteredOrders = dataSource.filter(order => 
-    selectedFilter === 'All' || order.status === selectedFilter.toLowerCase()
-  );
+  const fetchOrders = async (isRefreshing = false) => {
+    try {
+      if (isRefreshing) {
+        setRefreshing(true);
+        setPage(1);
+        setHasMore(true);
+      }
+
+      const status = selectedFilter !== 'All' ? selectedFilter.toUpperCase() : undefined;
+      const response = await apiService.getSellerOrders({
+        status,
+        page: isRefreshing ? 1 : page,
+        limit,
+      });
+
+      const newOrders = response.data || [];
+      
+      if (isRefreshing || page === 1) {
+        dispatch(setOrders(newOrders));
+      } else {
+        dispatch(setOrders([...orders, ...newOrders]));
+      }
+
+      setHasMore(newOrders.length === limit);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching orders:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch orders');
+    } finally {
+      if (isRefreshing) {
+        setRefreshing(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, [page, selectedFilter]);
+
+  const handleRefresh = () => {
+    fetchOrders(true);
+  };
+
+  const handleLoadMore = () => {
+    if (!loading && hasMore) {
+      setPage(prevPage => prevPage + 1);
+    }
+  };
+
+  const filteredOrders = selectedFilter === 'All' 
+    ? orders 
+    : orders.filter(order => {
+        const orderStatus = (order.status || '').toLowerCase();
+        const filterStatus = selectedFilter.toLowerCase();
+        return orderStatus === filterStatus;
+      });
+
+  const renderFooter = () => {
+    if (!loading) return null;
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="small" color={theme.colors.primary} />
+      </View>
+    );
+  };
+
+  const renderEmptyState = () => {
+    if (loading) return null;
+    
+    return (
+      <View style={styles.emptyContainer}>
+        <Package size={48} color={theme.colors.textSecondary} />
+        <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
+          {error ? 'Failed to load orders' : 'No orders found'}
+        </Text>
+        {error && (
+          <TouchableOpacity 
+            style={[styles.retryButton, { backgroundColor: theme.colors.primary }]}
+            onPress={handleRefresh}
+          >
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
 
   const OrderCard = ({ order }: { order: any }) => {
-    const StatusIcon = statusConfig[order.status as keyof typeof statusConfig].icon;
-    const statusColor = statusConfig[order.status as keyof typeof statusConfig].color;
-    const statusLabel = statusConfig[order.status as keyof typeof statusConfig].label;
+    // Use the safe status config getter
+    const statusConfig = getStatusConfig(order.status || 'pending');
+    const StatusIcon = statusConfig.icon;
+    const statusColor = statusConfig.color;
+    const statusLabel = statusConfig.label;
 
     return (
       <TouchableOpacity
@@ -110,10 +175,10 @@ export default function OrdersScreen() {
         <View style={styles.orderHeader}>
           <View>
             <Text style={[styles.orderId, { color: theme.colors.text }]}>
-              Order #{order.id}
+              Order #{order.orderNumber}
             </Text>
             <Text style={[styles.customerName, { color: theme.colors.primary }]}>
-              {order.customerName || 'Guest User'}
+              {order.user.name || 'Guest User'}
             </Text>
             <Text style={[styles.orderDate, { color: theme.colors.textSecondary }]}>
               {new Date(order.createdAt).toLocaleString()}
@@ -128,9 +193,9 @@ export default function OrdersScreen() {
         </View>
         <View style={styles.orderSummary}>
           <Text style={[styles.summaryText, { color: theme.colors.text }]}>
-            {order.items.length} items • ${order.total.toFixed(2)}
+            {order.items.length} items • Rs. {order.total.toFixed(2)}
           </Text>
-          {order.paymentStatus === 'paid' ? (
+          {order.paymentMethod === 'card' ? (
             <View style={[styles.paidBadge, { backgroundColor: '#10b98120' }]}>
               <Text style={[styles.paidText, { color: '#10b981' }]}>Paid</Text>
             </View>
@@ -182,9 +247,7 @@ export default function OrdersScreen() {
           <ArrowLeft size={20} color={theme.colors.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Manage Orders</Text>
-        <TouchableOpacity>
-          <Filter size={24} color={theme.colors.text} />
-        </TouchableOpacity>
+        <View style={{ width: 24 }} />
       </View>
 
       {/* Filter Tabs */}
@@ -237,28 +300,25 @@ export default function OrdersScreen() {
       </View>
 
       {/* Orders List */}
-      {filteredOrders.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Package size={80} color={theme.colors.textSecondary} />
-          <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>
-            No orders found
-          </Text>
-          <Text style={[styles.emptySubtitle, { color: theme.colors.textSecondary }]}>
-            {selectedFilter === 'All' 
-              ? 'No orders have been placed yet'
-              : `No ${selectedFilter.toLowerCase()} orders found`
-            }
-          </Text>
-        </View>
-      ) : (
-        <FlatList
-          data={filteredOrders}
-          renderItem={({ item }) => <OrderCard order={item} />}
-          keyExtractor={(item) => item.id}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.ordersList}
-        />
-      )}
+      <FlatList
+        data={filteredOrders}
+        keyExtractor={(item, index) => `${item.id}-${index}`}
+        renderItem={({ item }) => <OrderCard order={item} />}
+        contentContainerStyle={styles.ordersList}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[theme.colors.primary]}
+            tintColor={theme.colors.primary}
+          />
+        }
+        ListFooterComponent={renderFooter}
+        ListEmptyComponent={renderEmptyState}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
+      />
     </SafeAreaView>
   );
 }
@@ -318,28 +378,37 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    padding: 20,
   },
-  emptyTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginTop: 20,
-    marginBottom: 8,
-  },
-  emptySubtitle: {
+  emptyText: {
+    marginTop: 16,
     fontSize: 16,
     textAlign: 'center',
-    marginBottom: 32,
   },
-  ordersList: {
+  retryButton: {
+    marginTop: 16,
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  loadingContainer: {
+    paddingVertical: 20,
+    alignItems: 'center',
   },
   orderCard: {
-    borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 16,
-    marginBottom: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   orderHeader: {
     flexDirection: 'row',
@@ -349,8 +418,9 @@ const styles = StyleSheet.create({
   },
   orderId: {
     fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 2,
+    fontWeight: '600',
+    marginBottom: 4,
+    textTransform: 'uppercase',
   },
   customerName: {
     fontSize: 14,
@@ -358,7 +428,9 @@ const styles = StyleSheet.create({
     color: '#3498db',
   },
   orderDate: {
-    fontSize: 14,
+    fontSize: 12,
+    opacity: 0.7,
+    marginTop: 2,
   },
   statusBadge: {
     flexDirection: 'row',
@@ -366,7 +438,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
-    gap: 4,
   },
   statusText: {
     fontSize: 10,
@@ -376,7 +447,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.1)',
   },
   summaryText: {
     fontSize: 14,
@@ -385,15 +459,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    minWidth: 60,
+    justifyContent: 'center',
   },
   paidText: {
     fontSize: 10,
     fontWeight: '600',
+    marginLeft: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   sellerActions: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginTop: 12,
+    gap: 8,
+    flexWrap: 'wrap',
   },
   actionButton: {
     flexDirection: 'row',
@@ -407,5 +490,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     marginLeft: 8,
+  },
+  ordersList: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
 });

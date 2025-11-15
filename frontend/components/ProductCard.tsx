@@ -273,14 +273,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               )}
             </View>
             
-            {showAddToCart && product.inStock && (
+            {/* {showAddToCart && product.inStock && (
               <TouchableOpacity
                 onPress={handleAddToCart}
                 style={[styles.cartButton, { backgroundColor: theme.colors.primary }]}
               >
                 <ShoppingCart size={16} color="#fff" />
               </TouchableOpacity>
-            )}
+            )} */}
           </View>
         </View>
       </TouchableOpacity>

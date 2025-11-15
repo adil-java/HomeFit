@@ -88,7 +88,7 @@ export async function createPaymentIntent(orderId, totalAmount, sellerId) {
 
   const paymentIntent = await stripe.paymentIntents.create({
     amount: totalInCents,
-    currency: "usd",
+    currency: "pkr",
     application_fee_amount: platformFeeAmount,
     transfer_data: { destination: seller.stripeConnectId },
     metadata: { orderId, sellerId },

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -27,9 +27,35 @@ import {
 } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '@/store/store';
+import { useDispatch } from 'react-redux';
 import { updateOrderStatus } from '@/store/slices/ordersSlice';
+import { apiService } from '@/services/api';
+import { Order } from '@/types/order';
+
+// Helper function to safely get status config with fallback
+const getStatusConfig = (status: string) => {
+  const statusLower = status.toLowerCase();
+  
+  // Map of all possible status values from the API to our config
+  const statusMap: Record<string, { icon: any; color: string; label: string }> = {
+    'pending': { icon: Clock, color: '#f59e0b', label: 'Order Pending' },
+    'processing': { icon: Package, color: '#3b82f6', label: 'Processing' },
+    'shipped': { icon: Truck, color: '#8b5cf6', label: 'Shipped' },
+    'delivered': { icon: CheckCircle, color: '#10b981', label: 'Delivered' },
+    'cancelled': { icon: XCircle, color: '#ef4444', label: 'Cancelled' },
+    // Map any other possible statuses from the API
+    'completed': { icon: CheckCircle, color: '#10b981', label: 'Completed' },
+    'refunded': { icon: XCircle, color: '#ef4444', label: 'Refunded' },
+    'failed': { icon: XCircle, color: '#ef4444', label: 'Failed' },
+  };
+  
+  // Return the status config or a default one if status is not recognized
+  return statusMap[statusLower] || { 
+    icon: Package, 
+    color: '#6b7280', 
+    label: status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
+  };
+};
 
 const statusConfig = {
   pending: { icon: Clock, color: '#f59e0b', label: 'Order Pending' },
@@ -44,97 +70,72 @@ export default function OrderDetailScreen() {
   const { theme } = useTheme();
   const dispatch = useDispatch();
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState('');
-  
-  const ordersFromStore = useSelector((state: RootState) => state.orders.orders);
-  // Mock orders fallback for order detail
-  const mockOrders = [
-    {
-      id: '1001',
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-      customerName: 'Ali Khan',
-      customerEmail: 'ali.khan@example.com',
-      items: [
-        { name: 'Modern Sofa', price: 499.99, quantity: 1, image: 'https://picsum.photos/seed/sofa/200/200' },
-        { name: 'Side Table', price: 89.99, quantity: 2, image: 'https://picsum.photos/seed/table/200/200' },
-      ],
-      paymentStatus: 'paid',
-      paymentMethod: 'Credit Card',
-      subtotal: 679.97,
-      shippingCost: 0,
-      discount: 20,
-      total: 659.97,
-      shippingAddress: { name: 'Ali Khan', address: '123 Model Town', city: 'Lahore', state: 'PB', zipCode: '54000', country: 'Pakistan', phone: '+92 300 1111111' },
-      billingAddress: null,
-      notes: [ { author: 'System', date: new Date().toISOString(), content: 'Order created.' } ],
-      statusTimeline: ['order_placed'],
-      paidAt: new Date().toISOString(),
-    },
-    {
-      id: '1002',
-      status: 'processing',
-      createdAt: new Date(Date.now() - 86400000).toISOString(),
-      customerName: 'Sara Ahmed',
-      customerEmail: 's.ahmed@example.com',
-      items: [
-        { name: 'Dining Set', price: 899.0, quantity: 1, image: 'https://picsum.photos/seed/dining/200/200' },
-      ],
-      paymentStatus: 'unpaid',
-      paymentMethod: 'Cash on Delivery',
-      subtotal: 899.0,
-      shippingCost: 10,
-      discount: 0,
-      total: 909.0,
-      shippingAddress: { name: 'Sara Ahmed', address: '45 Clifton', city: 'Karachi', state: 'SD', zipCode: '75500', country: 'Pakistan', phone: '+92 333 2222222' },
-      billingAddress: null,
-      notes: [],
-      statusTimeline: ['order_placed', 'payment_confirmed', 'order_processed'],
-    },
-    {
-      id: '1003',
-      status: 'delivered',
-      createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
-      customerName: 'John Doe',
-      customerEmail: 'john.doe@example.com',
-      items: [
-        { name: 'Office Chair', price: 129.99, quantity: 2, image: 'https://picsum.photos/seed/chair/200/200' },
-      ],
-      paymentStatus: 'paid',
-      paymentMethod: 'PayPal',
-      subtotal: 259.98,
-      shippingCost: 0,
-      discount: 0,
-      total: 259.98,
-      shippingAddress: { name: 'John Doe', address: '742 Evergreen', city: 'Springfield', state: 'IL', zipCode: '62701', country: 'USA', phone: '+1 555 987 6543' },
-      billingAddress: { name: 'John Doe', address: '742 Evergreen', city: 'Springfield', state: 'IL', zipCode: '62701', country: 'USA', phone: '+1 555 987 6543' },
-      notes: [ { author: 'Admin', date: new Date().toISOString(), content: 'Delivered to customer.' } ],
-      statusTimeline: ['order_placed', 'payment_confirmed', 'order_processed', 'shipped', 'delivered'],
-      deliveredAt: new Date().toISOString(),
-    },
-  ];
-  const order = (ordersFromStore && ordersFromStore.length ? ordersFromStore : mockOrders).find(o => o.id === id);
+  const [order, setOrder] = useState<Order | null>(null);
+
+  // Fetch order details when component mounts or ID changes
+  useEffect(() => {
+    const fetchOrderDetails = async () => {
+      if (!id) return;
+      
+      try {
+        setIsLoading(true);
+        const orderData = await apiService.getSellerOrderDetails(id as string);
+        setOrder(orderData);
+      } catch (err) {
+        console.error('Error fetching order details:', err);
+        setError('Failed to load order details. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchOrderDetails();
+  }, [id]);
 
   const handleStatusUpdate = async (newStatus: string) => {
+    if (!order) return;
+    
     try {
       setIsUpdating(true);
       setError('');
       
-      // Dispatch the async thunk
-      await dispatch(updateOrderStatus({
-        orderId: id as string,
-        status: newStatus as Order['status']
-      })).unwrap();
+      // Update the order status via API
+      await apiService.updateOrderStatus(order.id, newStatus);
+      
+      // Update local state
+      setOrder({
+        ...order,
+        status: newStatus,
+        updatedAt: new Date().toISOString()
+      });
       
       setShowStatusModal(false);
-    } catch (error) {
-      console.error('Failed to update status:', error);
+    } catch (err) {
+      console.error('Failed to update status:', err);
       setError('Failed to update status. Please try again.');
     } finally {
       setIsUpdating(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <ArrowLeft size={24} color={theme.colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Order Details</Text>
+        </View>
+        <View style={styles.centeredContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!order) {
     return (
@@ -152,9 +153,11 @@ export default function OrderDetailScreen() {
     );
   }
 
-  const StatusIcon = statusConfig[order.status as keyof typeof statusConfig].icon;
-  const statusColor = statusConfig[order.status as keyof typeof statusConfig].color;
-  const statusLabel = statusConfig[order.status as keyof typeof statusConfig].label;
+  // Use the safe status config getter
+  const statusConfig = getStatusConfig(order.status || 'pending');
+  const StatusIcon = statusConfig.icon;
+  const statusColor = statusConfig.color;
+  const statusLabel = statusConfig.label;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -257,7 +260,7 @@ export default function OrderDetailScreen() {
         <TouchableOpacity onPress={() => router.back()}>
           <ArrowLeft size={24} color={theme.colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Order #{id}</Text>
+        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Order #{order.orderNumber}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -277,7 +280,7 @@ export default function OrderDetailScreen() {
                 Tap to update status
               </Text>
               <Text style={[styles.customerInfo, { color: theme.colors.text }]}>
-                Customer: {order.customerName || 'Guest'} • {order.customerEmail || 'No email'}
+                Customer: {order.billingAddress?.name || 'Guest'} • {order.billingAddress?.email || 'No email'}
               </Text>
             </View>
           </View>
@@ -309,17 +312,17 @@ export default function OrderDetailScreen() {
           <View style={[styles.summaryCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
             {order.items.map((item, index) => (
               <View key={index} style={styles.orderItem}>
-                <Image source={{ uri: item.image }} style={styles.itemImage} />
+                <Image source={{ uri: item?.product?.images[0] }} style={styles.itemImage} />
                 <View style={styles.itemInfo}>
                   <Text style={[styles.itemName, { color: theme.colors.text }]}>
-                    {item.name}
+                    {item?.product?.name}
                   </Text>
                   <Text style={[styles.itemDetails, { color: theme.colors.textSecondary }]}>
-                    Qty: {item.quantity} × ${item.price.toFixed(2)}
+                    Qty: {item.quantity} × Rs. {item.price.toFixed(2)}
                   </Text>
                 </View>
                 <Text style={[styles.itemTotal, { color: theme.colors.text }]}>
-                  ${(item.price * item.quantity).toFixed(2)}
+                  Rs. {(item.price * item.quantity).toFixed(2)}
                 </Text>
               </View>
             ))}
@@ -331,7 +334,7 @@ export default function OrderDetailScreen() {
                 Subtotal
               </Text>
               <Text style={[styles.summaryValue, { color: theme.colors.text }]}>
-                ${order.subtotal?.toFixed(2) || order.total.toFixed(2)}
+                Rs. {order.subtotal?.toFixed(2) || order.total.toFixed(2)}
               </Text>
             </View>
             
@@ -350,7 +353,7 @@ export default function OrderDetailScreen() {
                   Discount
                 </Text>
                 <Text style={[styles.summaryValue, { color: '#10b981' }]}>
-                  -${order.discount.toFixed(2)}
+                  Rs. {order.discount.toFixed(2)}
                 </Text>
               </View>
             )}
@@ -360,16 +363,16 @@ export default function OrderDetailScreen() {
                 Total
               </Text>
               <Text style={[styles.totalValue, { color: theme.colors.text }]}>
-                ${order.total.toFixed(2)}
+                Rs. {order.total.toFixed(2)}
               </Text>
             </View>
             
-            <View style={[styles.paymentStatus, { backgroundColor: order.paymentStatus === 'paid' ? '#10b98110' : '#ef444410' }]}>
-              <Text style={[styles.paymentStatusText, { color: order.paymentStatus === 'paid' ? '#10b981' : '#ef4444' }]}>
-                {order.paymentStatus === 'paid' ? 'PAID' : 'PENDING PAYMENT'}
+            <View style={[styles.paymentStatus, { backgroundColor: order.paymentMethod === 'card' ? '#10b98110' : '#ef444410' }]}>
+              <Text style={[styles.paymentStatusText, { color: order.paymentMethod === 'card' ? '#10b981' : '#ef4444' }]}>
+                {order.paymentMethod === 'card' ? 'PAID' : 'PENDING PAYMENT'}
               </Text>
               <Text style={[styles.paymentMethod, { color: theme.colors.textSecondary }]}>
-                {order.paymentMethod} • {order.paymentStatus === 'paid' ? 'Paid on ' + new Date(order.paidAt).toLocaleDateString() : 'Not paid'}
+                {order.paymentMethod} • {order.paymentMethod === 'card' ? 'Paid on ' + new Date(order.createdAt).toLocaleDateString() : 'Not paid'}
               </Text>
             </View>
           </View>
@@ -384,16 +387,16 @@ export default function OrderDetailScreen() {
           <View style={[styles.infoCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
             <View style={styles.infoRow}>
               <Text style={[styles.infoLabel, { color: theme.colors.textSecondary }]}>Name</Text>
-              <Text style={[styles.infoValue, { color: theme.colors.text }]}>{order.customerName || 'Guest'}</Text>
+              <Text style={[styles.infoValue, { color: theme.colors.text }]}>{order.billingAddress?.name || 'Guest'}</Text>
             </View>
             <View style={styles.infoRow}>
               <Text style={[styles.infoLabel, { color: theme.colors.textSecondary }]}>Email</Text>
-              <Text style={[styles.infoValue, { color: theme.colors.primary }]}>{order.customerEmail || 'No email'}</Text>
+              <Text style={[styles.infoValue, { color: theme.colors.primary }]}>{order.billingAddress?.email || 'No email'}</Text>
             </View>
-            {order.customerPhone && (
+            {order.billingAddress?.phone && (
               <View style={styles.infoRow}>
                 <Text style={[styles.infoLabel, { color: theme.colors.textSecondary }]}>Phone</Text>
-                <Text style={[styles.infoValue, { color: theme.colors.text }]}>{order.customerPhone}</Text>
+                <Text style={[styles.infoValue, { color: theme.colors.text }]}>{order.billingAddress?.phone}</Text>
               </View>
             )}
           </View>
@@ -407,7 +410,7 @@ export default function OrderDetailScreen() {
             </Text>
             <View style={[styles.infoCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
               <Text style={[styles.addressName, { color: theme.colors.text }]}>
-                {order.shippingAddress?.name || order.customerName || 'No name'}
+                {order.shippingAddress?.name || 'No name'}
               </Text>
               <Text style={[styles.addressText, { color: theme.colors.text }]}>
                 {order.shippingAddress?.address || 'No address'}
@@ -434,7 +437,7 @@ export default function OrderDetailScreen() {
               {order.billingAddress ? (
                 <>
                   <Text style={[styles.addressName, { color: theme.colors.text }]}>
-                    {order.billingAddress.name || order.customerName || 'No name'}
+                    {order.billingAddress.name || 'No name'}
                   </Text>
                   <Text style={[styles.addressText, { color: theme.colors.text }]}>
                     {order.billingAddress.address}

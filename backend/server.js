@@ -9,7 +9,7 @@ import wishlistRoutes from "./routes/wishlist.routes.js";
 import prisma from "./config/db.js";
 import stripeRoutes from "./routes/payment.route.js";
 import StripeRoutes from "./routes/stripe.routes.js"
-
+import orderRoutes from "./routes/order.route.js";
 dotenv.config({ path: "./config/config.env" });
 
 const app = express();
@@ -25,6 +25,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/wishlist", wishlistRoutes);
+app.use("/api/orders", orderRoutes);
 app.use("/api/stripe", stripeRoutes);
 app.use("/api/Stripe", StripeRoutes)
 //Admin routes

@@ -647,26 +647,225 @@ class ApiService {
     }
   }
 
-  async createPaymentIntentnew(orderId: string, amount: number, sellerId: string) {
+  async createPaymentIntentnew(amount: number, currency: string = 'PKR') {
     try {
       const headers = await this.getAuthHeaders();
-      const response = await fetch(`${API_BASE_URL}/Stripe/payment-intent`, {
+      // Convert amount to the smallest currency unit (e.g., cents)
+      const amountInCents = Math.round(amount * 100);
+      
+      const response = await fetch(`${API_BASE_URL}/stripe/create-payment-intent`, {
         method: 'POST',
-        headers,
-        body: JSON.stringify({ orderId, totalAmount: amount, sellerId }),
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          amount: amountInCents,
+          currency: currency.toLowerCase()
+        }),
       });
 
+      const responseData = await response.json();
+
       if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(error.message || 'Failed to create payment intent');
+        console.error('Payment intent error response:', responseData);
+        throw new Error(responseData.message || 'Failed to create payment intent');
       }
 
-      return response.json();
+      if (!responseData.success) {
+        throw new Error(responseData.message || 'Payment intent creation failed');
+      }
+
+      return {
+        paymentIntent: responseData.paymentIntent,
+        ephemeralKey: responseData.ephemeralKey,
+        customer: responseData.customer,
+        publishableKey: responseData.publishableKey,
+        amount: responseData.amount,
+        currency: responseData.currency,
+      };
     } catch (error) {
       console.error('Create payment intent error:', error);
       throw error;
     }
   }
-}
 
+  async createOrder(orderData: any) {
+    try {
+      const headers = await this.getAuthHeaders();
+      console.log('Creating order with data:', JSON.stringify(orderData, null, 2));
+      
+      const response = await fetch(`${API_BASE_URL}/orders`, {
+        method: 'POST',
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderData),
+      });
+
+      const responseData = await response.json().catch(() => ({}));
+      
+      if (!response.ok) {
+        // Extract and format validation errors if they exist
+        const errorDetails = responseData.errors ? 
+          `Validation errors: ${JSON.stringify(responseData.errors, null, 2)}` : 
+          'No additional error details';
+          
+        console.error('Order creation failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          response: responseData,
+          requestData: orderData,
+          errorDetails: errorDetails
+        });
+        
+        // Create a more detailed error message
+        const errorMessage = responseData.message || 
+          (responseData.errors ? 'Validation failed' : 'Failed to create order');
+        const error = new Error(`${errorMessage} (${response.status})`) as Error & {
+          response?: any;
+          status?: number;
+        };
+        error.response = responseData;
+        error.status = response.status;
+        throw error;
+      }
+
+      return responseData;
+    } catch (error) {
+      console.error('Error in createOrder:', error);
+      throw error;
+    }
+  }
+
+  async confirmPayment(orderId: string, paymentIntentId: string) {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}/orders/${orderId}/confirm-payment`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ paymentIntentId }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || 'Failed to confirm payment');
+    }
+
+    return response.json();
+  }
+
+  async getUserOrders(filters: { status?: string; page?: number; limit?: number } = {}) {
+    try {
+      const { status, page = 1, limit = 10 } = filters;
+      const queryParams = new URLSearchParams();
+      
+      if (status) queryParams.append('status', status);
+      queryParams.append('page', page.toString());
+      queryParams.append('limit', limit.toString());
+      
+      const headers = await this.getAuthHeaders();
+      const response = await fetch(`${API_BASE_URL}/orders?${queryParams}`, { headers });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to fetch orders');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching user orders:', error);
+      throw error;
+    }
+  }
+
+  async getOrderDetails(orderId: string) {
+    if (!orderId) {
+      console.error('No order ID provided to getOrderDetails');
+      throw new Error('Order ID is required');
+    }
+
+    try {
+      console.log('Fetching order with ID:', orderId);
+      const headers = await this.getAuthHeaders();
+      const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
+        headers,
+      });
+      
+      console.log('Response status:', response.status);
+      const responseData = await response.json().catch(() => ({}));
+      
+      if (!response.ok) {
+        console.error('Error response data:', responseData);
+        throw new Error(responseData.message || 'Failed to fetch order details');
+      }
+
+      console.log('Order details response:', responseData);
+      
+      // Handle both nested data and direct response
+      const orderData = responseData.data || responseData;
+      
+      if (!orderData) {
+        throw new Error('No order data received from server');
+      }
+      
+      return orderData;
+    } catch (error) {
+      console.error('Error in getOrderDetails:', error);
+      throw error instanceof Error ? error : new Error('Failed to fetch order details');
+    }
+  }
+
+  async getSellerOrders(filters: { status?: string; page?: number; limit?: number } = {}) {
+    try {
+      const { status, page = 1, limit = 10 } = filters;
+      const queryParams = new URLSearchParams();
+      
+      if (status) queryParams.append('status', status);
+      queryParams.append('page', page.toString());
+      queryParams.append('limit', limit.toString());
+      
+      const headers = await this.getAuthHeaders();
+      const response = await fetch(`${API_BASE_URL}/orders/seller/orders?${queryParams}`, { 
+        headers,
+        method: 'GET'
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to fetch seller orders');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching seller orders:', error);
+      throw error;
+    }
+  }
+
+  async getSellerOrderDetails(orderId: string) {
+    if (!orderId) {
+      throw new Error('Order ID is required');
+    }
+
+    try {
+      const headers = await this.getAuthHeaders();
+      const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
+        headers,
+        method: 'GET'
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to fetch seller order details');
+      }
+      
+      const responseData = await response.json();
+      return responseData.data || responseData;
+    } catch (error) {
+      console.error('Error fetching seller order details:', error);
+      throw error;
+    }
+  }
+}
 export const apiService = new ApiService();

@@ -26,6 +26,7 @@ import Toast from 'react-native-toast-message';
 import { useStripe } from '@stripe/stripe-react-native';
 import { apiService } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
+import OrderDetailScreen from '../orders/[id]';
 
 const mockAddresses = [
   {
@@ -123,14 +124,88 @@ export default function CheckoutScreen() {
     setIsProcessing(true);
 
     try {
+      const selectedAddr = mockAddresses.find(addr => addr.id === selectedAddress);
+      const paymentMethod = paymentMethods.find(pm => pm.id === selectedPayment);
+
+      if (!selectedAddr) {
+        throw new Error('Please select a shipping address');
+      }
+
+      if (!paymentMethod) {
+        throw new Error('Please select a payment method');
+      }
+
+      // Define address type with required fields
+      const address = {
+        name: user?.name || 'Customer', // Use user's name or default to 'Customer'
+        email: user?.email, // User's email is required
+        phone: user?.phone || '+923001234567', // Default phone number if not provided
+        street: selectedAddr.address,
+        city: selectedAddr.city,
+        state: '', // State is not in the original type, default to empty string
+        postalCode: selectedAddr.zipCode,
+        country: selectedAddr.country,
+        isDefault: selectedAddr.isDefault || false
+      };
+
+      // Validate required fields
+      if (!address.phone) {
+        throw new Error('Phone number is required for shipping');
+      }
+
+      // Prepare order data for the backend
+      const orderData = {
+  items: items.map(item => ({
+    productId: item.id,
+    quantity: item.quantity,
+    options: item.options || {},
+    price: item.price,
+    name: item.name
+  })),
+  shippingAddress: address,
+  billingAddress: address, // Using same address for billing and shipping
+  paymentMethod: selectedPayment,
+  couponCode: appliedCoupon?.code,
+  notes: '',
+  currency: 'PKR'
+};
+
+      // 1. First, create a payment intent for card payments
+      let paymentIntent;
+      let ephemeralKey;
+      let customer;
+      let publishableKey;
+      
       if (selectedPayment === 'card') {
-        // Initialize PaymentSheet with backend intent and customer ephemeral key
-        if (!paymentSheetInitialized) {
-          const pi = await apiService.createPaymentIntent();
+        try {
+          // Calculate total amount in PKR (convert to smallest unit - paisa)
+          const totalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+          
+          // Create payment intent
+          const paymentIntentResponse = await apiService.createPaymentIntentnew(totalAmount, 'PKR');
+          
+          // Extract payment details from response
+          paymentIntent = paymentIntentResponse.paymentIntent;
+          ephemeralKey = paymentIntentResponse.ephemeralKey;
+          customer = paymentIntentResponse.customer;
+          publishableKey = paymentIntentResponse.publishableKey;
+          
+          if (!paymentIntent) {
+            throw new Error('Failed to create payment intent: No client secret received');
+          }
+          
+          // Initialize PaymentSheet with the payment intent
           const initRes = await initPaymentSheet({
-            customerId: pi.customer,
-            customerEphemeralKeySecret: pi.ephemeralKey,
-            paymentIntentClientSecret: pi.paymentIntent,
+            merchantDisplayName: 'Your Store Name',
+            customerId: customer,
+            customerEphemeralKeySecret: ephemeralKey,
+            paymentIntentClientSecret: paymentIntent,
+            defaultBillingDetails: {
+              name: user?.name || '',
+              email: user?.email || '',
+              phone: user?.phone || '',
+            },
+            paymentIntentClientSecret: paymentIntent,
             merchantDisplayName: 'HomeFit',
             defaultBillingDetails: {
               name: user?.name || user?.email || 'Customer',
@@ -138,55 +213,89 @@ export default function CheckoutScreen() {
             },
             allowsDelayedPaymentMethods: true,
           });
+
           if (initRes.error) {
             throw new Error(initRes.error.message);
           }
-          setPaymentSheetInitialized(true);
-        }
 
-        const presentRes = await presentPaymentSheet();
-        if (presentRes.error) {
-          throw new Error(presentRes.error.message);
+          // Present the payment sheet
+          const presentRes = await presentPaymentSheet();
+          if (presentRes.error) {
+            throw new Error(presentRes.error.message);
+          }
+        } catch (error) {
+          console.error('Payment error:', error);
+          throw new Error(error.message || 'Payment processing failed');
         }
-      } else {
-        // Simulate wallet payment
-        await new Promise(resolve => setTimeout(resolve, 1200));
       }
 
-      const selectedAddr = mockAddresses.find(addr => addr.id === selectedAddress);
-      const paymentMethod = paymentMethods.find(pm => pm.id === selectedPayment);
+      // 2. Create the order in the backend after successful payment
+      const createOrderResponse = await apiService.createOrder({
+        ...orderData,
+        paymentIntentId: paymentIntent?.id
+      });
+      
+      // Extract order from response - handle both nested and direct response formats
+      const responseData = createOrderResponse.data || createOrderResponse;
+      
+      if (!responseData) {
+        console.error('No order data in response:', createOrderResponse);
+        throw new Error('Failed to create order: No order data received');
+      }
 
-      const order = {
-        id: Date.now().toString(),
-        userId: user?.id || '1',
+      // The order data might be nested under an 'order' property or be the root object
+      const createdOrder = responseData.order || responseData;
+      
+      if (!createdOrder) {
+        console.error('Invalid order data structure:', responseData);
+        throw new Error('Failed to create order: Invalid order data structure');
+      }
+
+      // Ensure we have a valid order ID
+      const orderId = createdOrder.id || responseData.id;
+      if (!orderId) {
+        console.error('Invalid order ID in response:', { order: createdOrder, response: createOrderResponse });
+        throw new Error('Failed to create order: Invalid order ID received');
+      }
+      
+      // Make sure the order object has the ID
+      createdOrder.id = orderId;
+
+      // Update local state with the order from the backend
+      const orderWithItems = {
+        ...createdOrder,
         items: items.map(item => ({
-          id: item.id,
+          id: item.productId || item.id,
           name: item.name,
           price: item.price,
           quantity: item.quantity,
           image: item.image,
+          productId: item.productId || item.id
         })),
-        total: finalTotal,
-        status: 'pending' as const,
-        paymentStatus: 'paid' as const,
-        shippingAddress: selectedAddr!,
-        paymentMethod: paymentMethod!.name,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        shippingAddress: selectedAddr,
+        paymentMethod: paymentMethod.name,
       };
 
-      dispatch(addOrder(order));
-      dispatch(clearCart());
-
+      // Save the order to Redux
+      dispatch(addOrder(orderWithItems));
+      
+      // Show success message with order number if available
+      const orderNumber = createdOrder.orderNumber || createdOrder.id?.substring(0, 8) || '';
       Toast.show({
         type: 'success',
         text1: 'Order placed successfully!',
-        text2: `Order #${order.id}`,
+        text2: orderNumber ? `Order #${orderNumber}` : 'Your order has been received',
         position: 'top',
       });
 
-      router.replace(`/orders/${order.id}`);
+      // Clear the cart after successful order
+      dispatch(clearCart());
+      
+      // Navigate to order details with the order ID
+      console.log('Navigating to order:', createdOrder.id);
+      router.replace(`/orders/${createdOrder.id}`);
     } catch (error) {
+      console.error('Order error:', error);
       Toast.show({
         type: 'error',
         text1: 'Order failed',

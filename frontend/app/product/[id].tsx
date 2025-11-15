@@ -385,10 +385,34 @@ export default function ProductDetailScreen() {
               </TouchableOpacity>
               <Text style={[styles.quantityText, { color: theme.colors.text }]}>{quantity}</Text>
               <TouchableOpacity
-                onPress={() => setQuantity(quantity + 1)}
-                style={[styles.quantityButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+                onPress={() => {
+                  if (product.quantity && quantity < product.quantity) {
+                    setQuantity(quantity + 1);
+                  } else {
+                    Toast.show({
+                      type: 'info',
+                      text1: 'Maximum quantity reached',
+                      text2: `Only ${product.quantity} items available in stock`,
+                      position: 'top',
+                    });
+                  }
+                }}
+                style={[
+                  styles.quantityButton, 
+                  { 
+                    backgroundColor: theme.colors.surface, 
+                    borderColor: theme.colors.border,
+                    opacity: (product.quantity && quantity >= product.quantity) ? 0.5 : 1
+                  }
+                ]}
+                disabled={product.quantity && quantity >= product.quantity}
               >
-                <Plus size={20} color={theme.colors.text} />
+                <Plus 
+                  size={20} 
+                  color={product.quantity && quantity >= product.quantity 
+                    ? theme.colors.textSecondary 
+                    : theme.colors.text} 
+                />
               </TouchableOpacity>
             </View>
           </View>
