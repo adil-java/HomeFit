@@ -58,6 +58,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         id: product.id,
         name: product.name,
         rating: product.rating,
+        modelUrl:product.ARModelUrl,
         averageRating: avg1,
         averagerating: avg2,
         displayRating,
@@ -80,6 +81,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               ...foundProduct,
               rating: (foundProduct as any)?.rating ?? (foundProduct as any)?.averageRating ?? (foundProduct as any)?.averagerating ?? 0,
               inStock: (foundProduct as any)?.inStock ?? (((foundProduct as any)?.stock ?? (foundProduct as any)?.quantity ?? 0) > 0),
+              modelUrl: (foundProduct as any)?.ARModelUrl,
             } as Product;
             setProduct(normalized);
           } else {
@@ -93,6 +95,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 ...first,
                 rating: (first as any)?.rating ?? (first as any)?.averageRating ?? (first as any)?.averagerating ?? 0,
                 inStock: (first as any)?.inStock ?? (((first as any)?.stock ?? (first as any)?.quantity ?? 0) > 0),
+                modelUrl: (first as any)?.ARModelUrl,
               } as Product)
             : null;
           setProduct(normalized);
@@ -136,6 +139,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         name: product.name,
         price: product.price,
         image: product.image,
+        modelUrl: product.ARModelUrl,
       }
     });
   };
