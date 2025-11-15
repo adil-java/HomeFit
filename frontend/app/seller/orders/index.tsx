@@ -16,7 +16,7 @@ import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/store/store';
-import { setOrders } from '@/store/slices/ordersSlice';
+import { setOrders, setLoading } from '@/store/slices/ordersSlice';
 import { apiService } from '@/services/api';
 
 // Helper function to safely get status config with fallback
@@ -79,6 +79,9 @@ export default function OrdersScreen() {
         setRefreshing(true);
         setPage(1);
         setHasMore(true);
+      } else if (page === 1) {
+        // Only set loading for initial load, not for pagination
+        dispatch(setLoading(true));
       }
 
       const status = selectedFilter !== 'All' ? selectedFilter.toUpperCase() : undefined;
@@ -104,6 +107,9 @@ export default function OrdersScreen() {
     } finally {
       if (isRefreshing) {
         setRefreshing(false);
+      } else if (page === 1) {
+        // Only reset loading for initial load, not for pagination
+        dispatch(setLoading(false));
       }
     }
   };
@@ -140,7 +146,16 @@ export default function OrdersScreen() {
   };
 
   const renderEmptyState = () => {
-    if (loading) return null;
+    if (loading && page === 1) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={[styles.loadingText, { color: theme.colors.text }]}>
+            Loading orders...
+          </Text>
+        </View>
+      );
+    }
     
     return (
       <View style={styles.emptyContainer}>

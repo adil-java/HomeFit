@@ -26,10 +26,27 @@ import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useAppSelector } from '@/store/hooks';
+import { useEffect } from 'react';
+import { fetchCart } from '@/store/slices/cartSlice';
+import { fetchWishlist } from '@/store/slices/wishlistSlice';
+import { useAppDispatch } from '@/store/hooks';
 
 export default function ProfileScreen() {
   const { theme, isDark, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
+  const dispatch = useAppDispatch();
+  const { items: cartItems } = useAppSelector((state) => state.cart);
+  const { items: wishlistItems } = useAppSelector((state) => state.wishlist);
+
+  // Fetch cart and wishlist data when the component mounts
+  useEffect(() => {
+    dispatch(fetchCart());
+    dispatch(fetchWishlist({}));
+  }, [dispatch]);
+
+  const cartCount = cartItems?.length || 0;
+  const wishlistCount = wishlistItems?.length || 0;
 
   const handleLogout = async () => {
     await logout();
@@ -108,11 +125,11 @@ export default function ProfileScreen() {
         <View style={styles.statsContainer}>
           <TouchableOpacity
             style={[styles.statCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
-            onPress={() => router.push('/orders')}
+            onPress={() => router.push('/(tabs)/cart')}
           >
             <ShoppingBag size={24} color={theme.colors.primary} />
-            <Text style={[styles.statNumber, { color: theme.colors.text }]}>1</Text>
-            <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Orders</Text>
+            <Text style={[styles.statNumber, { color: theme.colors.text }]}>{cartCount}</Text>
+            <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Cart Items</Text>
           </TouchableOpacity>
           
           <TouchableOpacity
@@ -122,7 +139,7 @@ export default function ProfileScreen() {
             <View style={[styles.statIcon, { backgroundColor: theme.colors.accent + '20' }]}>
               <Text style={styles.heartIcon}>♥</Text>
             </View>
-            <Text style={[styles.statNumber, { color: theme.colors.text }]}>2</Text>
+            <Text style={[styles.statNumber, { color: theme.colors.text }]}>{wishlistCount}</Text>
             <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Wishlist</Text>
           </TouchableOpacity>
           
