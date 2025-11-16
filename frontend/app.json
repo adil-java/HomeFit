@@ -26,7 +26,8 @@
         "CFBundleURLTypes": [
           {
             "CFBundleURLSchemes": [
-              "myapp"
+              "myapp",
+              "com.googleusercontent.apps.1066517448696-rffitabve6rg0j8bhje6quh1j8mqie9o"
             ]
           }
         ],
@@ -73,7 +74,12 @@
       "favicon": "./assets/images/logo-square.png"
     },
     "plugins": [
-      "@react-native-google-signin/google-signin",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.1066517448696-rffitabve6rg0j8bhje6quh1j8mqie9o"
+        }
+      ],
       [
         "expo-image-picker",
         {
