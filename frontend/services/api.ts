@@ -1,8 +1,7 @@
 import { auth } from '../firebaseConfig';
 import { Platform } from 'react-native';
 
-const API_BASE_URL =
-  (process.env.EXPO_PUBLIC_API_BASE_URL as string) || 'https://home-fit-backend.onrender.com/api/';
+const API_BASE_URL = 'https://home-fit-backend.onrender.com/api/';
 
 class ApiService {
   private async getAuthHeaders(): Promise<Record<string, string>> {
@@ -10,12 +9,12 @@ class ApiService {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
-    
+
     if (user) {
       const token = await user.getIdToken();
       headers['Authorization'] = `Bearer ${token}`;
     }
-    
+
     return headers;
   }
 
@@ -35,9 +34,14 @@ class ApiService {
 
       return json;
     } catch (error) {
-      console.warn('Token verification error (network/API unavailable):', error);
+      console.warn(
+        'Token verification error (network/API unavailable):',
+        error
+      );
       // Throw the error to be handled by the auth context
-      throw new Error('Unable to verify token. Please check your connection and try again.');
+      throw new Error(
+        'Unable to verify token. Please check your connection and try again.'
+      );
     }
   }
 
@@ -57,7 +61,7 @@ class ApiService {
       // Return a mock response for build environments or when backend is unavailable
       return {
         success: true,
-        message: 'Login successful (offline mode)'
+        message: 'Login successful (offline mode)',
       };
     }
   }
@@ -78,23 +82,26 @@ class ApiService {
 
       return json;
     } catch (error) {
-      console.warn('Backend registration error (network/API unavailable):', error);
+      console.warn(
+        'Backend registration error (network/API unavailable):',
+        error
+      );
       // Return a mock response for build environments or when backend is unavailable
       return {
         success: true,
-        message: 'Registration successful (offline mode)'
+        message: 'Registration successful (offline mode)',
       };
     }
   }
 
-  async getProducts(){
-    try{
+  async getProducts() {
+    try {
       const response = await fetch(`${API_BASE_URL}/products/`, {
         method: 'GET',
         headers: await this.getAuthHeaders(),
       });
       return await response.json();
-    }catch(error){
+    } catch (error) {
       console.error('Failed to fetch products:', error);
       return { success: false, error: 'Failed to fetch products' };
     }
@@ -105,7 +112,7 @@ class ApiService {
       const headers = await this.getAuthHeaders();
       // Remove the Content-Type header to let the browser set it with the correct boundary
       delete headers['Content-Type'];
-      
+
       const response = await fetch(`${API_BASE_URL}/products/`, {
         method: 'POST',
         headers,
@@ -148,8 +155,8 @@ class ApiService {
           id: 'mock-user-id',
           email: 'user@example.com',
           name: 'Mock User',
-          role: 'seller'
-        }
+          role: 'seller',
+        },
       };
     }
   }
@@ -174,7 +181,8 @@ class ApiService {
 
       const json = await response.json().catch(() => ({ success: false }));
       if (!response.ok) {
-        const message = (json as any)?.error || 'Failed to submit seller application';
+        const message =
+          (json as any)?.error || 'Failed to submit seller application';
         throw new Error(message);
       }
 
@@ -184,7 +192,7 @@ class ApiService {
       // Return a mock response for build environments or when backend is unavailable
       return {
         success: true,
-        message: 'Seller application submitted (offline mode)'
+        message: 'Seller application submitted (offline mode)',
       };
     }
   }
@@ -192,25 +200,32 @@ class ApiService {
   async getSellerApplicationStatus() {
     try {
       const headers = await this.getAuthHeaders();
-      const response = await fetch(`${API_BASE_URL}/users/seller-application-status`, {
-        method: 'GET',
-        headers,
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/users/seller-application-status`,
+        {
+          method: 'GET',
+          headers,
+        }
+      );
 
       const json = await response.json().catch(() => ({ success: false }));
       if (!response.ok) {
-        const message = (json as any)?.error || 'Failed to fetch application status';
+        const message =
+          (json as any)?.error || 'Failed to fetch application status';
         throw new Error(message);
       }
 
       return json;
     } catch (error) {
-      console.warn('Get seller application status error (network/API unavailable):', error);
+      console.warn(
+        'Get seller application status error (network/API unavailable):',
+        error
+      );
       // Return a mock response for build environments or when backend is unavailable
       return {
         success: true,
         status: 'pending',
-        message: 'Application status unavailable (offline mode)'
+        message: 'Application status unavailable (offline mode)',
       };
     }
   }
@@ -267,7 +282,7 @@ class ApiService {
     }
   }
 
-    async getCategoriesWithImages() {
+  async getCategoriesWithImages() {
     try {
       const response = await fetch(`${API_BASE_URL}/categories`, {
         method: 'GET',
@@ -280,7 +295,7 @@ class ApiService {
       }
 
       const categories = await response.json();
-      
+
       // Map the categories to include the image URL
       return categories.map((category: any) => ({
         id: category.id,
@@ -295,28 +310,29 @@ class ApiService {
     }
   }
 
-    // Wishlist methods
+  // Wishlist methods
   async getWishlist() {
     const headers = await this.getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/wishlist`, {
       method: 'GET',
       headers,
     });
-    
+
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
       throw new Error(error.message || 'Failed to fetch wishlist');
     }
-    
+
     const data = await response.json();
-    
+
     // Transform the response to match the expected frontend format
     if (data && data.items) {
       return {
         ...data,
         items: data.items.map((item: any) => {
           const p = item.product || {};
-          const derivedRating = p?.rating ?? p?.averageRating ?? p?.averagerating ?? 0;
+          const derivedRating =
+            p?.rating ?? p?.averageRating ?? p?.averagerating ?? 0;
           return {
             id: item.productId,
             name: p?.name || 'Unknown Product',
@@ -325,10 +341,10 @@ class ApiService {
             rating: derivedRating,
             product: item.product,
           };
-        })
+        }),
       };
     }
-    
+
     return { items: [] };
   }
 
@@ -339,14 +355,14 @@ class ApiService {
       headers,
       body: JSON.stringify({ productId }),
     });
-    
+
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
       throw new Error(error.message || 'Failed to add to wishlist');
     }
-    
+
     const data = await response.json();
-    
+
     // Transform the response to match the expected frontend format
     if (data && data.items) {
       return {
@@ -357,30 +373,33 @@ class ApiService {
           price: item.product?.price || 0,
           image: item.product?.images?.[0] || '',
           rating: 0, // Default rating if not provided
-          product: item.product // Include full product details
-        }))
+          product: item.product, // Include full product details
+        })),
       };
     }
-    
+
     return { items: [] };
   }
 
   async removeFromWishlist(productId: string) {
     const headers = await this.getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/wishlist/items/${productId}`, {
-      method: 'DELETE',
-      headers,
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/wishlist/items/${productId}`,
+      {
+        method: 'DELETE',
+        headers,
+      }
+    );
 
     const data = await response.json().catch(() => ({}));
-    
+
     if (!response.ok) {
       const errorMessage = data.message || 'Failed to remove from wishlist';
       const error = new Error(errorMessage);
       (error as any).status = response.status;
       throw error;
     }
-    
+
     // Transform the response to match the expected frontend format
     if (data && data.items) {
       return {
@@ -391,30 +410,32 @@ class ApiService {
           price: item.product?.price || 0,
           image: item.product?.images?.[0] || '',
           rating: 0, // Default rating if not provided
-          product: item.product // Include full product details
-        }))
+          product: item.product, // Include full product details
+        })),
       };
     }
-    
+
     return { items: [] };
   }
 
   async isInWishlist(productId: string) {
     const headers = await this.getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/wishlist/check/${productId}`, {
-      method: 'GET',
-      headers,
-    });
-    
+    const response = await fetch(
+      `${API_BASE_URL}/wishlist/check/${productId}`,
+      {
+        method: 'GET',
+        headers,
+      }
+    );
+
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
       throw new Error(error.message || 'Failed to check wishlist status');
     }
-    
+
     const data = await response.json();
     return data.isInWishlist || false;
   }
-
 
   //Cart methods
   async getCart() {
@@ -433,7 +454,11 @@ class ApiService {
     return data;
   }
 
-  async addToCart(productId: string, quantity: number = 1, options: any = null) {
+  async addToCart(
+    productId: string,
+    quantity: number = 1,
+    options: any = null
+  ) {
     const headers = await this.getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/cart/items`, {
       method: 'POST',
@@ -499,7 +524,11 @@ class ApiService {
     return data;
   }
 
-  async getSellerProducts(sellerId: string, page: number = 1, limit: number = 10) {
+  async getSellerProducts(
+    sellerId: string,
+    page: number = 1,
+    limit: number = 10
+  ) {
     try {
       const headers = await this.getAuthHeaders();
       const response = await fetch(
@@ -523,13 +552,10 @@ class ApiService {
   async deleteProduct(productId: string) {
     try {
       const headers = await this.getAuthHeaders();
-      const response = await fetch(
-        `${API_BASE_URL}/products/${productId}`,
-        {
+      const response = await fetch(`${API_BASE_URL}/products/${productId}`, {
         method: 'DELETE',
-          headers
-        }
-      );
+        headers,
+      });
 
       const json = await response.json();
       if (!response.ok) {
@@ -553,24 +579,27 @@ class ApiService {
           ...headers,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          businessName, 
+        body: JSON.stringify({
+          businessName,
           email,
-          isMobile: Platform.OS !== 'web' 
+          isMobile: Platform.OS !== 'web',
         }),
       });
 
       const responseData = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(
-          responseData.error || 
-          responseData.message || 
-          'Failed to start onboarding. Please try again.'
+          responseData.error ||
+            responseData.message ||
+            'Failed to start onboarding. Please try again.'
         );
       }
 
-      if (!responseData.data?.onboardingUrl && !responseData.data?.isOnboarded) {
+      if (
+        !responseData.data?.onboardingUrl &&
+        !responseData.data?.isOnboarded
+      ) {
         throw new Error('No onboarding URL received from server');
       }
 
@@ -584,31 +613,34 @@ class ApiService {
   async getSellerStatus(sellerId: string) {
     try {
       const headers = await this.getAuthHeaders();
-      const response = await fetch(`${API_BASE_URL}/Stripe/connect/status/${sellerId}`, {
-        method: 'GET',
-        headers: {
-          ...headers,
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/Stripe/connect/status/${sellerId}`,
+        {
+          method: 'GET',
+          headers: {
+            ...headers,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
       const responseData = await response.json().catch(() => ({}));
-      
+
       // Handle 401 Unauthorized - user is not a seller yet
       if (response.status === 401) {
         return {
           isOnboarded: false,
           chargesEnabled: false,
           detailsSubmitted: false,
-          requirements: ['Complete seller registration']
+          requirements: ['Complete seller registration'],
         };
       }
-      
+
       if (!response.ok) {
         throw new Error(
-          responseData.message || 
-          responseData.error || 
-          'Failed to fetch seller status. Please try again.'
+          responseData.message ||
+            responseData.error ||
+            'Failed to fetch seller status. Please try again.'
         );
       }
 
@@ -621,7 +653,7 @@ class ApiService {
         chargesEnabled: responseData.data?.chargesEnabled || false,
         detailsSubmitted: responseData.data?.detailsSubmitted || false,
         requirements: responseData.data?.requirements || [],
-        ...responseData.data
+        ...responseData.data,
       };
     } catch (error) {
       console.error('Get seller status error:', error);
@@ -652,28 +684,35 @@ class ApiService {
       const headers = await this.getAuthHeaders();
       // Convert amount to the smallest currency unit (e.g., cents)
       const amountInCents = Math.round(amount * 100);
-      
-      const response = await fetch(`${API_BASE_URL}/stripe/create-payment-intent`, {
-        method: 'POST',
-        headers: {
-          ...headers,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          amount: amountInCents,
-          currency: currency.toLowerCase()
-        }),
-      });
+
+      const response = await fetch(
+        `${API_BASE_URL}/stripe/create-payment-intent`,
+        {
+          method: 'POST',
+          headers: {
+            ...headers,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            amount: amountInCents,
+            currency: currency.toLowerCase(),
+          }),
+        }
+      );
 
       const responseData = await response.json();
 
       if (!response.ok) {
         console.error('Payment intent error response:', responseData);
-        throw new Error(responseData.message || 'Failed to create payment intent');
+        throw new Error(
+          responseData.message || 'Failed to create payment intent'
+        );
       }
 
       if (!responseData.success) {
-        throw new Error(responseData.message || 'Payment intent creation failed');
+        throw new Error(
+          responseData.message || 'Payment intent creation failed'
+        );
       }
 
       return {
@@ -693,8 +732,11 @@ class ApiService {
   async createOrder(orderData: any) {
     try {
       const headers = await this.getAuthHeaders();
-      console.log('Creating order with data:', JSON.stringify(orderData, null, 2));
-      
+      console.log(
+        'Creating order with data:',
+        JSON.stringify(orderData, null, 2)
+      );
+
       const response = await fetch(`${API_BASE_URL}/orders`, {
         method: 'POST',
         headers: {
@@ -705,25 +747,30 @@ class ApiService {
       });
 
       const responseData = await response.json().catch(() => ({}));
-      
+
       if (!response.ok) {
         // Extract and format validation errors if they exist
-        const errorDetails = responseData.errors ? 
-          `Validation errors: ${JSON.stringify(responseData.errors, null, 2)}` : 
-          'No additional error details';
-          
+        const errorDetails = responseData.errors
+          ? `Validation errors: ${JSON.stringify(responseData.errors, null, 2)}`
+          : 'No additional error details';
+
         console.error('Order creation failed:', {
           status: response.status,
           statusText: response.statusText,
           response: responseData,
           requestData: orderData,
-          errorDetails: errorDetails
+          errorDetails: errorDetails,
         });
-        
+
         // Create a more detailed error message
-        const errorMessage = responseData.message || 
-          (responseData.errors ? 'Validation failed' : 'Failed to create order');
-        const error = new Error(`${errorMessage} (${response.status})`) as Error & {
+        const errorMessage =
+          responseData.message ||
+          (responseData.errors
+            ? 'Validation failed'
+            : 'Failed to create order');
+        const error = new Error(
+          `${errorMessage} (${response.status})`
+        ) as Error & {
           response?: any;
           status?: number;
         };
@@ -741,11 +788,14 @@ class ApiService {
 
   async confirmPayment(orderId: string, paymentIntentId: string) {
     const headers = await this.getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/orders/${orderId}/confirm-payment`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ paymentIntentId }),
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/orders/${orderId}/confirm-payment`,
+      {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ paymentIntentId }),
+      }
+    );
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
@@ -755,23 +805,27 @@ class ApiService {
     return response.json();
   }
 
-  async getUserOrders(filters: { status?: string; page?: number; limit?: number } = {}) {
+  async getUserOrders(
+    filters: { status?: string; page?: number; limit?: number } = {}
+  ) {
     try {
       const { status, page = 1, limit = 10 } = filters;
       const queryParams = new URLSearchParams();
-      
+
       if (status) queryParams.append('status', status);
       queryParams.append('page', page.toString());
       queryParams.append('limit', limit.toString());
-      
+
       const headers = await this.getAuthHeaders();
-      const response = await fetch(`${API_BASE_URL}/orders?${queryParams}`, { headers });
-      
+      const response = await fetch(`${API_BASE_URL}/orders?${queryParams}`, {
+        headers,
+      });
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || 'Failed to fetch orders');
       }
-      
+
       return await response.json();
     } catch (error) {
       console.error('Error fetching user orders:', error);
@@ -791,51 +845,60 @@ class ApiService {
       const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
         headers,
       });
-      
+
       console.log('Response status:', response.status);
       const responseData = await response.json().catch(() => ({}));
-      
+
       if (!response.ok) {
         console.error('Error response data:', responseData);
-        throw new Error(responseData.message || 'Failed to fetch order details');
+        throw new Error(
+          responseData.message || 'Failed to fetch order details'
+        );
       }
 
       console.log('Order details response:', responseData);
-      
+
       // Handle both nested data and direct response
       const orderData = responseData.data || responseData;
-      
+
       if (!orderData) {
         throw new Error('No order data received from server');
       }
-      
+
       return orderData;
     } catch (error) {
       console.error('Error in getOrderDetails:', error);
-      throw error instanceof Error ? error : new Error('Failed to fetch order details');
+      throw error instanceof Error
+        ? error
+        : new Error('Failed to fetch order details');
     }
   }
 
-  async getSellerOrders(filters: { status?: string; page?: number; limit?: number } = {}) {
+  async getSellerOrders(
+    filters: { status?: string; page?: number; limit?: number } = {}
+  ) {
     try {
       const { status, page = 1, limit = 10 } = filters;
       const queryParams = new URLSearchParams();
-      
+
       if (status) queryParams.append('status', status);
       queryParams.append('page', page.toString());
       queryParams.append('limit', limit.toString());
-      
+
       const headers = await this.getAuthHeaders();
-      const response = await fetch(`${API_BASE_URL}/orders/seller/orders?${queryParams}`, { 
-        headers,
-        method: 'GET'
-      });
-      
+      const response = await fetch(
+        `${API_BASE_URL}/orders/seller/orders?${queryParams}`,
+        {
+          headers,
+          method: 'GET',
+        }
+      );
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || 'Failed to fetch seller orders');
       }
-      
+
       return await response.json();
     } catch (error) {
       console.error('Error fetching seller orders:', error);
@@ -852,14 +915,16 @@ class ApiService {
       const headers = await this.getAuthHeaders();
       const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
         headers,
-        method: 'GET'
+        method: 'GET',
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to fetch seller order details');
+        throw new Error(
+          errorData.message || 'Failed to fetch seller order details'
+        );
       }
-      
+
       const responseData = await response.json();
       return responseData.data || responseData;
     } catch (error) {
@@ -875,12 +940,12 @@ class ApiService {
       const response = await fetch(`${API_BASE_URL}/sellerDashboard/stats`, {
         headers,
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || 'Failed to fetch dashboard stats');
       }
-      
+
       const responseData = await response.json();
       return responseData.data || responseData;
     } catch (error) {
@@ -892,15 +957,20 @@ class ApiService {
   async getRevenueByCategory() {
     try {
       const headers = await this.getAuthHeaders();
-      const response = await fetch(`${API_BASE_URL}/sellerDashboard/revenue-by-category`, {
-        headers,
-      });
-      
+      const response = await fetch(
+        `${API_BASE_URL}/sellerDashboard/revenue-by-category`,
+        {
+          headers,
+        }
+      );
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to fetch revenue by category');
+        throw new Error(
+          errorData.message || 'Failed to fetch revenue by category'
+        );
       }
-      
+
       const responseData = await response.json();
       return responseData.data || responseData;
     } catch (error) {
@@ -912,15 +982,18 @@ class ApiService {
   async getMonthlyRevenue() {
     try {
       const headers = await this.getAuthHeaders();
-      const response = await fetch(`${API_BASE_URL}/sellerDashboard/monthly-revenue`, {
-        headers,
-      });
-      
+      const response = await fetch(
+        `${API_BASE_URL}/sellerDashboard/monthly-revenue`,
+        {
+          headers,
+        }
+      );
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || 'Failed to fetch monthly revenue');
       }
-      
+
       const responseData = await response.json();
       return responseData.data || responseData;
     } catch (error) {
@@ -932,15 +1005,18 @@ class ApiService {
   async getTopProducts() {
     try {
       const headers = await this.getAuthHeaders();
-      const response = await fetch(`${API_BASE_URL}/sellerDashboard/top-products`, {
-        headers,
-      });
-      
+      const response = await fetch(
+        `${API_BASE_URL}/sellerDashboard/top-products`,
+        {
+          headers,
+        }
+      );
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || 'Failed to fetch top products');
       }
-      
+
       const responseData = await response.json();
       return responseData.data || responseData;
     } catch (error) {
@@ -948,7 +1024,6 @@ class ApiService {
       throw error;
     }
   }
-
 }
 
 export const apiService = new ApiService();
