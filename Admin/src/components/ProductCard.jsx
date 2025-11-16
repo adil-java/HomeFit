@@ -2,13 +2,28 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import StatusBadge from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
+import { adminApi } from '@/services/adminApi';
+import { toast } from 'sonner';
+import { Trash2 } from 'lucide-react';
 
-const ProductCard = ({ product }) => {
+const ProductCard = ({ product, onDelete }) => {
   const navigate = useNavigate();
 
   const handleOpen = () => {
     // Navigate to product details page by id
     navigate(`/products/${product.id}`);
+  };
+
+  const handleDelete = async (e) => {
+    e.stopPropagation();
+    if (!window.confirm(`Delete "${product.name}"?`)) return;
+    try {
+      await adminApi.deleteProduct(product.id);
+      toast.success('Product deleted');
+      if (onDelete) onDelete(product.id);
+    } catch (err) {
+      toast.error(err.message || 'Failed to delete product');
+    }
   };
 
   const image = (product.images && product.images[0]) || '';
@@ -38,6 +53,13 @@ const ProductCard = ({ product }) => {
         </div>
 
         <p className="text-xs text-muted-foreground mt-3 line-clamp-3">{product.description}</p>
+        
+        <div className="mt-4 flex gap-2">
+          <Button size="sm" variant="outline" className="flex-1" onClick={handleOpen}>View</Button>
+          <Button size="sm" variant="destructive" onClick={handleDelete}>
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       </div >
     </div>
   );

@@ -1,6 +1,7 @@
 import prisma from '../config/db.js';
 import { Role } from '@prisma/client';
 import { generateToken} from '../utils/jwtHelper.js';
+import { deleteProductService } from '../services/product.service.js';
 
 export const getAllUsers = async (req, res) => {
   try {
@@ -23,7 +24,35 @@ export const getAllUsers = async (req, res) => {
     res.status(200).json({ success: true, data: users });
   } catch (error) {
     console.error('Get all users error:', error);
-    res.status(500).json({ success: false, message: 'Server Error' });
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+export const adminDeleteProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Admin can delete any product, so we pass null as sellerId to bypass ownership check
+    const product = await prisma.product.findUnique({
+      where: { id },
+      select: { id: true, sellerId: true, images: true }
+    });
+
+    if (!product) {
+      return res.status(404).json({ success: false, message: 'Product not found' });
+    }
+
+    // Use the product's actual sellerId for the service call
+    const result = await deleteProductService(id, product.sellerId);
+
+    if (!result.success) {
+      return res.status(403).json(result);
+    }
+
+    res.status(200).json({ success: true, message: 'Product deleted successfully' });
+  } catch (error) {
+    console.error('Admin delete product error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 export const revenueMonthly = async (req, res) => {

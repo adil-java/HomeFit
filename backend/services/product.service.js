@@ -453,6 +453,16 @@ export const deleteProductService = async (id, sellerId) => {
         where: { productId: id },
       }),
       
+      // Delete order items (important: must delete before product)
+      prisma.orderItem.deleteMany({
+        where: { productId: id },
+      }),
+      
+      // Delete reviews
+      prisma.review.deleteMany({
+        where: { productId: id },
+      }),
+      
       // Delete the product
       prisma.product.delete({
         where: { id },

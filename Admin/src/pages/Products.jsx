@@ -109,7 +109,7 @@ const Products = () => {
           <div className="col-span-full text-center text-muted-foreground">No products found</div>
         ) : (
           visibleProducts.map((p) => (
-            <ProductCard key={p.id} product={p} />
+            <ProductCard key={p.id} product={p} onDelete={handleDelete} />
           ))
         )}
       </div>

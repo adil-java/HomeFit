@@ -11,7 +11,8 @@ import {
   rejectSellerRequest,
   analyticsSummary,
   revenueMonthly,
-  topProducts
+  topProducts,
+  adminDeleteProduct
 } from '../controllers/admin.controller.js';
 import { toggleProductStatus } from '../controllers/product.controller.js';
 import { adminJwtVerify } from '../middlewares/authMiddleware.js';
@@ -39,5 +40,8 @@ router.route('/analytics/top-products', adminJwtVerify).get(topProducts);
 
 // Admin-only product status toggle (allows admin to change isActive / isFeatured)
 router.route('/products/:id/status', adminJwtVerify).patch(toggleProductStatus);
+
+// Admin-only product delete (can delete any product)
+router.route('/products/:id', adminJwtVerify).delete(adminDeleteProduct);
 
 export default router;
