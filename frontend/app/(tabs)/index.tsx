@@ -105,6 +105,7 @@ export default function HomeScreen() {
         try {
           const derived = (response.data || []).slice(0, 5).map((p: any) => ({
             id: p?.id,
+            modelUrl: p?.ARModelUrl,
             name: p?.name,
             rating: p?.rating,
             averageRating: p?.averageRating,
@@ -118,6 +119,7 @@ export default function HomeScreen() {
         // Normalize rating so UI consistently reads product.rating
         const normalized = (response.data || []).map((p: any) => ({
           ...p,
+          modelUrl: p?.ARModelUrl,
           rating: p?.rating ?? p?.averageRating ?? p?.averagerating ?? 0,
           inStock: p?.inStock ?? ((p?.stock ?? p?.quantity ?? 0) > 0),
         }));

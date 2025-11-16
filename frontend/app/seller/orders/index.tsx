@@ -18,6 +18,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/store/store';
 import { setOrders, setLoading } from '@/store/slices/ordersSlice';
 import { apiService } from '@/services/api';
+import { BackHandler } from 'react-native';
 
 // Helper function to safely get status config with fallback
 const getStatusConfig = (status: string) => {
@@ -72,6 +73,21 @@ export default function OrdersScreen() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const limit = 10;
+
+    // Handle hardware back button press
+    useEffect(() => {
+      const backAction = () => {
+        router.replace('/(tabs)');
+        return true;
+      };
+    
+      const backHandler = BackHandler.addEventListener(
+        'hardwareBackPress',
+        backAction
+      );
+    
+      return () => backHandler.remove();
+    }, []);
 
   const fetchOrders = async (isRefreshing = false) => {
     try {

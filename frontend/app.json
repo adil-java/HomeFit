@@ -9,9 +9,9 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/logo-square.png",
+      "image": "./assets/images/logoTransparent.png",
       "resizeMode": "cover",
-      "backgroundColor": "#e6edf2"
+      "backgroundColor": "#1A202C"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -41,8 +41,8 @@
     "android": {
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/logo-square.png",
-        "backgroundColor": "#e6edf2"
+        "foregroundImage": "./assets/images/logoTransparent.png",
+        "backgroundColor": "#1A202C"
       },
       "package": "com.yourcompany.boltecommerce",
       "intentFilters": [
@@ -71,7 +71,7 @@
     "web": {
       "bundler": "metro",
       "output": "single",
-      "favicon": "./assets/images/logo-square.png"
+      "favicon": "./assets/images/logoTransparent.png"
     },
     "plugins": [
       [
@@ -105,9 +105,9 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/logo-square.png",
+          "image": "./assets/images/logoTransparent.png",
           "resizeMode": "cover",
-          "backgroundColor": "#e6edf2"
+          "backgroundColor": "#1A202C"
         }
       ],
       "expo-secure-store",

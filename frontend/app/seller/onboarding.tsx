@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { router, useLocalSearchParams } from "expo-router";
 import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
+import { BackHandler } from 'react-native';
 
 // Add deep linking configuration for mobile
 const DEEP_LINKING_URL = 'yourapp://' // Replace with your app's deep link scheme
@@ -56,6 +57,21 @@ export default function OnboardingPage() {
   const [loading, setLoading] = useState(true);
   const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
   const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus | null>(null);
+
+    // Handle hardware back button press
+    useEffect(() => {
+      const backAction = () => {
+        router.replace('/(tabs)');
+        return true;
+      };
+    
+      const backHandler = BackHandler.addEventListener(
+        'hardwareBackPress',
+        backAction
+      );
+    
+      return () => backHandler.remove();
+    }, []);
 
   useEffect(() => {
     // Set up deep linking listener
@@ -429,7 +445,7 @@ export default function OnboardingPage() {
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
             style={[styles.button, styles.secondaryButton]} 
-            onPress={() => router.back()} 
+            onPress={() => router.replace('/(tabs)')}
             disabled={loading}
           >
             <Text style={styles.secondaryButtonText}>Maybe Later</Text>
