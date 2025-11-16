@@ -1,7 +1,7 @@
 import { auth } from '../firebaseConfig';
 import { Platform } from 'react-native';
 
-const API_BASE_URL = 'https://home-fit-backend.onrender.com/api';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://home-fit-backend.onrender.com/api';
 
 class ApiService {
   private async getAuthHeaders(): Promise<Record<string, string>> {
