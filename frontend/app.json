@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "HomeFit",
-    "slug": "HomeFit-expo-nativewind",
+    "slug": "bolt-expo-nativewind",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/logo-square.png",
@@ -18,14 +18,16 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourcompany.HomeFitecommerce",
+      "bundleIdentifier": "com.yourcompany.boltecommerce",
       "associatedDomains": [
         "applinks:yourapp.com"
       ],
       "infoPlist": {
         "CFBundleURLTypes": [
           {
-            "CFBundleURLSchemes": ["myapp"]
+            "CFBundleURLSchemes": [
+              "myapp"
+            ]
           }
         ],
         "NSPhotoLibraryUsageDescription": "Allow $(PRODUCT_NAME) to access your photos",
@@ -41,7 +43,7 @@
         "foregroundImage": "./assets/images/logo-square.png",
         "backgroundColor": "#e6edf2"
       },
-      "package": "com.yourcompany.HomeFitecommerce",
+      "package": "com.yourcompany.boltecommerce",
       "intentFilters": [
         {
           "action": "VIEW",
@@ -52,7 +54,10 @@
               "host": "*"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ],
       "permissions": [
@@ -110,6 +115,7 @@
       "eas": {
         "projectId": "b87d57da-7325-457c-aec2-ad595da68ad1"
       }
-    }
+    },
+    "owner": "adil-java"
   }
 }

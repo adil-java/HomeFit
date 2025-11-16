@@ -2,7 +2,7 @@ import { auth } from '../firebaseConfig';
 import { Platform } from 'react-native';
 
 const API_BASE_URL =
-  (process.env.EXPO_PUBLIC_API_BASE_URL as string) || 'http://192.168.0.112:8080/api';
+  (process.env.EXPO_PUBLIC_API_BASE_URL as string) || 'https://home-fit-backend.onrender.com/api/';
 
 class ApiService {
   private async getAuthHeaders(): Promise<Record<string, string>> {
