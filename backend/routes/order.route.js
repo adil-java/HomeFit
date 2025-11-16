@@ -207,41 +207,6 @@ router.get(
   getOrderNotes
 );
 
-// Admin routes
-router.get(
-  '/admin/orders',
-  protect,
-  admin,
-  [
-    query('status')
-      .optional()
-      .isIn(['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED']),
-    query('userId')
-      .optional()
-      .isUUID(),
-    query('limit')
-      .optional()
-      .isInt({ min: 1, max: 100 })
-      .toInt(),
-    query('page')
-      .optional()
-      .isInt({ min: 1 })
-      .toInt()
-  ],
-  listAllOrders
-);
-
-router.put(
-  '/admin/orders/:id/status',
-  protect,
-  admin,
-  [
-    param('id').isUUID().withMessage('Invalid order ID'),
-    ...validateStatusUpdate
-  ],
-  updateOrderStatus
-);
-
 // Webhook (no auth required)
 router.post(
   '/webhook/stripe',

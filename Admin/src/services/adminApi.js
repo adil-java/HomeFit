@@ -111,4 +111,29 @@ export const adminApi = {
   async analyticsTopProducts() {
     return request('/analytics/top-products');
   },
+  async analyticsSalesBySeller(params = {}) {
+    const qs = new URLSearchParams();
+    if (params.startDate) qs.append('startDate', params.startDate);
+    if (params.endDate) qs.append('endDate', params.endDate);
+    const query = qs.toString() ? `?${qs.toString()}` : '';
+    return request(`/analytics/sales-by-seller${query}`);
+  },
+  async getAdminOrders(params = {}) {
+    const qs = new URLSearchParams();
+    if (params.status) qs.append('status', params.status);
+    if (params.userId) qs.append('userId', params.userId);
+    if (params.sellerId) qs.append('sellerId', params.sellerId);
+    if (params.startDate) qs.append('startDate', params.startDate);
+    if (params.endDate) qs.append('endDate', params.endDate);
+    if (params.page) qs.append('page', params.page);
+    if (params.limit) qs.append('limit', params.limit);
+    const query = qs.toString() ? `?${qs.toString()}` : '';
+    return request(`/orders${query}`);
+  },
+  async updateOrderStatus(orderId, status, notes) {
+    return request(`/orders/${orderId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status, notes }),
+    });
+  },
 };

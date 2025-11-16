@@ -360,6 +360,86 @@ class OrderService {
     };
   }
 
+  async listAllOrders(filters = {}) {
+    // Admin endpoint to list ALL orders (not filtered by userId)
+    const limit = Math.min(parseInt(filters.limit) || 10, 100);
+    const page = Math.max(1, parseInt(filters.page) || 1);
+    const skip = (page - 1) * limit;
+
+    const where = {};
+    if (filters.status) {
+      where.status = filters.status;
+    }
+    if (filters.sellerId) {
+      where.sellerId = filters.sellerId;
+    }
+
+    const [orders, total] = await Promise.all([
+      prisma.order.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: isNaN(skip) ? 0 : skip,
+        take: isNaN(limit) ? 10 : limit,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          items: {
+            select: {
+              id: true,
+              productName: true,
+              quantity: true,
+              price: true,
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  images: true,
+                  sellerId: true,
+                  seller: {
+                    select: {
+                      id: true,
+                      name: true,
+                      email: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      }),
+      prisma.order.count({ where }),
+    ]);
+
+    // Extract seller info from items
+    const ordersWithSeller = orders.map(order => {
+      const firstItem = order.items?.[0];
+      const seller = firstItem?.product?.seller;
+      const sellerId = firstItem?.product?.sellerId;
+      
+      return {
+        ...order,
+        seller: seller || null,
+        sellerId: sellerId || null,
+      };
+    });
+
+    return {
+      data: ordersWithSeller,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
   async listSellersOrders(sellerId, filters = {}) {
     // Ensure we have valid numbers for pagination
     const limit = Math.min(parseInt(filters.limit) || 10, 100); // Cap at 100 items per page

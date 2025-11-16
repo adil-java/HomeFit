@@ -228,23 +228,24 @@ export const listAllOrders = async (req, res) => {
   try {
     const { status, userId, limit = 20, page = 1 } = req.query;
     
-    const { orders, total } = await OrderService.listUserOrders({
-      status,
-      userId,
-      limit: parseInt(limit),
-      skip: (parseInt(page) - 1) * parseInt(limit)
-    });
+    // For admin, if userId is provided, filter by that user, otherwise get all orders
+    const result = userId 
+      ? await OrderService.listUserOrders(userId, {
+          status,
+          limit: parseInt(limit),
+          page: parseInt(page)
+        })
+      : await OrderService.listAllOrders({
+          status,
+          limit: parseInt(limit),
+          page: parseInt(page)
+        });
     
     res.json({
       success: true,
-      count: orders.length,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / limit)
-      },
-      data: orders
+      count: result.data?.length || 0,
+      pagination: result.pagination,
+      data: result.data || []
     });
   } catch (error) {
     console.error('List All Orders Error:', error);

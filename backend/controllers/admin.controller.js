@@ -330,3 +330,167 @@ export const analyticsSummary = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
+
+export const salesBySeller = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const where = { paymentMethod: 'card' };
+    if (startDate) where.createdAt = { gte: new Date(startDate) };
+    if (endDate) {
+      where.createdAt = where.createdAt || {};
+      where.createdAt.lte = new Date(endDate);
+    }
+
+    const orders = await prisma.order.groupBy({
+      by: ['sellerId'],
+      where,
+      _sum: { total: true },
+      _count: { id: true },
+    });
+
+    // Filter out null sellerIds in JS
+    const filtered = orders.filter(o => o.sellerId != null);
+
+    // Fetch seller info
+    const sellerIds = filtered.map(o => o.sellerId);
+    const sellers = await prisma.user.findMany({
+      where: { id: { in: sellerIds } },
+      select: { id: true, name: true, email: true },
+    });
+    const sellerMap = new Map(sellers.map(s => [s.id, s]));
+
+    const result = filtered.map(o => ({
+      sellerId: o.sellerId,
+      name: sellerMap.get(o.sellerId)?.name || null,
+      email: sellerMap.get(o.sellerId)?.email || null,
+      totalSales: Number(o._sum.total || 0),
+      orderCount: o._count.id,
+    }));
+
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('Sales by seller error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+export const adminListAllOrders = async (req, res) => {
+  try {
+    const { status, userId, sellerId, startDate, endDate, limit = 20, page = 1 } = req.query;
+    
+    const where = {};
+    if (status) where.status = status;
+    if (userId) where.userId = userId;
+    if (sellerId) where.sellerId = sellerId;
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) where.createdAt.gte = new Date(startDate);
+      if (endDate) where.createdAt.lte = new Date(endDate);
+    }
+
+    const limitNum = Math.min(parseInt(limit) || 20, 100);
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const skip = (pageNum - 1) * limitNum;
+
+    const [orders, total] = await Promise.all([
+      prisma.order.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: isNaN(skip) ? 0 : skip,
+        take: isNaN(limitNum) ? 20 : limitNum,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          items: {
+            select: {
+              id: true,
+              productName: true,
+              quantity: true,
+              price: true,
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  images: true,
+                  sellerId: true,
+                  seller: {
+                    select: {
+                      id: true,
+                      name: true,
+                      email: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      }),
+      prisma.order.count({ where }),
+    ]);
+
+    // Extract seller info from items
+    const ordersWithSeller = orders.map(order => {
+      const firstItem = order.items?.[0];
+      const seller = firstItem?.product?.seller;
+      const orderSellerId = firstItem?.product?.sellerId;
+      
+      return {
+        ...order,
+        seller: seller || null,
+        sellerId: orderSellerId || null,
+      };
+    });
+
+    res.json({
+      success: true,
+      data: ordersWithSeller,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
+      },
+    });
+  } catch (error) {
+    console.error('Admin list orders error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+export const adminUpdateOrderStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, notes } = req.body;
+
+    if (!['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED'].includes(status)) {
+      return res.status(400).json({ success: false, message: 'Invalid status' });
+    }
+
+    const order = await prisma.order.update({
+      where: { id },
+      data: { status },
+    });
+
+    // Optionally log status change
+    if (notes) {
+      await prisma.statusHistory.create({
+        data: {
+          orderId: id,
+          status,
+          notes,
+        },
+      });
+    }
+
+    res.json({ success: true, data: order });
+  } catch (error) {
+    console.error('Admin update order status error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
