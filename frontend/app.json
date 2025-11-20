@@ -4,14 +4,14 @@
     "slug": "bolt-expo-nativewind",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/logo-square.png",
+    "icon": "./assets/images/logoTransparent.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/logoTransparent.png",
       "resizeMode": "cover",
-      "backgroundColor": "#1A202C"
+      "backgroundColor": "#2f3b4b"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -42,7 +42,7 @@
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/logoTransparent.png",
-        "backgroundColor": "#1A202C"
+        "backgroundColor": "#2f3b4b"
       },
       "package": "com.yourcompany.boltecommerce",
       "intentFilters": [
@@ -107,7 +107,7 @@
         {
           "image": "./assets/images/logoTransparent.png",
           "resizeMode": "cover",
-          "backgroundColor": "#1A202C"
+          "backgroundColor": "#2f3b4b"
         }
       ],
       "expo-secure-store",
