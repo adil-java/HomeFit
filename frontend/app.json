@@ -4,12 +4,12 @@
     "slug": "bolt-expo-nativewind",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/logoTransparent.png",
+    "icon": "./assets/images/LOGO.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/logoTransparent.png",
+      "image": "./assets/images/LOGO.png",
       "resizeMode": "cover",
       "backgroundColor": "#2f3b4b"
     },
@@ -41,7 +41,7 @@
     "android": {
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/logoTransparent.png",
+        "foregroundImage": "./assets/images/LOGO.png",
         "backgroundColor": "#2f3b4b"
       },
       "package": "com.yourcompany.boltecommerce",
@@ -71,7 +71,7 @@
     "web": {
       "bundler": "metro",
       "output": "single",
-      "favicon": "./assets/images/logoTransparent.png"
+      "favicon": "./assets/images/LOGO.png"
     },
     "plugins": [
       [
@@ -105,7 +105,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/logoTransparent.png",
+          "image": "./assets/images/LOGO.png",
           "resizeMode": "cover",
           "backgroundColor": "#2f3b4b"
         }
