@@ -170,7 +170,9 @@ export default function OrderDetailScreen() {
   }
 
   const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0);
-  const statusInfo = statusConfig[order.status as keyof typeof statusConfig] || statusConfig.pending;
+  // Convert status to lowercase to match statusConfig keys
+  const statusKey = order.status.toLowerCase() as keyof typeof statusConfig;
+  const statusInfo = statusConfig[statusKey] || statusConfig.pending;
   const StatusIcon = statusInfo.icon;
   const statusColor = statusInfo.color;
   const statusLabel = statusInfo.label;

@@ -257,25 +257,30 @@ class OrderService {
     }
 
     return await prisma.$transaction(async (tx) => {
-      // Update order status
+      // Update only the status field
       const order = await tx.order.update({
         where: { id: orderId },
-        data: {
-          status,
-          ...(status === 'CANCELLED' && { cancelledAt: new Date() }),
-          ...(status === 'DELIVERED' && { deliveredAt: new Date() }),
-        },
+        data: { status }
       });
 
-      // Add to status history
+      // Add to status history with only valid fields
       await tx.orderStatusHistory.create({
         data: {
           orderId,
-          status,
-          notes,
-          createdBy: userId,
-        },
+          status
+        }
       });
+
+      // Add a note to the order if notes were provided
+      if (notes) {
+        await tx.orderNote.create({
+          data: {
+            orderId,
+            author: userId,
+            content: notes
+          }
+        });
+      }
 
       return order;
     });

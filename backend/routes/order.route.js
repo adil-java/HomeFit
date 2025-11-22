@@ -11,7 +11,7 @@ import {
   getOrderNotes,
   listSellersOrders
 } from '../controllers/order.controller.js';
-import { protect, adminJwtVerify as admin } from '../middlewares/authMiddleware.js';
+import { protect, checkSeller } from '../middlewares/authMiddleware.js';
 import { body, param, query, validationResult } from 'express-validator';
 
 const router = express.Router();
@@ -101,6 +101,15 @@ const validateNote = [
     .isBoolean()
     .withMessage('isPublic must be a boolean')
 ];
+
+router.patch(
+  '/:id/status',
+  protect,
+  checkSeller,
+  [param('id').isUUID().withMessage('Invalid order ID')],
+  validateStatusUpdate,
+  updateOrderStatus
+);
 
 // Customer routes
 router.post(

@@ -8,6 +8,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, Modal, Pressable, Scro
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import Toast from 'react-native-toast-message';
 
 function TabBarBadge({ count }: { count: number }) {
   const { theme } = useTheme();
@@ -190,7 +191,12 @@ export default function TabLayout() {
                 <TouchableOpacity 
                   style={styles.menuItem}
                   onPress={() => {
-                    router.push('/seller/notifications');
+                    Toast.show({
+                      type: 'info',
+                      text1: 'Coming Soon',
+                      text2: 'The Notifications feature will be available in the next update!',
+                      position: 'top'
+                    });
                     setShowSellerMenu(false);
                   }}
                 >
@@ -204,26 +210,6 @@ export default function TabLayout() {
                     </Text>
                   </View>
                 </TouchableOpacity>
-
-                {/* Settings */}
-                <TouchableOpacity 
-                  style={styles.menuItem}
-                  onPress={() => {
-                    router.push('/seller/settings');
-                    setShowSellerMenu(false);
-                  }}
-                >
-                  <Settings size={20} color={theme.colors.primary} style={styles.menuIcon} />
-                  <View style={styles.menuTextContainer}>
-                    <Text style={[styles.menuText, { color: theme.colors.text }]}>
-                      Settings
-                    </Text>
-                    <Text style={[styles.menuSubtext, { color: theme.colors.textSecondary }]}>
-                      App configuration
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-
 
                 {/* Logout */}
                 <TouchableOpacity 
@@ -459,7 +445,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 8,
     borderRadius: 8,
-    marginBottom: 4,
+    marginBottom: 6,
   },
   menuIcon: {
     width: 36,

@@ -188,9 +188,9 @@ export default function ProductDetailScreen() {
               fill={isInWishlist ? theme.colors.accent : 'transparent'}
             />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.headerButton}>
+          {/* <TouchableOpacity style={styles.headerButton}>
             <Share size={24} color={theme.colors.text} />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       </View>
 

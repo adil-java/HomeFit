@@ -18,6 +18,27 @@ class ApiService {
     return headers;
   }
 
+  // Order related methods
+  async updateOrderStatus(orderId: string, status: string, notes: string = '') {
+    try {
+      const headers = await this.getAuthHeaders();
+      const response = await fetch(`${API_BASE_URL}/orders/${orderId}/status`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ status, notes })
+      });
+
+      const json = await response.json();
+      if (!response.ok) {
+        throw new Error(json.error || 'Failed to update order status');
+      }
+      return json;
+    } catch (error) {
+      console.error('Update order status error:', error);
+      throw error;
+    }
+  }
+
   async verifyToken() {
     try {
       const headers = await this.getAuthHeaders();
@@ -130,6 +151,33 @@ class ApiService {
       throw error;
     }
   }
+
+  async getProductById(productId: string) {
+  try {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}/products/${productId}`, {
+      method: 'GET',
+      headers,
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to fetch product');
+    }
+
+    return { 
+      success: true, 
+      data 
+    };
+  } catch (error) {
+    console.error('Error fetching product:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Failed to fetch product' 
+    };
+  }
+}
 
   async getProfile() {
     try {
@@ -546,6 +594,62 @@ class ApiService {
     } catch (error) {
       console.error('Error fetching seller products:', error);
       throw error;
+    }
+  }
+
+  async updateProduct(productId: string, productData: any, files: any[] = []) {
+    try {
+      const headers = await this.getAuthHeaders();
+      // Remove Content-Type header to let the browser set it with the correct boundary
+      // @ts-ignore - We're intentionally removing the Content-Type header
+      delete headers['Content-Type'];
+      
+      const formData = new FormData();
+      
+      // Append all product data fields to formData
+      Object.keys(productData).forEach(key => {
+        if (key === 'images' && Array.isArray(productData[key])) {
+          // Handle images array
+          formData.append(key, JSON.stringify(productData[key]));
+        } else if (key === 'categoryIds' && Array.isArray(productData[key])) {
+          // Handle categoryIds array
+          formData.append(key, JSON.stringify(productData[key]));
+        } else if (key === 'variants' && Array.isArray(productData[key])) {
+          // Handle variants array
+          formData.append(key, JSON.stringify(productData[key]));
+        } else if (productData[key] !== undefined && productData[key] !== null) {
+          formData.append(key, productData[key]);
+        }
+      });
+
+      // Append files if any
+      if (files && files.length > 0) {
+        files.forEach((file, index) => {
+          // @ts-ignore - File type is compatible with FormData
+          formData.append('files', file);
+        });
+      }
+
+      const response = await fetch(`${API_BASE_URL}/products/${productId}`, {
+        method: 'PUT',
+        headers,
+        body: formData,
+      });
+
+      const json = await response.json().catch(() => ({}));
+      
+      if (!response.ok) {
+        const error = json.error || 'Failed to update product';
+        throw new Error(error);
+      }
+
+      return { success: true, data: json };
+    } catch (error) {
+      console.error('Error updating product:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to update product' 
+      };
     }
   }
 

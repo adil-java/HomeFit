@@ -27,39 +27,19 @@ import {
   AlertCircle
 } from 'lucide-react-native';
 
-// Mock API function - replace with actual API calls
-const saveProduct = async (productData: any, isUpdate = false) => {
-  console.log('Saving product:', productData);
-  // Simulate API call
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        success: true,
-        message: isUpdate ? 'Product updated successfully' : 'Product created successfully',
-        data: { ...productData, id: isUpdate ? productData.id : Math.random().toString() }
-      });
-    }, 1000);
-  });
-};
+import { apiService } from '@/services/api';
+
 const getProductById = async (id: string) => {
-  // Mock data - replace with actual API call
-  const mockProduct =   {
-      id: 'f676bf63-db27-4eda-9b68-ee1ee3c591ec',
-      name: 'Industrial Metal Canopy Bed',
-      description: 'Elevated in striking modern-industrial style, this canopy bed features a bold steel frame with a matte finish.',
-      category: 'Beds',
-      price: 999.99,
-      sales: 190,
-      revenue: 189998.1,
-      growth: 18.3,
-      stock: 18,
-      rating: 4.8,
-      image: 'https://res.cloudinary.com/dmpinsiam/image/upload/v1760470454/ecommerce/products/khlt31mjw6ejdwmrz28t.jpg'
+  try {
+    const response = await apiService.getProductById(id);
+    if (response.success) {
+      return response.data;
     }
-  
-  return new Promise((resolve) => {
-    setTimeout(() => resolve(mockProduct), 500);
-  });
+    throw new Error(response.error || 'Failed to load product');
+  } catch (error) {
+    console.error('Error fetching product:', error);
+    throw error;
+  }
 };
 
 export default function ProductForm() {
@@ -110,22 +90,28 @@ export default function ProductForm() {
   const loadProduct = async () => {
     try {
       setLoading(true);
-      const product = await getProductById(id as string);
-      setFormData({
-        name: product.name,
-        description: product.description || '',
-        price: product.price.toString(),
-        category: product.category,
-        stock: product.stock.toString(),
-        sku: product.sku,
-        status: product.status,
-        image: product.image,
-        sizes: [],
-        colors: [],
-      });
+      const response = await getProductById(id as string);
+      
+      if (response.success && response.data) {
+        const product = response.data;
+        setFormData({
+          name: product.name || '',
+          description: product.description || '',
+          price: product.price ? product.price.toString() : '',
+          category: product.categories?.[0]?.id || '',
+          stock: product.quantity ? product.quantity.toString() : '0',
+          sku: product.sku || '',
+          status: product.isActive ? 'active' : 'draft',
+          image: Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : '',
+          sizes: [],
+          colors: [],
+        });
+      } else {
+        throw new Error(response.error || 'Failed to load product');
+      }
     } catch (error) {
       console.error('Error loading product:', error);
-      Alert.alert('Error', 'Failed to load product');
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to load product');
     } finally {
       setLoading(false);
     }
@@ -176,20 +162,53 @@ export default function ProductForm() {
     
     try {
       setSaving(true);
-      const result = await saveProduct({
-        ...formData,
+      
+      const productData = {
+        name: formData.name,
+        description: formData.description,
         price: parseFloat(formData.price),
-        stock: parseInt(formData.stock, 10),
-      }, isEditMode);
+        comparePrice: formData.comparePrice ? parseFloat(formData.comparePrice) : undefined,
+        cost: formData.cost ? parseFloat(formData.cost) : undefined,
+        sku: formData.sku,
+        barcode: formData.barcode,
+        quantity: parseInt(formData.stock, 10),
+        isActive: formData.status === 'active',
+        isFeatured: formData.isFeatured || false,
+        images: formData.image ? [formData.image] : [],
+        categoryIds: formData.category ? [formData.category] : [],
+        variants: formData.variants || []
+      };
+
+      let result;
+      if (isEditMode) {
+        result = await apiService.updateProduct(id as string, productData, formData.uploadedFiles || []);
+      } else {
+        result = await apiService.createProduct(productData, formData.uploadedFiles || []);
+      }
       
       if (result.success) {
-        Alert.alert('Success', result.message, [
-          { text: 'OK', onPress: () => router.back() }
-        ]);
+        Alert.alert(
+          'Success', 
+          isEditMode ? 'Product updated successfully' : 'Product created successfully',
+          [
+            { 
+              text: 'OK', 
+              onPress: () => router.replace({
+                pathname: '/seller/products',
+                params: { refresh: new Date().getTime() }
+              }) 
+            }
+          ]
+        );
+      } else {
+        throw new Error(result.error || 'Failed to save product');
       }
     } catch (error) {
       console.error('Error saving product:', error);
-      Alert.alert('Error', 'Failed to save product');
+      Alert.alert(
+        'Error', 
+        error instanceof Error ? error.message : 'Failed to save product'
+      );
     } finally {
       setSaving(false);
     }

@@ -200,13 +200,12 @@ export const updateOrderStatus = async (req, res) => {
     const { id: orderId } = req.params;
     const { status, notes } = req.body;
 
-    const order = await OrderService.updateOrderStatus({
+    const order = await OrderService.updateOrderStatus(
       orderId,
       status,
       notes,
-      userId: req.user.id,
-      isAdmin: req.user.role === 'ADMIN'
-    });
+      req.user.id
+    );
 
     res.json({
       success: true,

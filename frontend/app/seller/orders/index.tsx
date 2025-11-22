@@ -6,12 +6,13 @@ import {
   ScrollView,
   TouchableOpacity,
   FlatList,
-  Image,
   ActivityIndicator,
   RefreshControl,
+  Modal,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, Package, Truck, CircleCheck as CheckCircle, Clock, Circle as XCircle, Filter, MessageCircle, Edit } from 'lucide-react-native';
+import { ArrowLeft, Package, Truck, CircleCheck as CheckCircle, Clock, Circle as XCircle, MessageCircle, Edit } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useDispatch, useSelector } from 'react-redux';
@@ -45,22 +46,21 @@ const getStatusConfig = (status: string) => {
   };
 };
 
-// For backward compatibility
-const statusConfig = {
-  pending: { icon: Clock, color: '#f59e0b', label: 'Pending' },
-  processing: { icon: Package, color: '#3b82f6', label: 'Processing' },
-  shipped: { icon: Truck, color: '#8b5cf6', label: 'Shipped' },
-  delivered: { icon: CheckCircle, color: '#10b981', label: 'Delivered' },
-  cancelled: { icon: XCircle, color: '#ef4444', label: 'Cancelled' },
-};
-
 const filterOptions = [
-  { key: 'All', label: 'All' },
-  { key: 'Pending', label: 'Pending' },
-  { key: 'Processing', label: 'Processing' },
-  { key: 'Shipped', label: 'Shipped' },
-  { key: 'Delivered', label: 'Delivered' },
-  { key: 'Cancelled', label: 'Cancelled' },
+  { key: 'all', label: 'All' },
+  { key: 'pending', label: 'Pending' },
+  { key: 'processing', label: 'Processing' },
+  { key: 'shipped', label: 'Shipped' },
+  { key: 'delivered', label: 'Delivered' },
+  { key: 'cancelled', label: 'Cancelled' },
+];
+
+const statusOptions = [
+  { value: 'PENDING', label: 'Pending' },
+  { value: 'PROCESSING', label: 'Processing' },
+  { value: 'SHIPPED', label: 'Shipped' },
+  { value: 'DELIVERED', label: 'Delivered' },
+  { value: 'CANCELLED', label: 'Cancelled' },
 ];
 
 export default function OrdersScreen() {
@@ -68,50 +68,79 @@ export default function OrdersScreen() {
   const dispatch = useDispatch<AppDispatch>();
   const { orders, loading } = useSelector((state: RootState) => state.orders);
   const [error, setError] = useState<string | null>(null);
-  const [selectedFilter, setSelectedFilter] = useState('All');
+  const [selectedFilter, setSelectedFilter] = useState('all');
+  const [isStatusModalVisible, setIsStatusModalVisible] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const limit = 10;
 
-    // Handle hardware back button press
-    useEffect(() => {
-      const backAction = () => {
-        router.replace('/(tabs)');
-        return true;
-      };
+  // Set initial loading state and fetch orders on mount
+  useEffect(() => {
+    let isMounted = true;
     
-      const backHandler = BackHandler.addEventListener(
-        'hardwareBackPress',
-        backAction
-      );
+    const loadInitialData = async () => {
+      try {
+        dispatch(setLoading(true));
+        await fetchOrders(false, 1);
+      } catch (err) {
+        console.error('Error loading initial data:', err);
+      } finally {
+        if (isMounted) {
+          dispatch(setLoading(false));
+        }
+      }
+    };
     
-      return () => backHandler.remove();
-    }, []);
+    loadInitialData();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
-  const fetchOrders = async (isRefreshing = false) => {
+  // Handle hardware back button press
+  useEffect(() => {
+    const backAction = () => {
+      router.replace('/(tabs)');
+      return true;
+    };
+  
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction
+    );
+  
+    return () => backHandler.remove();
+  }, []);
+
+  const fetchOrders = async (isRefreshing = false, currentPage = page) => {
     try {
       if (isRefreshing) {
         setRefreshing(true);
-        setPage(1);
-        setHasMore(true);
-      } else if (page === 1) {
-        // Only set loading for initial load, not for pagination
+      } else if (currentPage === 1) {
         dispatch(setLoading(true));
+      } else {
+        setIsLoadingMore(true);
       }
 
-      const status = selectedFilter !== 'All' ? selectedFilter.toUpperCase() : undefined;
+      const status = selectedFilter !== 'all' ? selectedFilter.toUpperCase() : undefined;
       const response = await apiService.getSellerOrders({
         status,
-        page: isRefreshing ? 1 : page,
+        page: currentPage,
         limit,
       });
 
       const newOrders = response.data || [];
       
-      if (isRefreshing || page === 1) {
+      if (isRefreshing || currentPage === 1) {
         dispatch(setOrders(newOrders));
       } else {
+        // Append new orders for pagination
         dispatch(setOrders([...orders, ...newOrders]));
       }
 
@@ -123,52 +152,73 @@ export default function OrdersScreen() {
     } finally {
       if (isRefreshing) {
         setRefreshing(false);
-      } else if (page === 1) {
-        // Only reset loading for initial load, not for pagination
+      } else if (currentPage === 1) {
         dispatch(setLoading(false));
+      } else {
+        setIsLoadingMore(false);
       }
     }
   };
 
+  // Reset pagination and fetch when filter changes
   useEffect(() => {
-    fetchOrders();
-  }, [page, selectedFilter]);
+    setPage(1);
+    setHasMore(true);
+    fetchOrders(false, 1);
+  }, [selectedFilter]);
 
-  const handleRefresh = () => {
-    fetchOrders(true);
+  // Fetch more when page changes (but not on initial mount or filter change)
+  useEffect(() => {
+    if (page > 1) {
+      fetchOrders(false, page);
+    }
+  }, [page]);
+
+  const handleRefresh = async () => {
+    try {
+      setRefreshing(true);
+      setPage(1);
+      setHasMore(true);
+      
+      const status = selectedFilter !== 'all' ? selectedFilter.toUpperCase() : undefined;
+      const response = await apiService.getSellerOrders({
+        status,
+        page: 1,
+        limit,
+      });
+      
+      const newOrders = response.data || [];
+      dispatch(setOrders(newOrders));
+      setHasMore(newOrders.length === limit);
+      setError(null);
+    } catch (err) {
+      console.error('Error refreshing orders:', err);
+      setError(err instanceof Error ? err.message : 'Failed to refresh orders');
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleLoadMore = () => {
-    if (!loading && hasMore) {
+    if (!loading && !isLoadingMore && hasMore) {
       setPage(prevPage => prevPage + 1);
     }
   };
 
-  const filteredOrders = selectedFilter === 'All' 
-    ? orders 
-    : orders.filter(order => {
-        const orderStatus = (order.status || '').toLowerCase();
-        const filterStatus = selectedFilter.toLowerCase();
-        return orderStatus === filterStatus;
-      });
-
   const renderFooter = () => {
-    if (!loading) return null;
+    if (!isLoadingMore) return null;
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="small" color={theme.colors.primary} />
       </View>
     );
   };
-
-  const renderEmptyState = () => {
-    if (loading && page === 1) {
+  
+  const renderEmpty = () => {
+    if (loading) {
       return (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={[styles.loadingText, { color: theme.colors.text }]}>
-            Loading orders...
-          </Text>
         </View>
       );
     }
@@ -209,7 +259,7 @@ export default function OrdersScreen() {
               Order #{order.orderNumber}
             </Text>
             <Text style={[styles.customerName, { color: theme.colors.primary }]}>
-              {order.user.name || 'Guest User'}
+              {order.user?.name || 'Guest User'}
             </Text>
             <Text style={[styles.orderDate, { color: theme.colors.textSecondary }]}>
               {new Date(order.createdAt).toLocaleString()}
@@ -224,7 +274,7 @@ export default function OrdersScreen() {
         </View>
         <View style={styles.orderSummary}>
           <Text style={[styles.summaryText, { color: theme.colors.text }]}>
-            {order.items.length} items • Rs. {order.total.toFixed(2)}
+            {order.items?.length || 0} items • Rs. {order.total?.toFixed(2) || '0.00'}
           </Text>
           {order.paymentMethod === 'card' ? (
             <View style={[styles.paidBadge, { backgroundColor: '#10b98120' }]}>
@@ -253,7 +303,7 @@ export default function OrdersScreen() {
             style={[styles.actionButton, { borderColor: theme.colors.border }]}
             onPress={(e) => {
               e.stopPropagation();
-              // Handle update status
+              openStatusModal(order);
             }}
           >
             <Edit size={16} color={theme.colors.primary} />
@@ -264,6 +314,38 @@ export default function OrdersScreen() {
         </View>
       </TouchableOpacity>
     );
+  };
+
+  const handleUpdateStatus = async () => {
+    if (!selectedOrder || !selectedStatus) return;
+    
+    try {
+      setIsUpdating(true);
+      // Call the API with the selected status
+      await apiService.updateOrderStatus(selectedOrder.id, selectedStatus, '');
+      
+      // Close modal first
+      setIsStatusModalVisible(false);
+      
+      // Reset pagination and refresh orders
+      setPage(1);
+      setHasMore(true);
+      await fetchOrders(false, 1);
+      
+      Alert.alert('Success', 'Order status updated successfully');
+    } catch (error: any) {
+      console.error('Update status error:', error);
+      Alert.alert('Error', error?.message || 'Failed to update order status');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const openStatusModal = (order: any) => {
+    setSelectedOrder(order);
+    // Convert current status to uppercase to match the options
+    setSelectedStatus((order.status || 'PENDING').toUpperCase());
+    setIsStatusModalVisible(true);
   };
 
   return (
@@ -326,16 +408,19 @@ export default function OrdersScreen() {
       {/* Results Count */}
       <View style={styles.resultsContainer}>
         <Text style={[styles.resultsText, { color: theme.colors.textSecondary }]}>
-          {filteredOrders.length} orders found
+          {orders.length} orders found
         </Text>
       </View>
 
       {/* Orders List */}
       <FlatList
-        data={filteredOrders}
+        data={orders}
         keyExtractor={(item, index) => `${item.id}-${index}`}
         renderItem={({ item }) => <OrderCard order={item} />}
-        contentContainerStyle={styles.ordersList}
+        contentContainerStyle={[
+          styles.ordersList,
+          loading && orders.length === 0 && { flex: 1, justifyContent: 'center' }
+        ]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -345,11 +430,78 @@ export default function OrdersScreen() {
             tintColor={theme.colors.primary}
           />
         }
+        ListEmptyComponent={renderEmpty}
         ListFooterComponent={renderFooter}
-        ListEmptyComponent={renderEmptyState}
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5}
       />
+      
+      {/* Status Update Modal */}
+      <Modal
+        visible={isStatusModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => !isUpdating && setIsStatusModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.colors.background }]}>
+            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>
+              Update Order Status
+            </Text>
+            
+            <ScrollView style={styles.statusOptionsContainer}>
+              {statusOptions.map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.statusOption,
+                    selectedStatus === option.value && { 
+                      backgroundColor: `${theme.colors.primary}20`,
+                      borderColor: theme.colors.primary,
+                    },
+                    { borderColor: theme.colors.border }
+                  ]}
+                  onPress={() => setSelectedStatus(option.value)}
+                  disabled={isUpdating}
+                >
+                  <Text style={[styles.statusOptionText, { color: theme.colors.text }]}>
+                    {option.label}
+                  </Text>
+                  {selectedStatus === option.value && (
+                    <View style={[styles.statusSelected, { backgroundColor: theme.colors.primary }]} />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setIsStatusModalVisible(false)}
+                disabled={isUpdating}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.modalButton, 
+                  styles.updateButton, 
+                  { backgroundColor: theme.colors.primary },
+                  (isUpdating || !selectedStatus) && { opacity: 0.5 }
+                ]}
+                onPress={handleUpdateStatus}
+                disabled={isUpdating || !selectedStatus}
+              >
+                {isUpdating ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.updateButtonText}>Update Status</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -357,6 +509,12 @@ export default function OrdersScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
   backButton: {
     padding: 8,
@@ -400,7 +558,7 @@ const styles = StyleSheet.create({
   },
   resultsContainer: {
     paddingHorizontal: 20,
-    marginBottom: 8,
+    paddingVertical: 12,
   },
   resultsText: {
     fontSize: 14,
@@ -425,10 +583,6 @@ const styles = StyleSheet.create({
   retryText: {
     color: '#fff',
     fontWeight: '600',
-  },
-  loadingContainer: {
-    paddingVertical: 20,
-    alignItems: 'center',
   },
   orderCard: {
     borderRadius: 12,
@@ -456,7 +610,7 @@ const styles = StyleSheet.create({
   customerName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#3498db',
+    marginTop: 4,
   },
   orderDate: {
     fontSize: 12,
@@ -469,10 +623,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
+    gap: 4,
   },
   statusText: {
     fontSize: 10,
     fontWeight: '600',
+    marginLeft: 4,
   },
   orderSummary: {
     flexDirection: 'row',
@@ -498,7 +654,6 @@ const styles = StyleSheet.create({
   paidText: {
     fontSize: 10,
     fontWeight: '600',
-    marginLeft: 4,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -525,5 +680,69 @@ const styles = StyleSheet.create({
   ordersList: {
     paddingHorizontal: 20,
     paddingBottom: 20,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '90%',
+    padding: 20,
+    borderRadius: 12,
+    maxHeight: '80%',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  statusOptionsContainer: {
+    maxHeight: 300,
+  },
+  statusOption: {
+    padding: 15,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  statusOptionText: {
+    fontSize: 16,
+  },
+  statusSelected: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+  },
+  modalButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginHorizontal: 5,
+  },
+  cancelButton: {
+    backgroundColor: '#f1f1f1',
+  },
+  updateButton: {
+    backgroundColor: '#007AFF',
+  },
+  cancelButtonText: {
+    color: '#333',
+    fontWeight: 'bold',
+  },
+  updateButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
