@@ -15,7 +15,13 @@ import {
   adminDeleteProduct,
   salesBySeller,
   adminListAllOrders,
-  adminUpdateOrderStatus
+  adminUpdateOrderStatus,
+  adminGetCategories,
+  adminCreateCategory,
+  adminUpdateCategory,
+  adminDeleteCategory,
+  adminUpdatePaymentStatus,
+  adminSimulatePaymentStatuses
 } from '../controllers/admin.controller.js';
 import { toggleProductStatus } from '../controllers/product.controller.js';
 import { adminJwtVerify } from '../middlewares/authMiddleware.js';
@@ -51,5 +57,15 @@ router.route('/products/:id/status', adminJwtVerify).patch(toggleProductStatus);
 
 // Admin-only product delete (can delete any product)
 router.route('/products/:id', adminJwtVerify).delete(adminDeleteProduct);
+
+// Admin category management
+router.route('/categories', adminJwtVerify).get(adminGetCategories);
+router.route('/categories', adminJwtVerify).post(adminCreateCategory);
+router.route('/categories/:id', adminJwtVerify).put(adminUpdateCategory);
+router.route('/categories/:id', adminJwtVerify).delete(adminDeleteCategory);
+
+// Admin payment management
+router.route('/orders/:orderId/payment-status', adminJwtVerify).put(adminUpdatePaymentStatus);
+router.route('/simulate-payment-statuses', adminJwtVerify).post(adminSimulatePaymentStatuses);
 
 export default router;

@@ -132,17 +132,21 @@ export const login = async (req, res) => {
 
 export const register = async (req, res) => {
   try {
+    // Check if user already exists by Firebase UID (not email)
     const existingUser = await prisma.user.findUnique({
-      where: { email: req.user.email }
+      where: { firebaseUid: req.user.uid }
     });
 
     if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        error: "User with this email already exists"
+      // User already exists, return the existing user data
+      return res.status(200).json({
+        success: true,
+        message: "User already registered",
+        user: existingUser
       });
     }
 
+    // Create new user using the helper function
     const user = await createOrUpdateUser(req.user);
     
     res.status(201).json({
@@ -154,6 +158,23 @@ export const register = async (req, res) => {
     console.error('Registration error:', error);
     
     if (error.code === 'P2002') {
+      // Unique constraint violation - user might already exist
+      // Try to find and return existing user
+      try {
+        const existingUser = await prisma.user.findUnique({
+          where: { firebaseUid: req.user.uid }
+        });
+        if (existingUser) {
+          return res.status(200).json({
+            success: true,
+            message: "User already registered",
+            user: existingUser
+          });
+        }
+      } catch (findError) {
+        console.error('Error finding existing user:', findError);
+      }
+      
       return res.status(400).json({
         success: false,
         error: "User with this email already exists"

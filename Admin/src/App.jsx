@@ -15,8 +15,8 @@ import SellerRequests from "./pages/SellerRequests";
 import Products from "./pages/Products";
 import ProductDetails from "./pages/ProductDetails";
 import Orders from "./pages/Orders";
-import Reports from "./pages/Reports";
-import Settings from "./pages/Settings";
+import Categories from "./pages/Categories";
+import Payments from "./pages/Payments";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -104,21 +104,21 @@ const App = () => (
                 }
               />
               <Route
-                path="/reports"
+                path="/categories"
                 element={
                   <ProtectedRoute>
                     <AdminLayout>
-                      <Reports />
+                      <Categories />
                     </AdminLayout>
                   </ProtectedRoute>
                 }
               />
               <Route
-                path="/settings"
+                path="/payments"
                 element={
                   <ProtectedRoute>
                     <AdminLayout>
-                      <Settings />
+                      <Payments />
                     </AdminLayout>
                   </ProtectedRoute>
                 }

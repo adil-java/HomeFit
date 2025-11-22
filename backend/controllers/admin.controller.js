@@ -227,12 +227,60 @@ export const allSellers = async (req, res) => {
         email: true,
         name: true,
         role: true,
+        phoneNumber: true,
         createdAt: true,
         updatedAt: true
       }
     });
 
-    res.status(200).json({ success: true, data: sellers });
+    // Get product counts and order counts for each seller
+    const sellersWithCounts = await Promise.all(
+      sellers.map(async (seller) => {
+        const [productCount, orderCount, totalRevenue] = await Promise.all([
+          // Count products by this seller
+          prisma.product.count({
+            where: { sellerId: seller.id }
+          }),
+          // Count orders that contain products from this seller
+          prisma.order.count({
+            where: {
+              items: {
+                some: {
+                  product: {
+                    sellerId: seller.id
+                  }
+                }
+              }
+            }
+          }),
+          // Calculate total revenue from orders containing this seller's products
+          prisma.order.aggregate({
+            where: {
+              items: {
+                some: {
+                  product: {
+                    sellerId: seller.id
+                  }
+                }
+              },
+              paymentStatus: 'PAID'
+            },
+            _sum: {
+              total: true
+            }
+          })
+        ]);
+
+        return {
+          ...seller,
+          productCount,
+          orderCount,
+          totalRevenue: Number(totalRevenue._sum.total || 0)
+        };
+      })
+    );
+
+    res.status(200).json({ success: true, data: sellersWithCounts });
     console.log(" /Sellers");
   } catch (error) {
     console.error('Get all sellers error:', error);
@@ -492,5 +540,242 @@ export const adminUpdateOrderStatus = async (req, res) => {
   } catch (error) {
     console.error('Admin update order status error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// Admin Category Management
+export const adminGetCategories = async (req, res) => {
+  try {
+    const categories = await prisma.category.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json({ success: true, data: categories });
+  } catch (error) {
+    console.error('Admin get categories error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+export const adminCreateCategory = async (req, res) => {
+  try {
+    const { name, description, image } = req.body;
+    
+    if (!name) {
+      return res.status(400).json({ success: false, message: 'Category name is required' });
+    }
+
+    // Check if category already exists (case-insensitive for MySQL)
+    const existingCategory = await prisma.category.findFirst({
+      where: { 
+        name: {
+          equals: name
+        }
+      }
+    });
+
+    if (existingCategory) {
+      return res.status(400).json({ success: false, message: 'Category already exists' });
+    }
+
+    const category = await prisma.category.create({
+      data: {
+        name,
+        description: description || '',
+        image: image || '',
+        slug: name.toLowerCase().replace(/\s+/g, '-'),
+      },
+    });
+
+    res.status(201).json({ success: true, data: category });
+  } catch (error) {
+    console.error('Admin create category error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+export const adminUpdateCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description, image } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ success: false, message: 'Category name is required' });
+    }
+
+    // Check if another category with same name exists
+    const existingCategory = await prisma.category.findFirst({
+      where: { 
+        name: {
+          equals: name
+        },
+        id: { not: id }
+      }
+    });
+
+    if (existingCategory) {
+      return res.status(400).json({ success: false, message: 'Category name already exists' });
+    }
+
+    const category = await prisma.category.update({
+      where: { id: id },
+      data: {
+        name,
+        description: description || '',
+        image: image || '',
+        slug: name.toLowerCase().replace(/\s+/g, '-'),
+        updatedAt: new Date(),
+      },
+    });
+
+    res.json({ success: true, data: category });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ success: false, message: 'Category not found' });
+    }
+    console.error('Admin update category error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+export const adminDeleteCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if category is used by any products
+    const categoryWithProducts = await prisma.category.findUnique({
+      where: { id: id },
+      include: { products: true }
+    });
+
+    if (!categoryWithProducts) {
+      return res.status(404).json({ success: false, message: 'Category not found' });
+    }
+
+    if (categoryWithProducts.products.length > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Cannot delete category that is assigned to products' 
+      });
+    }
+
+    await prisma.category.delete({
+      where: { id: id },
+    });
+
+    res.json({ success: true, message: 'Category deleted successfully' });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ success: false, message: 'Category not found' });
+    }
+    console.error('Admin delete category error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// Update order payment status (for testing/admin purposes)
+export const adminUpdatePaymentStatus = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { paymentStatus, status } = req.body;
+
+    const order = await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        paymentStatus,
+        ...(status && { status }),
+        ...(paymentStatus === 'PAID' && { paymentConfirmedAt: new Date() }),
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        seller: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    res.json({
+      success: true,
+      data: order,
+      message: `Order payment status updated to ${paymentStatus}`,
+    });
+  } catch (error) {
+    console.error('Admin update payment status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+    });
+  }
+};
+
+// Simulate payment statuses for existing orders (for testing)
+export const adminSimulatePaymentStatuses = async (req, res) => {
+  try {
+    const orders = await prisma.order.findMany({
+      take: 10,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const updates = [];
+    
+    for (let i = 0; i < orders.length; i++) {
+      const order = orders[i];
+      let paymentStatus = 'PENDING';
+      let status = order.status;
+      
+      // Simulate different payment statuses
+      if (i % 4 === 0) {
+        paymentStatus = 'PAID';
+        status = 'PROCESSING';
+      } else if (i % 4 === 1) {
+        paymentStatus = 'FAILED';
+        status = 'CANCELLED';
+      } else if (i % 4 === 2) {
+        paymentStatus = 'PENDING';
+      } else if (i % 4 === 3) {
+        paymentStatus = 'PAID';
+        status = 'COMPLETED';
+      }
+
+      const updateData = {
+        paymentStatus,
+        status,
+        ...(paymentStatus === 'PAID' && { paymentConfirmedAt: new Date() }),
+      };
+
+      updates.push(
+        prisma.order.update({
+          where: { id: order.id },
+          data: updateData,
+        })
+      );
+    }
+
+    await Promise.all(updates);
+
+    res.json({
+      success: true,
+      message: `Updated payment statuses for ${orders.length} orders`,
+      data: {
+        updatedCount: orders.length,
+      },
+    });
+  } catch (error) {
+    console.error('Admin simulate payment statuses error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+    });
   }
 };

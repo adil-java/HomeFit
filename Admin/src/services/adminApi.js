@@ -1,6 +1,8 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/admin';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+// Admin API endpoints
+const ADMIN_API_BASE = `${API_BASE_URL}/admin`;
 // Public API base (products, categories, etc.)
-const PUBLIC_API_BASE = import.meta.env.VITE_API_BASE_URL_PUBLIC || API_BASE_URL.replace(/\/admin$/, '').replace(/\/$/, '');
+const PUBLIC_API_BASE = API_BASE_URL;
 
 function getToken() {
   return localStorage.getItem('admin_token');
@@ -14,7 +16,7 @@ async function request(path, options = {}) {
   };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE_URL}${path}`, {
+  const res = await fetch(`${ADMIN_API_BASE}${path}`, {
     ...options,
     headers,
   });
@@ -134,6 +136,62 @@ export const adminApi = {
     return request(`/orders/${orderId}/status`, {
       method: 'PUT',
       body: JSON.stringify({ status, notes }),
+    });
+  },
+  
+  // Categories
+  async getCategories() {
+    return request('/categories');
+  },
+  async createCategory(categoryData) {
+    return request('/categories', {
+      method: 'POST',
+      body: JSON.stringify(categoryData),
+    });
+  },
+  async updateCategory(id, categoryData) {
+    return request(`/categories/${id}`, {
+      method: 'PUT', 
+      body: JSON.stringify(categoryData),
+    });
+  },
+  async deleteCategory(id) {
+    return request(`/categories/${id}`, { method: 'DELETE' });
+  },
+
+  // Payments
+  async getPayments(params = {}) {
+    const qs = new URLSearchParams();
+    if (params.status) qs.append('status', params.status);
+    if (params.startDate) qs.append('startDate', params.startDate);
+    if (params.endDate) qs.append('endDate', params.endDate);
+    if (params.page) qs.append('page', params.page);
+    if (params.limit) qs.append('limit', params.limit);
+    const query = qs.toString() ? `?${qs.toString()}` : '';
+    return request(`/orders${query}`); // Use orders as payment source
+  },
+  async getPaymentDetails(paymentId) {
+    return request(`/orders/${paymentId}`);
+  },
+  async refundPayment(orderId, amount, reason) {
+    return request(`/orders/${orderId}/refund`, {
+      method: 'POST',
+      body: JSON.stringify({ amount, reason }),
+    });
+  },
+  
+  // Simulate different payment statuses for testing
+  async simulatePaymentStatuses() {
+    return request('/simulate-payment-statuses', {
+      method: 'POST',
+    });
+  },
+  
+  // Update payment status for a specific order
+  async updatePaymentStatus(orderId, paymentStatus, status) {
+    return request(`/orders/${orderId}/payment-status`, {
+      method: 'PUT',
+      body: JSON.stringify({ paymentStatus, status }),
     });
   },
 };

@@ -14,8 +14,36 @@
       },
       "oauth_client": [
         {
-          "client_id": "1066517448696-6snmnbvgh3km9l20hs9dqdhrb6uie4m3.apps.googleusercontent.com",
-          "client_type": 3
+          "client_id": "1066517448696-4f44i0vnr9156199nmbbsrnkb9pvgh44.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.yourcompany.boltecommerce",
+            "certificate_hash": "fc18fd1c3c34d5f1bad287f3e99a696264076049"
+          }
+        },
+        {
+          "client_id": "1066517448696-eho0d6vpdmcnkuevov8h1a0c0veu3ep8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.yourcompany.boltecommerce",
+            "certificate_hash": "61caef3988103ad7c1a3893e611206a8a8078810"
+          }
+        },
+        {
+          "client_id": "1066517448696-fa2fefj25boortveq1u48tgr8a8ahjlo.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.yourcompany.boltecommerce",
+            "certificate_hash": "e6c5f1c0caf2249bb0375b7075ed9454145da385"
+          }
+        },
+        {
+          "client_id": "1066517448696-i1mms5iqpbuo5ish3ir17ub363v0fegg.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.yourcompany.boltecommerce",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
         }
       ],
       "api_key": [
@@ -27,8 +55,15 @@
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "1066517448696-6snmnbvgh3km9l20hs9dqdhrb6uie4m3.apps.googleusercontent.com",
+              "client_id": "1066517448696-tgpl2cf5snd5auej7brq4hjb6sg1ugv9.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "1066517448696-rffitabve6rg0j8bhje6quh1j8mqie9o.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.yourcompany.boltecommerce"
+              }
             }
           ]
         }
@@ -41,36 +76,7 @@
           "package_name": "om.yourcompany.boltecommerce"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "1066517448696-9uikbea34ee9vv5bislkb5ok3kt2j5j1.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "om.yourcompany.boltecommerce",
-            "certificate_hash": "e6c5f1c0caf2249bb0375b7075ed9454145da385"
-          }
-        },
-        {
-          "client_id": "1066517448696-nej56gt5c72efbv58ohbfsc5adm39dli.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "om.yourcompany.boltecommerce",
-            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
-          }
-        },
-        {
-          "client_id": "1066517448696-piki86kqcpod87h921n6umfkba8usnr3.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "om.yourcompany.boltecommerce",
-            "certificate_hash": "61caef3988103ad7c1a3893e611206a8a8078810"
-          }
-        },
-        {
-          "client_id": "1066517448696-6snmnbvgh3km9l20hs9dqdhrb6uie4m3.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
           "current_key": "AIzaSyArPIfHsQrahEVK47iIZdlpy4gjxyDXtY8"
@@ -80,8 +86,15 @@
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "1066517448696-6snmnbvgh3km9l20hs9dqdhrb6uie4m3.apps.googleusercontent.com",
+              "client_id": "1066517448696-tgpl2cf5snd5auej7brq4hjb6sg1ugv9.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "1066517448696-rffitabve6rg0j8bhje6quh1j8mqie9o.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.yourcompany.boltecommerce"
+              }
             }
           ]
         }

@@ -9,8 +9,6 @@ import {
   Store,
   Package,
   ShoppingCart,
-  BarChart3,
-  Settings,
   Menu,
   X,
   Moon,
@@ -19,6 +17,8 @@ import {
   UserCircle,
   Bell,
   UserCheck,
+  Tags,
+  CreditCard,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -37,8 +37,8 @@ const navigation = [
   { name: 'Seller Requests', href: '/seller-requests', icon: UserCheck },
   { name: 'Products', href: '/products', icon: Package },
   { name: 'Orders', href: '/orders', icon: ShoppingCart },
-  { name: 'Reports', href: '/reports', icon: BarChart3 },
-  { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'Categories', href: '/categories', icon: Tags },
+  { name: 'Payments', href: '/payments', icon: CreditCard },
 ];
 
 const AdminLayout = ({ children }) => {

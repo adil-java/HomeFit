@@ -1,9 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
-import { makeRedirectUri } from 'expo-auth-session';
-import * as Google from 'expo-auth-session/providers/google';
+import { Alert } from 'react-native';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
@@ -50,14 +49,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  WebBrowser.maybeCompleteAuthSession();
-  const redirectUri = (makeRedirectUri as any)({ useProxy: true });
-  const googleConfig: any = {
-    clientId: "1066517448696-tgpl2cf5snd5auej7brq4hjb6sg1ugv9.apps.googleusercontent.com",
-    androidClientId: "1066517448696-k90lkfdsea2geec1nof73k3fh96ioij7.apps.googleusercontent.com",
-    redirectUri,
-  };
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest(googleConfig as any);
+  // Configure Google Sign-In for native popup
+  useEffect(() => {
+    GoogleSignin.configure({
+      webClientId: '1066517448696-tgpl2cf5snd5auej7brq4hjb6sg1ugv9.apps.googleusercontent.com',
+      iosClientId: '1066517448696-rffitabve6rg0j8bhje6quh1j8mqie9o.apps.googleusercontent.com',
+      offlineAccess: true,
+      scopes: ['profile', 'email'],
+      forceCodeForRefreshToken: true,
+    });
+  }, []);
+
+  // Handle Firebase auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
@@ -96,6 +99,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.warn('Backend verification failed, using Firebase data:', backendError);
             const user: User = {
               id: firebaseUser.uid,
+              uid: firebaseUser.uid,
               email: firebaseUser.email || "",
               name: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "",
               role: firebaseUser.email?.includes('seller') ? 'seller' : 'customer'
@@ -121,17 +125,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
     });
 
-    if (response?.type === 'success') {
-      const { id_token } = response.params;
-      const credential = GoogleAuthProvider.credential(id_token);
-      signInWithCredential(auth, credential);
-    }
-    else{
-      console.log("Google login failed");
-    }
-
     return () => unsubscribe();
-  }, [response]);
+  }, []);
 
   const login = async (email: string, password: string) => {
     try {
@@ -162,8 +157,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (backendError) {
         console.warn('Backend login verification failed, using fallback:', backendError);
         // Fallback to optimistic user if backend fails
-        const optimisticUser = {
+        const optimisticUser: User = {
           id: userCredential.user.uid,
+          uid: userCredential.user.uid,
           email: userCredential.user.email || '',
           name: userCredential.user.displayName || (userCredential.user.email?.split('@')[0] || ''),
           role: userCredential.user.email?.includes('seller') ? 'seller' : 'customer',
@@ -210,8 +206,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (backendError) {
         console.warn('Backend registration failed, using fallback:', backendError);
         // Fallback to optimistic user if backend fails
-        const optimisticUser = {
+        const optimisticUser: User = {
           id: userCredential.user.uid,
+          uid: userCredential.user.uid,
           email: userCredential.user.email || '',
           name: name || userCredential.user.displayName || (userCredential.user.email?.split('@')[0] || ''),
           role: userCredential.user.email?.includes('seller') ? 'seller' : 'customer',
@@ -230,9 +227,65 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginWithGoogle = async () => {
     try {
-      await (promptAsync as any)({ useProxy: true });
+      // Check Google Play Services
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+
+      // Show native Google Sign-In popup
+      const userInfo = await GoogleSignin.signIn();
+
+      // Get tokens using getTokens() method - more reliable for ID token
+      const tokens = await GoogleSignin.getTokens();
+
+      const idToken = tokens.idToken;
+
+      if (!idToken) {
+        Alert.alert(
+          'Sign-In Error',
+          'No ID token received from Google. Please check your Firebase configuration and SHA-1 certificate.',
+          [{ text: 'OK' }]
+        );
+        throw new Error('No ID token received from Google');
+      }
+
+      // Sign in to Firebase
+      const credential = GoogleAuthProvider.credential(idToken);
+      const result = await signInWithCredential(auth, credential);
+      
+      // Check if user exists in backend database by calling login endpoint
+      try {
+        await apiService.login();
+        Alert.alert('Welcome Back!', `Signed in as ${result.user.email}`, [{ text: 'OK' }]);
+      } catch (loginError: any) {
+        // If user doesn't exist (login fails), register them
+        try {
+          await apiService.register();
+          Alert.alert('Account Created!', `Welcome ${result.user.displayName || result.user.email}!`, [{ text: 'OK' }]);
+        } catch (registerError: any) {
+          // Continue anyway - Firebase auth succeeded
+          Alert.alert('Notice', 'Signed in successfully. Profile sync will happen later.', [{ text: 'OK' }]);
+        }
+      }
+      
+      // Wait a moment for backend operations to complete
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      router.replace('/(tabs)');
+      
     } catch (error: any) {
-      console.error('Google login error:', error);
+      if (error.code === '12501' || error.code === 'SIGN_IN_CANCELLED') {
+        return;
+      }
+      
+      // Show detailed error based on error code
+      let errorTitle = 'Sign-In Failed';
+      let errorMessage = error.message || 'Unknown error occurred';
+      
+      if (error.code === '-5' || error.message?.includes('DEVELOPER_ERROR')) {
+        errorTitle = 'Configuration Error';
+        errorMessage = 'Google Sign-In is not properly configured. Please check:\n\n1. SHA-1 certificate is added to Firebase\n2. google-services.json is correct\n3. Web Client ID matches Firebase';
+      }
+      
+      Alert.alert(errorTitle, errorMessage, [{ text: 'OK' }]);
       throw error;
     }
   };
