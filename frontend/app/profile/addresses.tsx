@@ -30,23 +30,23 @@ const mockAddresses: Address[] = [
   {
     id: '1',
     type: 'home',
-    name: 'John Doe',
-    address: '123 Main Street, Apt 4B',
-    city: 'New York',
-    state: 'NY',
+    name: 'Azlan',
+    address: 'street 3 Nazimabad',
+    city: 'Karachi',
+    state: 'Sindh',
     zipCode: '10001',
-    country: 'United States',
+    country: 'Pakistan',
     isDefault: true,
   },
   {
     id: '2',
     type: 'work',
-    name: 'John Doe',
-    address: '456 Business Ave, Suite 200',
-    city: 'New York',
-    state: 'NY',
+    name: 'Azlan',
+    address: 'block h Gulshan',
+    city: 'Karachi',
+    state: 'Sindh',
     zipCode: '10002',
-    country: 'United States',
+    country: 'Pakistan',
     isDefault: false,
   },
 ];
@@ -63,7 +63,7 @@ export default function AddressesScreen() {
     city: '',
     state: '',
     zipCode: '',
-    country: 'United States',
+    country: 'Pakistan',
   });
 
   const handleAddAddress = () => {
@@ -147,7 +147,7 @@ export default function AddressesScreen() {
       city: '',
       state: '',
       zipCode: '',
-      country: 'United States',
+      country: 'Pakistan',
     });
   };
 

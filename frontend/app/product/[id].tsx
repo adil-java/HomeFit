@@ -145,7 +145,7 @@ export default function ProductDetailScreen() {
       productId: product.id,
       userId: 'current_user', 
       userName: 'You',
-      userAvatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=64&h=64&fit=crop&crop=face',
+      userAvatar: 'https://encrypted-tbn0.gstatic.com/licensed-image?q=tbn:ANd9GcSB8YG1B2XziV21lROluErcnlysdyrhddEaEpjEVs5zR15rSu452WFwq034o63Qy-UXmPsACdI8xO42N2fNsCwgPC1xbuOD7yiNSZUJklKzwC3NsyU',
       rating: newCommentRating,
       text: newComment.trim(),
       date: new Date().toISOString().split('T')[0],

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   Dimensions,
   TouchableOpacity,
   Image,
+  FlatList,
+  RefreshControl,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -34,6 +36,7 @@ export default function HomeScreen() {
   const dispatch = useDispatch<AppDispatch>();
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const { products, categories } = useSelector((state: RootState) => state.products);
@@ -41,6 +44,25 @@ export default function HomeScreen() {
   
   // Get featured products (first 4 products)
   const featuredProducts = products.slice(0, 4);
+
+  // Handle pull-to-refresh
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      // Fetch fresh data
+      await Promise.all([
+        fetchProducts(true),
+        fetchCategories(true),
+        dispatch(fetchWishlist({ forceRefresh: true }) as any),
+        dispatch(fetchCart() as any)
+      ]);
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+      setError('Failed to refresh data');
+    } finally {
+      setRefreshing(false);
+    }
+  }, [dispatch]);
 
   // Fetch initial data
   useEffect(() => {
@@ -65,9 +87,11 @@ export default function HomeScreen() {
     }, [user])
   );
   
-  const fetchCategories = async () => {
+  const fetchCategories = async (isRefreshing = false) => {
     try {
-      setIsLoadingCategories(true);
+      if (!isRefreshing) {
+        setIsLoadingCategories(true);
+      }
       const categories = await apiService.getCategoriesWithImages();
       // Update Redux state with full category objects
       dispatch(setCategories(categories));
@@ -75,11 +99,13 @@ export default function HomeScreen() {
       console.error('Error fetching categories:', err);
       // Handle error (you might want to show a user-friendly message)
     } finally {
-      setIsLoadingCategories(false);
+      if (!isRefreshing) {
+        setIsLoadingCategories(false);
+      }
     }
   };
   
-  const fetchProducts = async () => {
+  const fetchProducts = async (isRefreshing = false) => {
     try {
       setIsLoadingProducts(true);
       setError(null);
@@ -93,6 +119,7 @@ export default function HomeScreen() {
             id: sample.id,
             name: sample.name,
             rating: sample.rating,
+            category: sample.category,
             averageRating: sample.averageRating,
             averagerating: sample.averagerating,
           });
@@ -101,28 +128,34 @@ export default function HomeScreen() {
         console.log('[Products][Fetch] logging error:', e);
       }
       if (response.success) {
-        // Debug: map and log rating derivation for first few products
-        try {
-          const derived = (response.data || []).slice(0, 5).map((p: any) => ({
-            id: p?.id,
-            modelUrl: p?.ARModelUrl,
-            name: p?.name,
-            rating: p?.rating,
-            averageRating: p?.averageRating,
-            averagerating: p?.averagerating,
-            derivedRating: p?.rating ?? p?.averageRating ?? p?.averagerating ?? null,
-          }));
-          console.log('[Products][Fetch] derived rating preview:', derived);
-        } catch (e) {
-          console.log('[Products][Fetch] derivation logging error:', e);
-        }
-        // Normalize rating so UI consistently reads product.rating
+        // Normalize product data for consistent UI
         const normalized = (response.data || []).map((p: any) => ({
           ...p,
           modelUrl: p?.ARModelUrl,
+          // Use the first category's name as the main category for display
+          category: p?.categories?.[0]?.name,
+          // Keep the full categories array
+          categories: p?.categories || [],
           rating: p?.rating ?? p?.averageRating ?? p?.averagerating ?? 0,
           inStock: p?.inStock ?? ((p?.stock ?? p?.quantity ?? 0) > 0),
         }));
+        
+        // Debug: log the first few normalized products
+        try {
+          const preview = normalized.slice(0, 5).map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            category: p.category,
+            categories: p.categories,
+            rating: p.rating,
+            modelUrl: p.modelUrl,
+            inStock: p.inStock
+          }));
+          console.log('[Products][Fetch] normalized products preview:', preview);
+        } catch (e) {
+          console.log('[Products][Fetch] error logging normalized products:', e);
+        }
+        
         dispatch(setProducts(normalized));
       } else {
         setError('Failed to load products');
@@ -132,6 +165,7 @@ export default function HomeScreen() {
       setError('Network error. Please try again.');
       console.error('Error fetching products:', err);
     } finally {
+      // Always set loading to false, regardless of whether it was a refresh or not
       setIsLoadingProducts(false);
     }
   };
@@ -166,7 +200,17 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.scrollView}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[theme.colors.primary]}
+            tintColor={theme.colors.primary}
+          />
+        }
+      >
         {/* Hero Banner */}
         <HeroBanner />
 
@@ -237,24 +281,62 @@ export default function HomeScreen() {
 
         {/* Deals Section */}
         {!['seller', 'admin'].includes(user?.role?.toLowerCase()) && (
-        <View style={styles.section}>
-          <LinearGradient
-            colors={[theme.colors.primary, theme.colors.accent]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.dealsBanner}
-          >
-            <Text style={styles.dealsBannerTitle}>Become a Seller</Text>
-            <Text style={styles.dealsBannerSubtitle}>List your products and earn money</Text>
-            <TouchableOpacity
-              style={styles.dealsButton}
-              onPress={() => router.push('/seller-application')}
+          <View style={[styles.section, { paddingHorizontal: 20, marginBottom: 30 }]}>
+            <LinearGradient
+              colors={[theme.colors.gradient.start, theme.colors.gradient.end]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.dealsBanner}
             >
-              <Text style={styles.dealsButtonText}>Apply Now</Text>
-            </TouchableOpacity>
-          </LinearGradient>
-        </View>
+              <View style={styles.dealsContent}>
+                <Text style={styles.dealsBannerTitle}>Become a Seller</Text>
+                <Text style={styles.dealsBannerSubtitle}>
+                  List your products and earn money with our platform
+                </Text>
+                <TouchableOpacity
+                  style={styles.dealsButton}
+                  onPress={() => router.push('/seller-application')}
+                >
+                  <Text style={styles.dealsButtonText}>
+                    Get Started
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </LinearGradient>
+          </View>
         )}
+
+        {/* All Products */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text, marginBottom: 16 }]}>
+            All Products
+          </Text>
+          {products.length > 0 ? (
+            <FlatList
+              data={products}
+              renderItem={({ item }) => (
+                <View style={styles.productCardWrapper}>
+                  <ProductCard 
+                    product={item}
+                    showAddToCart
+                    style={styles.productCard}
+                  />
+                </View>
+              )}
+              keyExtractor={(item) => item._id || item.id}
+              numColumns={2}
+              columnWrapperStyle={styles.columnWrapper}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.productsContainer}
+            />
+          ) : (
+            <View style={styles.emptyState}>
+              <Text style={[styles.emptyStateText, { color: theme.colors.text }]}>
+                No products available
+              </Text>
+            </View>
+          )}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -268,6 +350,28 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  emptyState: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  productsContainer: {
+    paddingBottom: 20,
+    paddingHorizontal: 2,
+    marginLeft: -4,
+  },
+  productCardWrapper: {
+    width: '50%',
+    padding: 2,
+  },
+  productCard: {
+    margin: 0,
+    width: '100%',
+  },
+  columnWrapper: {
+    justifyContent: 'space-between',
+    gap: 4,
   },
   loadingText: {
     fontSize: 16,
@@ -308,33 +412,41 @@ const styles = StyleSheet.create({
     width: 20,
   },
   dealsBanner: {
-    padding: 24,
-    borderRadius: 16,
+    height: 200,
+    borderRadius: 20,
+    justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  dealsContent: {
+    alignItems: 'center',
+    textAlign: 'center',
   },
   dealsBannerTitle: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '800',
     color: '#fff',
     textAlign: 'center',
+    marginBottom: 8,
   },
   dealsBannerSubtitle: {
     fontSize: 16,
     color: '#fff',
     textAlign: 'center',
-    marginTop: 8,
     opacity: 0.9,
+    marginBottom: 20,
+    lineHeight: 22,
   },
   dealsButton: {
     backgroundColor: '#fff',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingHorizontal: 28,
+    paddingVertical: 14,
     borderRadius: 25,
-    marginTop: 16,
   },
   dealsButtonText: {
     fontSize: 16,
     fontWeight: '700',
+    color: '#000',
     color: '#000',
   },
 });

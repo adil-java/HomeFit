@@ -238,7 +238,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </View>
         
         <View style={styles.content}>
-          <Text style={[styles.name, { color: theme.colors.text }]} numberOfLines={2}>
+          <Text 
+            style={[
+              styles.name, 
+              { 
+                color: theme.colors.text,
+                fontSize: product.name.length > 25 ? 10 : 13,
+              }
+            ]} 
+            numberOfLines={2}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}
+          >
             {product.name}
           </Text>
           

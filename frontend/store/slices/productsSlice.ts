@@ -1,6 +1,17 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { Comment } from './commentsSlice';
 
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  image: string | null;
+  description?: string;
+  parentId?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface Product {
   comparePrice: boolean;
   id: string;
@@ -12,7 +23,8 @@ export interface Product {
   description: string;
   rating: number;
   reviews: number;
-  category: string;
+  category: string; // For backward compatibility
+  categories?: Category[]; // New field for multiple categories
   tags: string[];
   inStock: boolean;
   colors?: string[];
@@ -21,13 +33,6 @@ export interface Product {
   comments?: Comment[];
 }
 
-export interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  image: string | null;
-  description?: string;
-}
 
 interface ProductsState {
   products: Product[];

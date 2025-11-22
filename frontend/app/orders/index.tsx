@@ -52,6 +52,7 @@ export default function OrdersScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
   const [selectedFilter, setSelectedFilter] = useState('All');
   const [pagination, setPagination] = useState({
     page: 1,
@@ -83,6 +84,7 @@ export default function OrdersScreen() {
 
       setOrders(prev => (page === 1 ? response.data : [...prev, ...response.data]));
       setError(null);
+      setHasMore(response.totalPages > page);
     } catch (err) {
       console.error('Error fetching orders:', err);
       setError('Failed to load orders. Please try again.');
@@ -268,7 +270,10 @@ export default function OrdersScreen() {
         data={orders}
         keyExtractor={(item, index) => `${item.id}-${index}`}
         renderItem={({ item }) => <OrderCard order={item} />}
-        contentContainerStyle={styles.ordersList}
+        contentContainerStyle={[
+          styles.ordersList,
+          loading && orders.length === 0 && { flex: 1, justifyContent: 'center' }
+        ]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -278,8 +283,8 @@ export default function OrdersScreen() {
             tintColor={theme.colors.primary}
           />
         }
-        ListEmptyComponent={renderEmpty}
-        ListFooterComponent={renderFooter}
+        ListEmptyComponent={!loading ? renderEmpty : null}
+        ListFooterComponent={!loading && hasMore ? renderFooter : null}
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5}
       />

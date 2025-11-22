@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   Platform,
   KeyboardAvoidingView,
   TouchableWithoutFeedback,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Search, Filter, X } from 'lucide-react-native';
@@ -20,6 +21,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store/store';
 import { setSearchQuery, setSelectedCategory, setSelectedTags } from '@/store/slices/productsSlice';
 import { ProductCard } from '@/components/ProductCard';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function SearchScreen() {
   const { theme } = useTheme();
@@ -32,6 +34,7 @@ export default function SearchScreen() {
   const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
   const [fadeAnim] = useState(new Animated.Value(1));
   const [isFocused, setIsFocused] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const handleFocus = () => {
     setIsFocused(true);
@@ -51,21 +54,50 @@ export default function SearchScreen() {
     }).start();
   };
 
+  // Handle pull-to-refresh
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    // Reset all filters including category
+    setLocalSearchQuery('');
+    dispatch(setSearchQuery(''));
+    dispatch(setSelectedCategory(''));
+    dispatch(setSelectedTags([]));
+    setRefreshing(false);
+  }, [dispatch]);
+
+  // Reset search state when tab is focused, but keep the selected category
+  useFocusEffect(
+    React.useCallback(() => {
+      // Only clear search query and tags, but keep the selected category
+      setLocalSearchQuery('');
+      dispatch(setSearchQuery(''));
+      dispatch(setSelectedTags([]));
+      return () => {};
+    }, [dispatch])
+  );
+
   // Filter products based on search query, category, and tags
   const filteredProducts = products.filter((product) => {
-    const matchesSearch = product.name.toLowerCase().includes(localSearchQuery.toLowerCase()) ||
+    const matchesSearch = localSearchQuery === '' ||
+                         product.name.toLowerCase().includes(localSearchQuery.toLowerCase()) ||
                          product.description.toLowerCase().includes(localSearchQuery.toLowerCase());
-    const matchesCategory = !selectedCategory || product.category === selectedCategory;
+    
+    // Check if product matches selected category (either through direct category or categories array)
+    const matchesCategory = !selectedCategory || 
+                          product.category === selectedCategory || 
+                          (product.categories && product.categories.some(cat => cat.id === selectedCategory));
+    
     const matchesTags = selectedTags.length === 0 || 
-                       selectedTags.some(tag => product.tags.includes(tag));
+                       selectedTags.some(tag => product.tags?.includes(tag));
     
     return matchesSearch && matchesCategory && matchesTags;
   });
 
   const allTags = [...new Set(products.flatMap(product => product.tags))];
 
-  const handleCategoryPress = (category: string) => {
-    dispatch(setSelectedCategory(selectedCategory === category ? '' : category));
+  const handleCategoryPress = (categoryId: string) => {
+    const newCategory = selectedCategory === categoryId ? '' : categoryId;
+    dispatch(setSelectedCategory(newCategory));
   };
 
   const handleTagPress = (tag: string) => {
@@ -174,62 +206,32 @@ export default function SearchScreen() {
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
                   {categories.map((category) => (
                     <TouchableOpacity
-                      key={category}
+                      key={category.id}
                       style={[
                         styles.filterChip,
                         {
-                          backgroundColor: selectedCategory === category ? theme.colors.primary : theme.colors.background,
+                          backgroundColor: selectedCategory === category.id ? theme.colors.primary : theme.colors.background,
                           borderColor: theme.colors.border,
                         },
                       ]}
-                      onPress={() => handleCategoryPress(category)}
+                      onPress={() => handleCategoryPress(category.id)}
                     >
                       <Text
                         style={[
                           styles.filterChipText,
                           {
-                            color: selectedCategory === category ? '#fff' : theme.colors.text,
+                            color: selectedCategory === category.id ? '#fff' : theme.colors.text,
                           },
                         ]}
                       >
-                        {category}
+                        {category.name}
                       </Text>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
               </View>
 
-              {/* Tags */}
-              <View style={styles.filterSection}>
-                <Text style={[styles.filterSectionTitle, { color: theme.colors.text }]}>Tags</Text>
-                <View style={styles.tagsContainer}>
-                  {allTags.map((tag) => (
-                    <TouchableOpacity
-                      key={tag}
-                      style={[
-                        styles.filterChip,
-                        {
-                          backgroundColor: selectedTags.includes(tag) ? theme.colors.accent : theme.colors.background,
-                          borderColor: theme.colors.border,
-                          marginBottom: 8,
-                        },
-                      ]}
-                      onPress={() => handleTagPress(tag)}
-                    >
-                      <Text
-                        style={[
-                          styles.filterChipText,
-                          {
-                            color: selectedTags.includes(tag) ? '#fff' : theme.colors.text,
-                          },
-                        ]}
-                      >
-                        {tag}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
+              
             </View>
           )}
 
@@ -241,6 +243,14 @@ export default function SearchScreen() {
             
             <FlatList
               data={filteredProducts}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  colors={[theme.colors.primary]}
+                  tintColor={theme.colors.primary}
+                />
+              }
               renderItem={({ item }) => (
                 <View style={styles.productCardWrapper}>
                   <ProductCard 
