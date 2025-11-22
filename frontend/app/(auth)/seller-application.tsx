@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/services/api';
+import Toast from 'react-native-toast-message';
 
 export default function SellerApplicationScreen() {
   const { theme } = useTheme();
@@ -40,11 +41,29 @@ export default function SellerApplicationScreen() {
   const checkApplicationStatus = async () => {
     try {
       const response = await apiService.getSellerApplicationStatus();
-      if (response.application) {
+      if (response.success && response.application) {
         setExistingApplication(response.application);
+        
+        // If there's an existing application with status PENDING or APPROVED, show the status
+        if (['PENDING', 'APPROVED', 'REJECTED'].includes(response.application.status)) {
+          // Show toast with the status message
+          Toast.show({
+            type: response.application.status === 'APPROVED' ? 'success' : 
+                  response.application.status === 'REJECTED' ? 'error' : 'info',
+            text1: response.application.status === 'PENDING' ? 'Application Under Review' : 
+                   response.application.status === 'APPROVED' ? 'Application Approved' : 'Application Status',
+            text2: response.message || `Your application is ${response.application.status.toLowerCase()}`,
+            visibilityTime: 5000,
+          });
+        }
       }
     } catch (error) {
       console.error('Error checking application status:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to check application status. Please try again.',
+      });
     } finally {
       setIsCheckingStatus(false);
     }
@@ -53,34 +72,61 @@ export default function SellerApplicationScreen() {
   const handleSubmit = async () => {
     // Validate required fields
     if (!formData.businessName.trim()) {
-      Alert.alert('Error', 'Please enter your business name');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please enter your business name',
+      });
       return;
     }
     if (!formData.businessType.trim()) {
-      Alert.alert('Error', 'Please enter your business type');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please enter your business type',
+      });
       return;
     }
     if (!formData.description.trim()) {
-      Alert.alert('Error', 'Please enter a business description');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please enter a business description',
+      });
       return;
     }
 
     setIsLoading(true);
     try {
-      await apiService.applyForSeller(formData);
+      const response = await apiService.applyForSeller({
+        businessName: formData.businessName.trim(),
+        businessType: formData.businessType.trim(),
+        description: formData.description.trim(),
+        phone: formData.phone.trim(),
+        address: formData.address.trim(),
+        website: formData.website.trim(),
+        taxId: formData.taxId.trim(),
+        businessLicense: formData.businessLicense.trim()
+      });
 
-      Alert.alert(
-        'Application Submitted!',
-        'Your seller application has been submitted successfully. You will be notified once it\'s reviewed by our team.',
-        [
-          {
-            text: 'OK',
-            onPress: () => router.replace('/(tabs)')
-          }
-        ]
-      );
+      if (response.success) {
+        Toast.show({
+          type: 'success',
+          text1: 'Application Submitted!',
+          text2: 'Your seller application has been submitted successfully.',
+          visibilityTime: 4000,
+          onHide: () => router.replace('/(tabs)')
+        });
+      } else {
+        throw new Error(response.error || 'Failed to submit application');
+      }
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to submit application');
+      console.error('Submit application error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message || 'Failed to submit application. Please try again.',
+      });
     } finally {
       setIsLoading(false);
     }

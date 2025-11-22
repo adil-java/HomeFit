@@ -283,6 +283,67 @@ export const applyForSeller = async (req, res) => {
   }
 };
 
+export const getCurrentSellerApplication = async (req, res) => {
+  try {
+    const firebaseUid = req.user.uid;
+
+    let user = await prisma.user.findUnique({
+      where: { firebaseUid: firebaseUid },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: "User not found"
+      });
+    }
+
+    // First check for any existing application regardless of status
+    const application = await prisma.sellerApplication.findFirst({
+      where: {
+        userId: user.id,
+      },
+      orderBy: {
+        submittedAt: 'desc' // Get the most recent application
+      },
+    });
+
+    if (!application) {
+      return res.json({
+        success: true,
+        application: null,
+        message: "You don't have any seller applications yet."
+      });
+    }
+
+    let message = "";
+    switch(application.status) {
+      case 'PENDING':
+        message = "Your seller application is currently under review. We'll notify you once a decision has been made.";
+        break;
+      case 'APPROVED':
+        message = "Congratulations! Your seller application has been approved. You can now start selling on our platform.";
+        break;
+      case 'REJECTED':
+        message = "We're sorry, but your seller application has been rejected. Please contact support for more information.";
+        break;
+      default:
+        message = "Your seller application status is: " + application.status;
+    }
+
+    res.json({
+      success: true,
+      application,
+      message,
+    });
+  } catch (error) {
+    console.error("Get current seller application error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch current seller application",
+    });
+  }
+}
 
 export const getAllSellerApplications = async (req, res) => {
   try {

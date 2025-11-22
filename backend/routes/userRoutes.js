@@ -1,5 +1,5 @@
 import express from "express";
-import { getProfile, verifyToken, login, register, getMe, applyForSeller, getAllSellerApplications, acceptSellerApplication, rejectSellerApplication } from "../controllers/userController.js";
+import { getProfile, verifyToken, login, register, getMe, applyForSeller, getAllSellerApplications, acceptSellerApplication, rejectSellerApplication, getCurrentSellerApplication } from "../controllers/userController.js";
 import { protect, checkAdmin } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
@@ -14,6 +14,8 @@ router.get("/profile", protect, getProfile);
 router.get("/me", protect, getMe);
 
 router.post("/apply-seller", protect, applyForSeller);
+
+router.get("/seller-application/status", protect, getCurrentSellerApplication);
 
 
 router.get("/admin/seller-applications", protect, checkAdmin, getAllSellerApplications);

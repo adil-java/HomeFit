@@ -201,7 +201,7 @@ class ApiService {
     try {
       const headers = await this.getAuthHeaders();
       const response = await fetch(
-        `${API_BASE_URL}/users/seller-application-status`,
+        `${API_BASE_URL}/users/seller-application/status`,
         {
           method: 'GET',
           headers,
