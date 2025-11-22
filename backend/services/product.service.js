@@ -59,7 +59,7 @@ const generateSlug = (name) => {
 export const getProducts = async (queryParams) => {
   const {
     page = 1,
-    limit = 10,
+    limit = 50,
     sort = 'createdAt',
     order = 'desc',
     category,
@@ -207,7 +207,7 @@ export const getFeaturedProducts = async (limit = 4) => {
   };
 };
 
-export const searchProducts = async (query, limit = 10) => {
+export const searchProducts = async (query, limit = 20) => {
   const products = await prisma.product.findMany({
     where: {
       OR: [

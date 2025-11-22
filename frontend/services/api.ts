@@ -115,9 +115,9 @@ class ApiService {
     }
   }
 
-  async getProducts() {
+    async getProducts(limit: number = 50) {
     try {
-      const response = await fetch(`${API_BASE_URL}/products/`, {
+      const response = await fetch(`${API_BASE_URL}/products/?limit=${limit}`, {
         method: 'GET',
         headers: await this.getAuthHeaders(),
       });
