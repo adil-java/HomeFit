@@ -56,9 +56,7 @@ exit;
 ```bash
 cd backend
 
-# Open the existing config.env file
-nano config/config.env
-```
+
 
 **Update ONLY the MySQL password:**
 
@@ -159,10 +157,6 @@ eas login
 # Build for Android
 cd E-Commerce/frontend
 eas build --profile development --platform android
-
-# Build for iOS (Mac only)
-eas build --profile development --platform ios
-```
 
 After build completes, download and install the APK/IPA on your device.
 
