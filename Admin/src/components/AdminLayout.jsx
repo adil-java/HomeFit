@@ -150,18 +150,18 @@ const AdminLayout = ({ children }) => {
 
           <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6 justify-end items-center">
             <div className="flex items-center gap-x-4">
-              <Button variant="ghost" size="icon" onClick={toggleTheme}>
+              {/* <Button variant="ghost" size="icon" onClick={toggleTheme}>
                 {theme === 'light' ? (
                   <Moon className="h-5 w-5" />
                 ) : (
                   <Sun className="h-5 w-5" />
                 )}
-              </Button>
+              </Button> */}
 
-              <Button variant="ghost" size="icon" className="relative">
+              {/* <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-5 w-5" />
                 <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive" />
-              </Button>
+              </Button> */}
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
