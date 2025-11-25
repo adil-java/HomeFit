@@ -5,6 +5,7 @@ Complete guide to get the entire E-Commerce platform running on your local machi
 ## 📋 What You'll Need
 
 ### Required Software
+- ✅ **Java SE** (JDK 17 or later) ([Download](https://www.oracle.com/java/technologies/javase-jdk17-downloads.html))
 - ✅ **Node.js** v18+ ([Download](https://nodejs.org/))
 - ✅ **MySQL** v8.x ([Download](https://dev.mysql.com/downloads/mysql/))
 
