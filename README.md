@@ -171,7 +171,7 @@ curl http://localhost:8080/api/products
 Should return product list (or empty array)
 
 ### Test Admin:
-1. Open `http://localhost:5173` in browser
+1. Open `http://localhost:3001` in browser
 2. You should see the admin dashboard
 
 ### Test Mobile:
@@ -220,21 +220,23 @@ The project includes pre-configured credentials for:
 
 ```bash
 # View database in browser
-cd backend && npx prisma studio
+cd backend 
+npx prisma studio
 
 # Reset database (⚠️ Deletes all data)
-cd backend && npx prisma migrate reset
+cd backend 
+npx prisma migrate reset
 
 # Check backend logs
-cd backend && npm run dev
+cd backend
+npm run dev
 
-# Build admin for production
-cd Admin && npm run build
 
-# Run tests
-npm test
 ```
-
+``` bash
+# Alternative user our deployed url
+ https://home-fit-backend.onrender.com/api
+```
 ---
 
 ## 🆘 Need Help?
