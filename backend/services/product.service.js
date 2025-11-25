@@ -103,6 +103,16 @@ export const getProducts = async (queryParams) => {
         categories: true,
         variants: true,
         reviews: true,
+        seller: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            photoURL: true,
+            stripeConnectId: true,
+            stripeOnboarded: true,
+          },
+        },
       },
       orderBy,
       skip,
@@ -132,6 +142,16 @@ export const getProductById = async (id) => {
     include: {
       categories: true,
       variants: true,
+      seller: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          photoURL: true,
+          stripeConnectId: true,
+          stripeOnboarded: true,
+        },
+      },
       reviews: {
         include: {
           user: {
@@ -165,6 +185,16 @@ export const getProductBySlug = async (slug) => {
     include: {
       categories: true,
       variants: true,
+      seller: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          photoURL: true,
+          stripeConnectId: true,
+          stripeOnboarded: true,
+        },
+      },
       reviews: {
         include: {
           user: {
@@ -198,6 +228,14 @@ export const getFeaturedProducts = async (limit = 4) => {
     take: parseInt(limit),
     include: {
       categories: true,
+      seller: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          photoURL: true,
+        },
+      },
     },
   });
 
@@ -218,6 +256,14 @@ export const searchProducts = async (query, limit = 20) => {
     take: parseInt(limit),
     include: {
       categories: true,
+      seller: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          photoURL: true,
+        },
+      },
     },
   });
 
@@ -623,6 +669,14 @@ export const getProductsByCategory = async (categoryId, queryParams) => {
       include: {
         categories: true,
         variants: true,
+        seller: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            photoURL: true,
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
       skip,
@@ -664,6 +718,14 @@ export const getProductsBySeller = async (sellerId, queryParams) => {
       include: {
         categories: true,
         variants: true,
+        seller: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            photoURL: true,
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
       skip,
@@ -714,6 +776,14 @@ export const getRelatedProducts = async (productId, limit = 4) => {
     include: {
       categories: true,
       variants: true,
+      seller: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          photoURL: true,
+        },
+      },
     },
     take: parseInt(limit),
     orderBy: { createdAt: 'desc' },
@@ -735,6 +805,14 @@ export const toggleProductStatus = async (id, field, value) => {
       include: {
         categories: true,
         variants: true,
+        seller: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            photoURL: true,
+          },
+        },
       },
     });
 

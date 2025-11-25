@@ -45,7 +45,7 @@ const ProductCard = ({ product, onDelete }) => {
         <div className="flex items-start justify-between">
           <div className="space-y-1">
             <h3 className="text-sm font-semibold line-clamp-2">{product.name}</h3>
-            <p className="text-sm text-muted-foreground">{product.seller ?? 'Unknown seller'}</p>
+            <p className="text-sm text-muted-foreground">{product.seller.name  ?? 'Unknown seller'}</p>
           </div>
           <div className="ml-2">
             <StatusBadge status={product.isActive || product.status ? (product.isActive ? 'active' : 'inactive') : product.status} />
