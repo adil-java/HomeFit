@@ -162,7 +162,8 @@ export const adminApi = {
   // Payments
   async getPayments(params = {}) {
     const qs = new URLSearchParams();
-    if (params.status) qs.append('status', params.status);
+    // Add payment-specific filters
+    if (params.status) qs.append('paymentStatus', params.status); // Use paymentStatus instead of status
     if (params.startDate) qs.append('startDate', params.startDate);
     if (params.endDate) qs.append('endDate', params.endDate);
     if (params.page) qs.append('page', params.page);

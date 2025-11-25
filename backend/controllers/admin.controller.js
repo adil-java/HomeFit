@@ -60,7 +60,11 @@ export const revenueMonthly = async (req, res) => {
     const now = new Date();
     const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
     const orders = await prisma.order.findMany({
-      where: { createdAt: { gte: sixMonthsAgo } },
+      where: { 
+        createdAt: { gte: sixMonthsAgo },
+        paymentStatus: 'PAID', // Only include paid orders
+        paymentMethod: 'card'   // Only include card payments
+      },
       select: { createdAt: true, total: true },
     });
 
@@ -357,7 +361,13 @@ export const analyticsSummary = async (req, res) => {
       prisma.sellerApplication.count({ where: { status: 'PENDING' } }),
       prisma.product.count(),
       prisma.order.count(),
-      prisma.order.aggregate({ _sum: { total: true } }),
+      prisma.order.aggregate({ 
+        where: {
+          paymentStatus: 'PAID', // Only include paid orders
+          paymentMethod: 'card'   // Only include card payments
+        },
+        _sum: { total: true } 
+      }),
     ]);
 
     res.status(200).json({
@@ -382,7 +392,10 @@ export const analyticsSummary = async (req, res) => {
 export const salesBySeller = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
-    const where = { paymentMethod: 'card' };
+    const where = { 
+      paymentMethod: 'card',
+      paymentStatus: 'PAID' // Only include paid orders
+    };
     if (startDate) where.createdAt = { gte: new Date(startDate) };
     if (endDate) {
       where.createdAt = where.createdAt || {};
@@ -424,10 +437,11 @@ export const salesBySeller = async (req, res) => {
 
 export const adminListAllOrders = async (req, res) => {
   try {
-    const { status, userId, sellerId, startDate, endDate, limit = 20, page = 1 } = req.query;
+    const { status, paymentStatus, userId, sellerId, startDate, endDate, limit = 20, page = 1 } = req.query;
     
     const where = {};
     if (status) where.status = status;
+    if (paymentStatus) where.paymentStatus = paymentStatus; // Add paymentStatus filter
     if (userId) where.userId = userId;
     if (sellerId) where.sellerId = sellerId;
     if (startDate || endDate) {
