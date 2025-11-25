@@ -179,11 +179,13 @@ export const stripeWebhook = async (req, res) => {
         await prisma.order.update({
           where: { id: paymentIntent.metadata.orderId },
           data: {
-            status: "PAID",
+            paymentStatus: "PAID",  // Update payment status instead of order status
+            status: "PROCESSING",   // Update order status to processing when payment succeeds
             stripePaymentIntent: paymentIntent.id,
+            paymentConfirmedAt: new Date(), // Record when payment was confirmed
           },
         });
-        console.log(`✓ Order ${paymentIntent.metadata.orderId} marked as PAID`);
+        console.log(`✓ Order ${paymentIntent.metadata.orderId} payment marked as PAID`);
         break;
       }
 

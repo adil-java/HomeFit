@@ -357,10 +357,44 @@ export const handleStripeWebhook = async (req, res) => {
   }
 };
 
+// @desc    Confirm payment for an order
+// @route   PUT /api/orders/:id/confirm-payment
+// @access  Private
+export const confirmPayment = async (req, res) => {
+  try {
+    const { id: orderId } = req.params;
+    const { paymentIntentId } = req.body;
+
+    if (!paymentIntentId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Payment intent ID is required'
+      });
+    }
+
+    const order = await OrderService.confirmPayment(paymentIntentId, orderId);
+
+    res.json({
+      success: true,
+      data: order,
+      message: 'Payment confirmed successfully'
+    });
+  } catch (error) {
+    console.error('Payment Confirmation Error:', error);
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({
+      success: false,
+      error: error.message || 'Payment confirmation failed',
+      ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
+    });
+  }
+};
+
 // Export all controller functions
 const orderController = {
   createOrder,
   initiatePayment,
+  confirmPayment,
   getOrder,
   listUserOrders,
   updateOrderStatus,
