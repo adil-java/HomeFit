@@ -100,8 +100,7 @@ export async function createPaymentIntent(orderId, totalAmount, sellerId) {
       stripePaymentIntent: paymentIntent.id,
       platformFee: totalAmount * 0.08,
       sellerAmount: totalAmount * 0.92,
-      paymentStatus: "PENDING", // Set payment status instead of order status
-      feeCalculatedAt: new Date(), // Record when fees were calculated
+      status: "PENDING",
     },
   });
 
