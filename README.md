@@ -1,4 +1,4 @@
-# 🚀 E-Commerce Platform - Local Setup Guide
+# 🚀 HomeFitAR - Local Setup Guide
 
 Complete guide to get the entire E-Commerce platform running on your local machine in under 10 minutes!
 
@@ -9,8 +9,8 @@ Complete guide to get the entire E-Commerce platform running on your local machi
 - ✅ **MySQL** v8.x ([Download](https://dev.mysql.com/downloads/mysql/))
 
 ### Optional (Already Configured)
-The project comes with pre-configured `.env` files. You only need to:
-- Update MySQL credentials
+The project comes with pre-configured `sample.env` files. You only need to:
+- Update MySQL and other sample.env credentials  
 - Add your Firebase `google-services.json` file
 - That's it! Ready to run.
 
@@ -56,20 +56,14 @@ exit;
 ```bash
 cd backend
 
-
-
-**Update ONLY the MySQL password:**
-
 ```env
-# Find this line and update YOUR_MYSQL_PASSWORD
+# Find this line in sample.env and update YOUR_MYSQL_PASSWORD
 DATABASE_URL="mysql://root:YOUR_MYSQL_PASSWORD@localhost:3306/ecommerce"
 ```
 
 **Save and exit** (Ctrl+X, then Y, then Enter)
 
-> 💡 **Note:** All other configurations (Firebase, Stripe, Cloudinary) are already set up!
-
-### STEP 4: Initialize Database
+### STEP 4: Initialize Database and setup Prisma ORM
 
 ```bash
 # Still in backend directory
@@ -154,13 +148,15 @@ npm install -g eas-cli
 # Login to Expo (create account if needed)
 eas login
 
-# Build for Android
+# Build for Android cloud based on expo eas dashboard
 cd E-Commerce/frontend
 eas build --profile development --platform android
 
 After build completes, download and install the APK/IPA on your device.
 
----
+# Build for Android locally
+cd E-Commerce/frontend
+eas build --local --platform android --profile preview
 
 ## ✅ Verify Everything Works
 
