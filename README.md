@@ -246,3 +246,5 @@ npm run dev
 ---
 
 **🎉 Congratulations!** Your E-Commerce platform is now running locally!
+Authors: Adil Javed SE-23025
+         Muhammad Yaafay SE-23023
