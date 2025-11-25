@@ -245,7 +245,8 @@ npm run dev
 
 ---
 
-
+``` bash
 Authors: 
-Adil Javed SE-23025
 Muhammad Yaafay SE-23023
+Adil Javed SE-23025
+```
