@@ -230,10 +230,6 @@ npm run dev
 
 
 ```
-``` bash
-# Alternative user our deployed url
- https://home-fit-backend.onrender.com/api
-```
 ---
 
 ## 🆘 Need Help?
