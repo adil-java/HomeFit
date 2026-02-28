@@ -135,6 +135,6 @@ const styles = StyleSheet.create({
   googleText: {
     fontSize: 16,
     color: '#000',
-    fontFamily: 'Roboto',
+    fontFamily: 'Inter_500Medium',
   },
 });

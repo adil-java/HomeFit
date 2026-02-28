@@ -161,6 +161,7 @@ const createStyles = (theme: any) => StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     color: 'white',
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
     textShadowOffset: { width: 1, height: 1 },
@@ -183,6 +184,7 @@ const createStyles = (theme: any) => StyleSheet.create({
     color: 'white',
     fontSize: 12,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     marginLeft: 4,
   },
 });

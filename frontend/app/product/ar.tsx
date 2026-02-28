@@ -315,6 +315,7 @@ const styles = StyleSheet.create({
 	errorTitle: {
 		fontSize: 20,
 		fontWeight: 'bold',
+		fontFamily: 'Inter_700Bold',
 		marginBottom: 12,
 		textAlign: 'center',
 	},
@@ -354,6 +355,7 @@ const styles = StyleSheet.create({
 		color: '#fff',
 		fontSize: 10,
 		fontWeight: 'bold',
+		fontFamily: 'Inter_700Bold',
 		marginTop: 2,
 	},
 });

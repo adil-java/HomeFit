@@ -336,6 +336,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   balanceSection: {
     paddingHorizontal: 20,
@@ -359,6 +360,7 @@ const styles = StyleSheet.create({
   balanceAmount: {
     fontSize: 36,
     fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
     color: '#fff',
     marginBottom: 20,
   },
@@ -374,6 +376,7 @@ const styles = StyleSheet.create({
   topUpButtonText: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   section: {
     paddingHorizontal: 20,
@@ -388,10 +391,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   viewAllText: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   quickActions: {
     flexDirection: 'row',
@@ -415,6 +420,7 @@ const styles = StyleSheet.create({
   quickActionText: {
     fontSize: 12,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     textAlign: 'center',
   },
   transactionItem: {
@@ -439,6 +445,7 @@ const styles = StyleSheet.create({
   transactionDescription: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     marginBottom: 2,
   },
   transactionDate: {
@@ -447,6 +454,7 @@ const styles = StyleSheet.create({
   transactionAmount: {
     fontSize: 16,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   modalOverlay: {
     position: 'absolute',
@@ -473,10 +481,12 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   cancelButton: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   modalBody: {
     padding: 20,
@@ -487,6 +497,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     marginBottom: 8,
   },
   amountInput: {
@@ -496,6 +507,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     fontSize: 18,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     textAlign: 'center',
   },
   methodOption: {
@@ -510,6 +522,7 @@ const styles = StyleSheet.create({
   methodText: {
     fontSize: 16,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
     flex: 1,
   },
   selectedDot: {
@@ -526,6 +539,7 @@ const styles = StyleSheet.create({
   confirmButtonText: {
     fontSize: 16,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     color: '#fff',
   },
 });

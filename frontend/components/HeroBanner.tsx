@@ -53,6 +53,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
     color: '#fff',
     textAlign: 'center',
     marginBottom: 8,
@@ -74,6 +75,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     color: '#000',
   },
 });

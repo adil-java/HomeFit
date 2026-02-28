@@ -929,6 +929,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     flex: 1,
   },
   saveButton: {
@@ -942,6 +943,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   scrollView: {
     flex: 1,
@@ -955,6 +957,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     marginBottom: 16,
   },
   imageGrid: {
@@ -999,6 +1002,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 13,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
     textAlign: 'center',
   },
   imageLimitText: {
@@ -1013,6 +1017,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 8,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   input: {
     height: 48,
@@ -1107,6 +1112,7 @@ const styles = StyleSheet.create({
   chipText: {
     fontSize: 14,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   colorPreview: {
     flex: 1,
@@ -1183,6 +1189,7 @@ const styles = StyleSheet.create({
   colorName: {
     fontSize: 14,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
     flex: 1,
     color: '#333',
     marginLeft: 4,
@@ -1219,6 +1226,7 @@ const styles = StyleSheet.create({
   settingTitle: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     marginBottom: 4,
   },
   settingDescription: {

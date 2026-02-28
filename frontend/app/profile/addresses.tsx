@@ -408,6 +408,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   content: {
     flex: 1,
@@ -433,6 +434,7 @@ const styles = StyleSheet.create({
   addressType: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   defaultBadge: {
     paddingHorizontal: 8,
@@ -442,6 +444,7 @@ const styles = StyleSheet.create({
   defaultText: {
     fontSize: 10,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     color: '#fff',
   },
   addressActions: {
@@ -458,6 +461,7 @@ const styles = StyleSheet.create({
   addressName: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     marginBottom: 4,
   },
   addressText: {
@@ -475,6 +479,7 @@ const styles = StyleSheet.create({
   setDefaultText: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   emptyContainer: {
     flex: 1,
@@ -485,6 +490,7 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 24,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     marginTop: 20,
     marginBottom: 8,
   },
@@ -501,6 +507,7 @@ const styles = StyleSheet.create({
   addButtonText: {
     fontSize: 16,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     color: '#fff',
   },
   modalContainer: {
@@ -518,6 +525,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   modalContent: {
     flex: 1,
@@ -529,6 +537,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     marginBottom: 8,
   },
   input: {
@@ -551,6 +560,7 @@ const styles = StyleSheet.create({
   typeButtonText: {
     fontSize: 14,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   row: {
     flexDirection: 'row',

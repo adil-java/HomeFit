@@ -247,6 +247,7 @@ export default function TabLayout() {
         headerTitleStyle: {
           color: theme.colors.text,
           fontWeight: 'bold',
+          fontFamily: 'Inter_700Bold',
           fontSize: 20,
         },
         tabBarStyle: {
@@ -373,6 +374,7 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 10,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     textAlign: 'center',
   },
   header: {
@@ -397,6 +399,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   headerButton: {
     width: 40,
@@ -457,6 +460,7 @@ const styles = StyleSheet.create({
   menuText: {
     fontSize: 15,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
     marginBottom: 2,
   },
   menuSubtext: {

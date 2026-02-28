@@ -164,6 +164,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 24,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     marginTop: 20,
     marginBottom: 8,
   },
@@ -180,6 +181,7 @@ const styles = StyleSheet.create({
   continueShoppingText: {
     fontSize: 16,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     color: '#fff',
   },
   listContent: {
@@ -199,6 +201,7 @@ const styles = StyleSheet.create({
   totalAmount: {
     fontSize: 16,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   checkoutButton: {
     paddingVertical: 16,
@@ -208,6 +211,7 @@ const styles = StyleSheet.create({
   checkoutButtonText: {
     fontSize: 16,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     color: '#fff',
   },
 });

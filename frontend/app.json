@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/LOGO.png",
-      "resizeMode": "cover",
+      "resizeMode": "contain",
       "backgroundColor": "#2f3b4b"
     },
     "assetBundlePatterns": [
@@ -106,7 +106,7 @@
         "expo-splash-screen",
         {
           "image": "./assets/images/LOGO.png",
-          "resizeMode": "cover",
+          "resizeMode": "contain",
           "backgroundColor": "#2f3b4b"
         }
       ],

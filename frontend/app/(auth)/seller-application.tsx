@@ -415,6 +415,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
+    fontFamily: 'Inter_700Bold',
     textAlign: 'center',
     marginBottom: 10,
   },
@@ -432,6 +433,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     marginBottom: 8,
   },
   input: {
@@ -453,6 +455,7 @@ const styles = StyleSheet.create({
   submitButtonText: {
     fontSize: 18,
     fontWeight: 'bold',
+    fontFamily: 'Inter_700Bold',
   },
   statusCard: {
     borderWidth: 2,
@@ -463,6 +466,7 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 20,
     fontWeight: 'bold',
+    fontFamily: 'Inter_700Bold',
     textAlign: 'center',
     marginBottom: 10,
   },
@@ -484,5 +488,6 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: 18,
     fontWeight: 'bold',
+    fontFamily: 'Inter_700Bold',
   },
 });

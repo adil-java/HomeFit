@@ -278,6 +278,7 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 24,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     color: '#fff',
     marginBottom: 4,
   },
@@ -299,6 +300,7 @@ const styles = StyleSheet.create({
   sellerBadgeText: {
     fontSize: 12,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     color: '#fff',
   },
   statsContainer: {
@@ -335,12 +337,14 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 18,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     marginTop: 8,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   section: {
     paddingHorizontal: 20,
@@ -349,6 +353,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     marginBottom: 12,
   },
   optionContainer: {
@@ -376,6 +381,7 @@ const styles = StyleSheet.create({
   optionTitle: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     marginBottom: 2,
   },
   optionSubtitle: {
@@ -393,5 +399,6 @@ const styles = StyleSheet.create({
   logoutText: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
 });

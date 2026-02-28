@@ -2,12 +2,28 @@ import React, { useState } from 'react';
 import { TouchableOpacity, StyleSheet, View, Text, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
+import { router } from 'expo-router';
+import { checkARSupport } from '../utils/checkARSupport';
 
-export const ARPreviewButton = ({ onPress }: { onPress: () => void }) => {
+interface ARPreviewButtonProps {
+	modelUrl?: string | null;
+}
+
+export const ARPreviewButton = ({ modelUrl }: ARPreviewButtonProps) => {
 	const { theme } = useTheme();
 	const [isCheckingSupport, setIsCheckingSupport] = useState(false);
 
 	const handlePress = async () => {
+		// Check if model URL exists
+		if (!modelUrl || modelUrl.trim() === '') {
+			Alert.alert(
+				'3D Preview Not Available',
+				"This product doesn't have a 3D model yet.",
+				[{ text: 'OK' }]
+			);
+			return;
+		}
+
 		setIsCheckingSupport(true);
 
 		try {
@@ -15,40 +31,26 @@ export const ARPreviewButton = ({ onPress }: { onPress: () => void }) => {
 			if (Platform.OS === 'web') {
 				Alert.alert(
 					'AR Not Supported',
-					'3D preview is not available on web browsers. Please use a mobile device with AR capabilities.',
+					'3D preview is not available on web browsers. Please use a mobile device.',
 					[{ text: 'OK' }]
 				);
 				return;
 			}
 
-			// For iOS and Android, check basic requirements
-			if (Platform.OS === 'ios' || Platform.OS === 'android') {
-				// Check for camera permission (basic requirement for AR)
-				try {
-					// We'll let the AR screen handle the detailed checks
-					onPress();
-				} catch (error) {
-					console.error('Error initializing AR:', error);
-					Alert.alert(
-						'AR Error',
-						'Unable to initialize AR preview. Please check your device camera permissions and try again.',
-						[{ text: 'OK' }]
-					);
-				}
+			// Check ARCore/ARKit support
+			const arSupported = await checkARSupport();
+
+			if (arSupported) {
+				// ARCore/ARKit available → use full AR experience
+				router.push(`/product/ar?modelUrl=${encodeURIComponent(modelUrl)}`);
 			} else {
-				Alert.alert(
-					'AR Not Supported',
-					'3D preview is not supported on this platform.',
-					[{ text: 'OK' }]
-				);
+				// No AR support → use interactive 3D viewer fallback
+				router.push(`/product/model-viewer?modelUrl=${encodeURIComponent(modelUrl)}`);
 			}
 		} catch (error) {
 			console.error('Error checking AR support:', error);
-			Alert.alert(
-				'Error',
-				'Unable to check AR support. Please try again.',
-				[{ text: 'OK' }]
-			);
+			// On any error, default to the safer 3D viewer fallback
+			router.push(`/product/model-viewer?modelUrl=${encodeURIComponent(modelUrl)}`);
 		} finally {
 			setIsCheckingSupport(false);
 		}
@@ -74,7 +76,7 @@ export const ARPreviewButton = ({ onPress }: { onPress: () => void }) => {
 					color="white"
 				/>
 				<Text style={styles.buttonText}>
-					{isCheckingSupport ? 'Checking...' : 'Preview in 3D'}
+					{isCheckingSupport ? 'Loading...' : 'Preview in 3D'}
 				</Text>
 			</View>
 		</TouchableOpacity>
@@ -103,6 +105,7 @@ const styles = StyleSheet.create({
 		color: 'white',
 		marginLeft: 8,
 		fontWeight: '600',
+		fontFamily: 'Inter_600SemiBold',
 		fontSize: 16,
 	},
 });

@@ -395,6 +395,7 @@ export default function OrdersScreen() {
                       ? '#fff' 
                       : theme.colors.text,
                     fontWeight: selectedFilter === filter.key ? '600' : '400',
+                    fontFamily: 'Inter_400Regular',
                   },
                 ]}
               >
@@ -536,6 +537,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   filterContainer: {
     paddingHorizontal: 16,
@@ -555,6 +557,7 @@ const styles = StyleSheet.create({
   filterText: {
     fontSize: 14,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   resultsContainer: {
     paddingHorizontal: 20,
@@ -583,6 +586,7 @@ const styles = StyleSheet.create({
   retryText: {
     color: '#fff',
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   orderCard: {
     borderRadius: 12,
@@ -604,12 +608,14 @@ const styles = StyleSheet.create({
   orderId: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     marginBottom: 4,
     textTransform: 'uppercase',
   },
   customerName: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     marginTop: 4,
   },
   orderDate: {
@@ -628,6 +634,7 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 10,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     marginLeft: 4,
   },
   orderSummary: {
@@ -654,6 +661,7 @@ const styles = StyleSheet.create({
   paidText: {
     fontSize: 10,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -675,6 +683,7 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 14,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
     marginLeft: 8,
   },
   ordersList: {
@@ -696,6 +705,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+    fontFamily: 'Inter_700Bold',
     marginBottom: 20,
     textAlign: 'center',
   },
@@ -740,9 +750,11 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     color: '#333',
     fontWeight: 'bold',
+    fontFamily: 'Inter_700Bold',
   },
   updateButtonText: {
     color: '#fff',
     fontWeight: 'bold',
+    fontFamily: 'Inter_700Bold',
   },
 });

@@ -217,6 +217,7 @@ const styles = StyleSheet.create({
   statusTitle: {
     fontSize: 14,
     fontWeight: "600",
+    fontFamily: 'Inter_400Regular',
     color: "#000",
   },
   statusBadge: {
@@ -233,6 +234,7 @@ const styles = StyleSheet.create({
   statusBadgeText: {
     fontSize: 12,
     fontWeight: "600",
+    fontFamily: 'Inter_400Regular',
     color: "#166534",
   },
   statusDescription: {
@@ -254,6 +256,7 @@ const styles = StyleSheet.create({
   balanceAmount: {
     fontSize: 36,
     fontWeight: "700",
+    fontFamily: 'Inter_400Regular',
     color: "#fff",
     marginBottom: 4,
   },
@@ -274,6 +277,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 14,
     fontWeight: "600",
+    fontFamily: 'Inter_400Regular',
   },
   card: {
     backgroundColor: "#f9f9f9",
@@ -286,6 +290,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 14,
     fontWeight: "600",
+    fontFamily: 'Inter_400Regular',
     color: "#000",
     marginBottom: 12,
   },
@@ -306,6 +311,7 @@ const styles = StyleSheet.create({
   pendingAmount: {
     fontSize: 18,
     fontWeight: "600",
+    fontFamily: 'Inter_400Regular',
     color: "#000",
   },
   processingBadge: {
@@ -317,6 +323,7 @@ const styles = StyleSheet.create({
   processingText: {
     fontSize: 12,
     fontWeight: "500",
+    fontFamily: 'Inter_400Regular',
     color: "#92400e",
   },
   pendingNote: {
@@ -346,6 +353,7 @@ const styles = StyleSheet.create({
   infoValue: {
     fontSize: 13,
     fontWeight: "500",
+    fontFamily: 'Inter_400Regular',
     color: "#000",
   },
   feeDescription: {
@@ -373,6 +381,7 @@ const styles = StyleSheet.create({
   exampleValue: {
     fontSize: 12,
     fontWeight: "500",
+    fontFamily: 'Inter_400Regular',
     color: "#000",
   },
   feeValue: {
@@ -386,6 +395,7 @@ const styles = StyleSheet.create({
   earningValue: {
     color: "#22c55e",
     fontWeight: "600",
+    fontFamily: 'Inter_400Regular',
   },
   supportLink: {
     paddingVertical: 12,
@@ -396,10 +406,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#007AFF",
     fontWeight: "500",
+    fontFamily: 'Inter_400Regular',
   },
   errorText: {
     fontSize: 16,
     color: "#ef4444",
     fontWeight: "500",
+    fontFamily: 'Inter_400Regular',
   },
 })

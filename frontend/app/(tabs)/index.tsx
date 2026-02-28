@@ -376,6 +376,7 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   section: {
     paddingHorizontal: 20,
@@ -390,10 +391,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   seeAllText: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   horizontalScroll: {
     marginHorizontal: -20,
@@ -425,6 +428,7 @@ const styles = StyleSheet.create({
   dealsBannerTitle: {
     fontSize: 28,
     fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
     color: '#fff',
     textAlign: 'center',
     marginBottom: 8,
@@ -446,6 +450,7 @@ const styles = StyleSheet.create({
   dealsButtonText: {
     fontSize: 16,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     color: '#000',
     color: '#000',
   },

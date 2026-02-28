@@ -321,6 +321,7 @@ const styles = StyleSheet.create({
   retryText: {
     color: '#fff',
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   header: {
     flexDirection: 'row',
@@ -332,6 +333,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   filterContainer: {
     paddingHorizontal: 16,
@@ -351,6 +353,7 @@ const styles = StyleSheet.create({
   filterText: {
     fontSize: 14,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   ordersList: {
     paddingHorizontal: 20,
@@ -371,6 +374,7 @@ const styles = StyleSheet.create({
   orderId: {
     fontSize: 16,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     marginBottom: 2,
   },
   statusBadge: {
@@ -384,6 +388,7 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 10,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   orderItem: {
     flexDirection: 'row',
@@ -402,6 +407,7 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     marginBottom: 2,
   },
   productPrice: {
@@ -429,9 +435,11 @@ const styles = StyleSheet.create({
   orderTotal: {
     fontSize: 16,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   viewDetails: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
 });

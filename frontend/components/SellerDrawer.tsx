@@ -176,6 +176,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontWeight: 'bold',
+    fontFamily: 'Inter_700Bold',
     textAlign: 'center',
   },
   menuContainer: {
@@ -198,6 +199,7 @@ const styles = StyleSheet.create({
     marginLeft: 16,
     fontSize: 15,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   footer: {
     padding: 20,
@@ -213,5 +215,6 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     fontSize: 15,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
 });

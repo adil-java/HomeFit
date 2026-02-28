@@ -575,6 +575,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   centeredContainer: {
     flex: 1,
@@ -584,6 +585,7 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 16,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   statusSection: {
     margin: 20,
@@ -602,11 +604,13 @@ const styles = StyleSheet.create({
   statusLabel: {
     fontSize: 18,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     marginBottom: 4,
   },
   orderId: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     marginBottom: 2,
   },
   orderDate: {
@@ -624,6 +628,7 @@ const styles = StyleSheet.create({
   trackButtonText: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     color: '#fff',
   },
   section: {
@@ -633,6 +638,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     marginBottom: 12,
   },
   itemCard: {
@@ -654,12 +660,14 @@ const styles = StyleSheet.create({
   itemName: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     marginBottom: 4,
     lineHeight: 18,
   },
   itemPrice: {
     fontSize: 14,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
     marginBottom: 2,
   },
   itemTotal: {
@@ -678,6 +686,7 @@ const styles = StyleSheet.create({
   addressName: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     marginBottom: 4,
   },
   addressText: {
@@ -697,11 +706,13 @@ const styles = StyleSheet.create({
   paymentMethod: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     marginBottom: 4,
   },
   paymentStatus: {
     fontSize: 14,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   summaryCard: {
     padding: 16,
@@ -720,6 +731,7 @@ const styles = StyleSheet.create({
   summaryValue: {
     fontSize: 16,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   totalRow: {
     borderTopWidth: 1,
@@ -731,10 +743,12 @@ const styles = StyleSheet.create({
   totalLabel: {
     fontSize: 18,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   totalValue: {
     fontSize: 18,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   supportActions: {
     flexDirection: 'row',
@@ -753,6 +767,7 @@ const styles = StyleSheet.create({
   supportButtonText: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   sellerStatusActions: {
     flexDirection: 'row',
@@ -772,6 +787,7 @@ const styles = StyleSheet.create({
   statusActionText: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     color: '#fff',
   },
   orderItem: {
@@ -785,6 +801,7 @@ const styles = StyleSheet.create({
   itemDetails: {
     fontSize: 14,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
     marginBottom: 2,
   },
   divider: {
@@ -795,6 +812,7 @@ const styles = StyleSheet.create({
   customerInfo: {
     fontSize: 14,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
     marginBottom: 2,
   },
   infoCard: {
@@ -814,6 +832,7 @@ const styles = StyleSheet.create({
   infoValue: {
     fontSize: 16,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   twoColumnSection: {
     flexDirection: 'row',
@@ -834,6 +853,7 @@ const styles = StyleSheet.create({
   addNoteText: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   notesCard: {
     padding: 16,
@@ -854,6 +874,7 @@ const styles = StyleSheet.create({
   noteAuthor: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   noteDate: {
     fontSize: 14,
@@ -861,10 +882,12 @@ const styles = StyleSheet.create({
   noteContent: {
     fontSize: 14,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   emptyNotes: {
     fontSize: 14,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
     fontStyle: 'italic',
     textAlign: 'center',
     paddingVertical: 12,
@@ -893,6 +916,7 @@ const styles = StyleSheet.create({
   timelineLabel: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     marginBottom: 2,
   },
   timelineDate: {
@@ -918,6 +942,7 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   paymentStatus: {
     padding: 12,
@@ -928,6 +953,7 @@ const styles = StyleSheet.create({
   paymentStatusText: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     marginBottom: 4,
   },
   modalOverlay: {
@@ -952,6 +978,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   statusOptions: {
     gap: 10,
@@ -968,6 +995,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   statusBadge: {
     paddingHorizontal: 8,
@@ -978,6 +1006,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 12,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   errorContainer: {
     padding: 12,

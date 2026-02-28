@@ -495,6 +495,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "700",
+    fontFamily: 'Inter_400Regular',
     color: "#000",
     marginBottom: 8,
   },
@@ -514,6 +515,7 @@ const styles = StyleSheet.create({
   benefitsTitle: {
     fontSize: 14,
     fontWeight: "600",
+    fontFamily: 'Inter_400Regular',
     color: "#16a34a",
     marginBottom: 12,
   },
@@ -527,6 +529,7 @@ const styles = StyleSheet.create({
     color: "#22c55e",
     marginRight: 10,
     fontWeight: "600",
+    fontFamily: 'Inter_400Regular',
   },
   benefitText: {
     fontSize: 13,
@@ -542,6 +545,7 @@ const styles = StyleSheet.create({
   requirementsTitle: {
     fontSize: 14,
     fontWeight: "600",
+    fontFamily: 'Inter_400Regular',
     color: "#000",
     marginBottom: 12,
   },
@@ -555,6 +559,7 @@ const styles = StyleSheet.create({
     color: "#999",
     marginRight: 10,
     fontWeight: "600",
+    fontFamily: 'Inter_400Regular',
   },
   requirementText: {
     fontSize: 13,
@@ -570,6 +575,7 @@ const styles = StyleSheet.create({
   timelineTitle: {
     fontSize: 14,
     fontWeight: "600",
+    fontFamily: 'Inter_400Regular',
     color: "#000",
     marginBottom: 16,
   },
@@ -592,6 +598,7 @@ const styles = StyleSheet.create({
   timelineStep: {
     fontSize: 13,
     fontWeight: "500",
+    fontFamily: 'Inter_400Regular',
     color: "#000",
     marginBottom: 4,
   },
@@ -613,6 +620,7 @@ const styles = StyleSheet.create({
     color: "#0284c7",
     marginRight: 10,
     fontWeight: "600",
+    fontFamily: 'Inter_400Regular',
   },
   infoText: {
     fontSize: 12,
@@ -638,6 +646,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 15,
     fontWeight: "600",
+    fontFamily: 'Inter_400Regular',
   },
   secondaryButton: {
     backgroundColor: "#f0f0f0",
@@ -646,6 +655,7 @@ const styles = StyleSheet.create({
     color: "#007AFF",
     fontSize: 15,
     fontWeight: "600",
+    fontFamily: 'Inter_400Regular',
   },
   disabledButton: {
     opacity: 0.6,
@@ -677,6 +687,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     marginLeft:-60,
     fontWeight: 'bold',
+    fontFamily: 'Inter_700Bold',
     marginBottom: 12,
     textAlign: 'left',
   },
@@ -697,6 +708,7 @@ const styles = StyleSheet.create({
   },
   requirementsTitle: {
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     marginBottom: 8,
   },
    detailsContainer: {
@@ -712,6 +724,7 @@ const styles = StyleSheet.create({
   detailsTitle: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     color: '#111827',
     marginBottom: 12,
   },
@@ -728,11 +741,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#374151',
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   detailValue: {
     fontSize: 14,
     color: '#111827',
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   positiveStatus: {
     color: '#16a34a', // green

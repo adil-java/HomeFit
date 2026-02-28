@@ -354,6 +354,7 @@ const styles = StyleSheet.create({
   discountText: {
     fontSize: 10,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     color: '#fff',
   },
   content: {
@@ -362,6 +363,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     marginBottom: 8,
     lineHeight: 18,
   },
@@ -393,6 +395,7 @@ const styles = StyleSheet.create({
   stockText: {
     fontSize: 11,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   priceContainer: {
     flexDirection: 'row',
@@ -403,6 +406,7 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 16,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   originalPrice: {
     fontSize: 12,

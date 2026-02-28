@@ -232,14 +232,7 @@ export default function ProductDetailScreen() {
 
           {/* 3D Preview Button */}
           <View style={styles.previewButtonContainer}>
-            <ARPreviewButton
-              onPress={() => {
-                // Use product.modelUrl if available, otherwise use a default URL
-                const modelUrl = product.modelUrl;
-                console.log(modelUrl)
-                router.push(`/product/ar?modelUrl=${encodeURIComponent(modelUrl)}`);
-              }}
-            />
+            <ARPreviewButton modelUrl={product.modelUrl} />
           </View>
         </View>
 
@@ -608,6 +601,7 @@ const styles = StyleSheet.create({
   stockText: {
     fontSize: 14,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
     marginLeft: 4,
   },
   detailsContainer: {
@@ -634,6 +628,7 @@ const styles = StyleSheet.create({
   variantTitle: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   variantRequired: {
     fontSize: 12,
@@ -662,6 +657,7 @@ const styles = StyleSheet.create({
   variantOptionText: {
     fontSize: 14,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   variantOptionSelected: {
     backgroundColor: '#007AFF',
@@ -697,6 +693,7 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 16,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   imageContainer: {
     height: 400,
@@ -730,6 +727,7 @@ const styles = StyleSheet.create({
   discountText: {
     fontSize: 12,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     color: '#fff',
   },
   productInfo: {
@@ -738,6 +736,7 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: 24,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     marginBottom: 12,
     lineHeight: 30,
   },
@@ -763,6 +762,7 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 32,
     fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
   },
   originalPrice: {
     fontSize: 20,
@@ -774,6 +774,7 @@ const styles = StyleSheet.create({
   optionTitle: {
     fontSize: 18,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     marginBottom: 12,
   },
   colorOptions: {
@@ -822,6 +823,7 @@ const styles = StyleSheet.create({
   quantityText: {
     fontSize: 18,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     minWidth: 32,
     textAlign: 'center',
   },
@@ -831,6 +833,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     marginBottom: 12,
   },
   description: {
@@ -853,6 +856,7 @@ const styles = StyleSheet.create({
   featureText: {
     fontSize: 14,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   bottomActions: {
     flexDirection: 'row',
@@ -881,6 +885,7 @@ const styles = StyleSheet.create({
   addToCartText: {
     fontSize: 16,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     color: '#fff',
   },
   commentsSection: {
@@ -900,6 +905,7 @@ const styles = StyleSheet.create({
   addCommentText: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     color: '#fff',
   },
   commentForm: {
@@ -922,6 +928,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     marginBottom: 8,
   },
   commentInput: {
@@ -945,6 +952,7 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   submitButton: {
     flex: 1,
@@ -955,6 +963,7 @@ const styles = StyleSheet.create({
   submitButtonText: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     color: '#fff',
   },
   commentsList: {
@@ -984,6 +993,7 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   commentDate: {
     fontSize: 12,
@@ -996,6 +1006,7 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     fontSize: 12,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   commentRating: {
     flexDirection: 'row',
@@ -1013,6 +1024,7 @@ const styles = StyleSheet.create({
   helpfulText: {
     fontSize: 14,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   noComments: {
     alignItems: 'center',

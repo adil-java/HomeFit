@@ -71,6 +71,7 @@ const styles = StyleSheet.create({
   errorTitle: {
     fontSize: 20,
     fontWeight: 'bold',
+    fontFamily: 'Inter_700Bold',
     marginBottom: 12,
     textAlign: 'center',
     color: '#333',
@@ -92,6 +93,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
 });
 

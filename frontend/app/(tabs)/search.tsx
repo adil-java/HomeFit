@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     height: '100%',
-    fontFamily: 'Inter-Regular',
+    fontFamily: 'Inter_400Regular',
   },
   clearButton: {
     padding: 8,
@@ -317,6 +317,7 @@ const styles = StyleSheet.create({
   filterButtonText: {
     fontSize: 16,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   filterBadge: {
     position: 'absolute',
@@ -342,10 +343,12 @@ const styles = StyleSheet.create({
   filtersTitle: {
     fontSize: 18,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   clearFiltersText: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   filterSection: {
     marginBottom: 16,
@@ -353,6 +356,7 @@ const styles = StyleSheet.create({
   filterSectionTitle: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     marginBottom: 8,
   },
   filterScroll: {
@@ -369,6 +373,7 @@ const styles = StyleSheet.create({
   filterChipText: {
     fontSize: 14,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   tagsContainer: {
     flexDirection: 'row',

@@ -276,6 +276,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
     marginBottom: 8,
     marginTop: 40,
   },
@@ -292,6 +293,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     marginBottom: 8,
   },
   input: {
@@ -326,6 +328,7 @@ const styles = StyleSheet.create({
   registerButtonText: {
     fontSize: 16,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     color: '#fff',
   },
   footer: {
@@ -340,5 +343,6 @@ const styles = StyleSheet.create({
   linkText: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
 });

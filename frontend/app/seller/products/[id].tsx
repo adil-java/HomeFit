@@ -617,6 +617,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     flex: 1,
   },
   saveButton: {
@@ -629,6 +630,7 @@ const styles = StyleSheet.create({
   saveButtonText: {
     marginLeft: 8,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   scrollView: {
     flex: 1,
@@ -663,6 +665,7 @@ const styles = StyleSheet.create({
   uploadButtonText: {
     color: 'white',
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   section: {
     padding: 16,
@@ -670,6 +673,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     marginBottom: 16,
   },
   inputGroup: {
@@ -686,6 +690,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   input: {
     borderWidth: 1,
@@ -732,6 +737,7 @@ const styles = StyleSheet.create({
   optionText: {
     fontSize: 14,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   chipsWrap: {
     flexDirection: 'row',
@@ -749,6 +755,7 @@ const styles = StyleSheet.create({
   chipText: {
     fontSize: 12,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   colorsWrap: {
     flexDirection: 'row',
@@ -776,6 +783,7 @@ const styles = StyleSheet.create({
   colorName: {
     fontSize: 12,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   colorDot: {
     width: 14,

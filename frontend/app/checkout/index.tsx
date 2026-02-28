@@ -564,6 +564,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   emptyContainer: {
     flex: 1,
@@ -574,6 +575,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     marginBottom: 24,
   },
   shopButton: {
@@ -584,6 +586,7 @@ const styles = StyleSheet.create({
   shopButtonText: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     color: '#fff',
   },
   section: {
@@ -599,6 +602,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     marginBottom: 12,
   },
   addressCard: {
@@ -622,6 +626,7 @@ const styles = StyleSheet.create({
   addressName: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   defaultBadge: {
     paddingHorizontal: 8,
@@ -631,6 +636,7 @@ const styles = StyleSheet.create({
   defaultText: {
     fontSize: 10,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     color: '#fff',
   },
   addressText: {
@@ -662,6 +668,7 @@ const styles = StyleSheet.create({
   paymentName: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   walletBalance: {
     fontSize: 14,
@@ -678,6 +685,7 @@ const styles = StyleSheet.create({
   couponCode: {
     fontSize: 16,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   couponDiscount: {
     fontSize: 14,
@@ -685,6 +693,7 @@ const styles = StyleSheet.create({
   removeButton: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   couponInput: {
     flexDirection: 'row',
@@ -707,6 +716,7 @@ const styles = StyleSheet.create({
   applyButtonText: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     color: '#fff',
   },
   summaryCard: {
@@ -726,6 +736,7 @@ const styles = StyleSheet.create({
   summaryValue: {
     fontSize: 16,
     fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   totalRow: {
     borderTopWidth: 1,
@@ -737,10 +748,12 @@ const styles = StyleSheet.create({
   totalLabel: {
     fontSize: 18,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   totalValue: {
     fontSize: 18,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   bottomSection: {
     paddingHorizontal: 20,
@@ -755,6 +768,7 @@ const styles = StyleSheet.create({
   placeOrderText: {
     fontSize: 16,
     fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     color: '#fff',
   },
 });

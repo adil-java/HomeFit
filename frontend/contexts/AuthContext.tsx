@@ -2,7 +2,13 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
 import { Alert } from 'react-native';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
+// Lazy-loaded to prevent crash in Expo Go (native module not available)
+let GoogleSignin: any = null;
+try {
+  GoogleSignin = require('@react-native-google-signin/google-signin').GoogleSignin;
+} catch (e) {
+  console.warn('[Auth] Google Sign-In native module not available (expected in Expo Go)');
+}
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
@@ -49,15 +55,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Configure Google Sign-In for native popup
+  // Configure Google Sign-In for native popup (skipped if module unavailable)
   useEffect(() => {
-    GoogleSignin.configure({
-      webClientId: '1066517448696-tgpl2cf5snd5auej7brq4hjb6sg1ugv9.apps.googleusercontent.com',
-      iosClientId: '1066517448696-rffitabve6rg0j8bhje6quh1j8mqie9o.apps.googleusercontent.com',
-      offlineAccess: true,
-      scopes: ['profile', 'email'],
-      forceCodeForRefreshToken: true,
-    });
+    if (GoogleSignin) {
+      try {
+        GoogleSignin.configure({
+          webClientId: '1066517448696-tgpl2cf5snd5auej7brq4hjb6sg1ugv9.apps.googleusercontent.com',
+          iosClientId: '1066517448696-rffitabve6rg0j8bhje6quh1j8mqie9o.apps.googleusercontent.com',
+          offlineAccess: true,
+          scopes: ['profile', 'email'],
+          forceCodeForRefreshToken: true,
+        });
+      } catch (e) {
+        console.warn('[Auth] Failed to configure Google Sign-In:', e);
+      }
+    }
   }, []);
 
   // Handle Firebase auth state changes
@@ -227,6 +239,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginWithGoogle = async () => {
     try {
+      // Check if Google Sign-In is available (not available in Expo Go)
+      if (!GoogleSignin) {
+        Alert.alert(
+          'Not Available',
+          'Google Sign-In requires a development or production build. It is not supported in Expo Go.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
       // Check Google Play Services
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
 
