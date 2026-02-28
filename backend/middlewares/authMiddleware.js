@@ -42,12 +42,8 @@ const protect = async (req, res, next) => {
     try {
       const firebaseUser = await firebaseService.verifyToken(token);
       
-      // For registration, login, and verify-token, we don't need to check if user exists in database
-      // These endpoints call createOrUpdateUser() internally which will create the user if needed
-      const bypassPaths = ['/register', '/login', '/verify-token'];
-      const shouldBypass = bypassPaths.some(p => req.path === p) && req.method === 'POST';
-      
-      if (shouldBypass) {
+      // For registration, we don't need to check if user exists in database
+      if (req.path === '/register' && req.method === 'POST') {
         req.user = {
           uid: firebaseUser.uid,
           email: firebaseUser.email,
