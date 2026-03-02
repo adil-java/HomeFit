@@ -55,15 +55,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       const avg2 = (product as any)?.averagerating;
       const displayRating = product?.rating ?? avg1 ?? avg2 ?? null;
       const modelUrl = product?.modelUrl ?? (product as any)?.ARModelUrl;
-      console.log('[ProductCard][Product]', {
-        id: product.id,
-        name: product.name,
-        rating: product.rating,
-        modelUrl,
-        averageRating: avg1,
-        averagerating: avg2,
-        displayRating,
-      });
+      // console.log('[ProductCard][Product]', {
+      //   id: product.id,
+      //   name: product.name,
+      //   rating: product.rating,
+      //   modelUrl,
+      //   averageRating: avg1,
+      //   averagerating: avg2,
+      //   displayRating,
+      // });
     }
   }, [product]);
 
@@ -214,7 +214,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             style={styles.image} 
             resizeMode="cover"
             onError={(e) => {
-              console.log('Failed to load image:', e.nativeEvent.error);
+              // console.log('Failed to load image:', e.nativeEvent.error);
             }}
           />
           <TouchableOpacity

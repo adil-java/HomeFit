@@ -18,6 +18,8 @@ import { Viro3DPoint } from "@reactvision/react-viro/dist/components/Types/ViroU
 import { View, Text, StyleSheet, Alert, Platform, TouchableOpacity } from "react-native";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Ionicons } from '@expo/vector-icons';
+import { checkARSupport } from '@/utils/checkARSupport';
+import Toast from 'react-native-toast-message';
 
 // Define the type for control functions
 interface ControlFunctions {
@@ -142,10 +144,10 @@ function Scene({ modelUrl, controlFunctions }: { modelUrl: string, controlFuncti
 						}
 					}}
 					onLoadStart={() => {
-						console.log('Starting to load 3D model:', modelUrl);
+						// console.log('Starting to load 3D model:', modelUrl);
 					}}
 					onLoadEnd={() => {
-						console.log('Finished loading 3D model');
+						// console.log('Finished loading 3D model');
 						setIsLoading(false);
 					}}
 					onError={(error) => {
@@ -190,18 +192,23 @@ function ErrorFallback() {
 export default function ProductARScreen() {
   const { modelUrl } = useLocalSearchParams<{ modelUrl: string }>();
   const [hasError, setHasError] = useState(false);
+  const [isCheckingSupport, setIsCheckingSupport] = useState(true);
+  const [isARSupported, setIsARSupported] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
   const controlFunctions = useRef<ControlFunctions>({} as ControlFunctions);
 
 	useEffect(() => {
+		const verifyARSupport = async () => {
 		// Check if we're on a platform that supports Viro
 		if (Platform.OS === 'web') {
 			setHasError(true);
+			setIsCheckingSupport(false);
 			return;
 		}
 
 		// Check if model URL is provided
 		if (!modelUrl || modelUrl.trim() === '') {
+			setIsCheckingSupport(false);
 			Alert.alert(
 				'Model Not Available',
 				'No 3D model is available for this product.',
@@ -209,10 +216,50 @@ export default function ProductARScreen() {
 			);
 			return;
 		}
+
+		try {
+			const supported = await checkARSupport();
+			if (!supported) {
+				setIsCheckingSupport(false);
+				Toast.show({
+					type: 'info',
+					text1: 'AR Not Supported',
+					text2: 'Opening 3D viewer instead.',
+					position: 'top',
+				});
+				router.replace(`/product/model-viewer?modelUrl=${encodeURIComponent(modelUrl)}`);
+				return;
+			}
+
+			setIsARSupported(true);
+		} catch (error) {
+			console.error('AR support check failed:', error);
+			Toast.show({
+				type: 'error',
+				text1: 'AR Preview Unavailable',
+				text2: 'Opening 3D viewer instead.',
+				position: 'top',
+			});
+			router.replace(`/product/model-viewer?modelUrl=${encodeURIComponent(modelUrl)}`);
+		} finally {
+			setIsCheckingSupport(false);
+		}
+		};
+
+		verifyARSupport();
 	}, [modelUrl]);
 
 	if (hasError) {
 		return <ErrorFallback />;
+	}
+
+	if (isCheckingSupport || !isARSupported) {
+		return (
+			<View style={[styles.errorContainer, { backgroundColor: '#000' }]}>
+				<Text style={[styles.errorTitle, { color: '#fff' }]}>Preparing AR...</Text>
+				<Text style={[styles.errorText, { color: '#ccc' }]}>Checking device compatibility.</Text>
+			</View>
+		);
 	}
 
 	const arContent = (

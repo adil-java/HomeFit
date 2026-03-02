@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { router } from 'expo-router';
 import { checkARSupport } from '../utils/checkARSupport';
+import Toast from 'react-native-toast-message';
 
 interface ARPreviewButtonProps {
 	modelUrl?: string | null;
@@ -45,11 +46,23 @@ export const ARPreviewButton = ({ modelUrl }: ARPreviewButtonProps) => {
 				router.push(`/product/ar?modelUrl=${encodeURIComponent(modelUrl)}`);
 			} else {
 				// No AR support → use interactive 3D viewer fallback
+				Toast.show({
+					type: 'info',
+					text1: 'AR Not Supported',
+					text2: 'Opening 3D viewer instead.',
+					position: 'top',
+				});
 				router.push(`/product/model-viewer?modelUrl=${encodeURIComponent(modelUrl)}`);
 			}
 		} catch (error) {
 			console.error('Error checking AR support:', error);
 			// On any error, default to the safer 3D viewer fallback
+			Toast.show({
+				type: 'error',
+				text1: 'AR Preview Unavailable',
+				text2: 'Opening 3D viewer instead.',
+				position: 'top',
+			});
 			router.push(`/product/model-viewer?modelUrl=${encodeURIComponent(modelUrl)}`);
 		} finally {
 			setIsCheckingSupport(false);

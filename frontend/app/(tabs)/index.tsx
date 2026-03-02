@@ -112,20 +112,20 @@ export default function HomeScreen() {
       const response = await apiService.getProducts();
       // Debug: inspect raw products payload and rating-related fields
       try {
-        console.log('[Products][Fetch] raw response keys:', response && Object.keys(response));
+        // console.log('[Products][Fetch] raw response keys:', response && Object.keys(response));
         const sample = Array.isArray(response?.data) ? response.data[0] : null;
-        if (sample) {
-          console.log('[Products][Fetch] sample product fields:', {
-            id: sample.id,
-            name: sample.name,
-            rating: sample.rating,
-            category: sample.category,
-            averageRating: sample.averageRating,
-            averagerating: sample.averagerating,
-          });
-        }
+        // if (sample) {
+        //   console.log('[Products][Fetch] sample product fields:', {
+        //     id: sample.id,
+        //     name: sample.name,
+        //     rating: sample.rating,
+        //     category: sample.category,
+        //     averageRating: sample.averageRating,
+        //     averagerating: sample.averagerating,
+        //   });
+        // }
       } catch (e) {
-        console.log('[Products][Fetch] logging error:', e);
+        // console.log('[Products][Fetch] logging error:', e);
       }
       if (response.success) {
         // Normalize product data for consistent UI
@@ -151,9 +151,9 @@ export default function HomeScreen() {
             modelUrl: p.modelUrl,
             inStock: p.inStock
           }));
-          console.log('[Products][Fetch] normalized products preview:', preview);
+          // console.log('[Products][Fetch] normalized products preview:', preview);
         } catch (e) {
-          console.log('[Products][Fetch] error logging normalized products:', e);
+          // console.log('[Products][Fetch] error logging normalized products:', e);
         }
         
         dispatch(setProducts(normalized));

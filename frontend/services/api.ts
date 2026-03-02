@@ -74,16 +74,16 @@ class ApiService {
         headers,
       });
 
-      return response.json();
+      const json = await response.json().catch(() => ({ success: false }));
+      if (!response.ok) {
+        const message = (json as any)?.error || 'Backend login failed';
+        throw new Error(message);
+      }
+
+      return json;
     } catch (error) {
       console.error('Login error:', error);
       throw error;
-      console.warn('Backend login error (network/API unavailable):', error);
-      // Return a mock response for build environments or when backend is unavailable
-      return {
-        success: true,
-        message: 'Login successful (offline mode)',
-      };
     }
   }
 
@@ -107,11 +107,7 @@ class ApiService {
         'Backend registration error (network/API unavailable):',
         error
       );
-      // Return a mock response for build environments or when backend is unavailable
-      return {
-        success: true,
-        message: 'Registration successful (offline mode)',
-      };
+      throw error;
     }
   }
 

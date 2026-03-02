@@ -395,7 +395,7 @@ export default function OrdersScreen() {
                       ? '#fff' 
                       : theme.colors.text,
                     fontWeight: selectedFilter === filter.key ? '600' : '400',
-                    fontFamily: 'Inter_400Regular',
+                    fontFamily: selectedFilter === filter.key ? 'Inter_600SemiBold' : 'Inter_400Regular',
                   },
                 ]}
               >

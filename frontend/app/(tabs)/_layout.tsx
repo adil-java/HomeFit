@@ -7,8 +7,11 @@ import { RootState } from '@/store/store';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Modal, Pressable, ScrollView } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import Toast from 'react-native-toast-message';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { initializeNotifications, syncNotifications } from '@/store/slices/notificationsSlice';
+import { useFocusEffect } from '@react-navigation/native';
 
 function TabBarBadge({ count }: { count: number }) {
   const { theme } = useTheme();
@@ -27,10 +30,21 @@ function TabBarBadge({ count }: { count: number }) {
 export default function TabLayout() {
   const { theme } = useTheme();
   const { user, logout } = useAuth();
+  const dispatch = useAppDispatch();
   const cartItemCount = useSelector((state: RootState) => state.cart.itemCount);
   const wishlistItemCount = useSelector((state: RootState) => state.wishlist.items.length);
+  const notificationUnreadCount = useSelector((state: RootState) => state.notifications.unreadCount);
   const router = useRouter();
   const [showSellerMenu, setShowSellerMenu] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!user) return () => {};
+      dispatch(initializeNotifications());
+      dispatch(syncNotifications());
+      return () => {};
+    }, [dispatch, user])
+  );
 
   // Add header right component for seller
   const headerRight = () => {
@@ -281,9 +295,12 @@ export default function TabLayout() {
               </View>
               <TouchableOpacity 
                 style={[styles.headerButton, { backgroundColor: theme.colors.surface }]}
-                onPress={() => {}}
+                onPress={() => router.push('/notifications')}
               >
-                <Bell size={20} color={theme.colors.text} />
+                <View>
+                  <Bell size={20} color={theme.colors.text} />
+                  <TabBarBadge count={notificationUnreadCount} />
+                </View>
               </TouchableOpacity>
             </View>
           ),

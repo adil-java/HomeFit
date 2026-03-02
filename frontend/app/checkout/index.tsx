@@ -292,7 +292,7 @@ export default function CheckoutScreen() {
       dispatch(clearCart());
       
       // Navigate to order details with the order ID
-      console.log('Navigating to order:', createdOrder.id);
+      // console.log('Navigating to order:', createdOrder.id);
       router.replace(`/orders/${createdOrder.id}`);
     } catch (error) {
       console.error('Order error:', error);

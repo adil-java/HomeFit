@@ -84,7 +84,7 @@ export default function OrderDetailScreen() {
 
   // Log the params to see what we're getting
   React.useEffect(() => {
-    console.log('Route params:', params);
+    // console.log('Route params:', params);
   }, [params]);
 
   // Ensure id is always a string and handle array case
@@ -102,12 +102,12 @@ export default function OrderDetailScreen() {
     }
 
     try {
-      console.log('Fetching order with ID:', orderId);
+      // console.log('Fetching order with ID:', orderId);
       setLoading(true);
       setError(null);
       
       const orderData = await apiService.getOrderDetails(orderId);
-      console.log('Order data received:', orderData);
+      // console.log('Order data received:', orderData);
       
       if (!orderData) {
         throw new Error('No order data received');
@@ -125,7 +125,7 @@ export default function OrderDetailScreen() {
 
   React.useEffect(() => {
     if (orderId) {
-      console.log('Order ID changed, fetching details...');
+      // console.log('Order ID changed, fetching details...');
       fetchOrderDetails();
     } else {
       console.error('No order ID provided in route params');

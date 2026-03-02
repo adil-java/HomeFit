@@ -1,12 +1,12 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Provider } from 'react-redux';
-import { PaperProvider } from 'react-native-paper';
+import { PaperProvider, MD3LightTheme, configureFonts } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold } from '@expo-google-fonts/inter';
-import { Text, View } from 'react-native';
+import { Text, TextInput, View } from 'react-native';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { store } from '@/store/store';
 import { ThemeProvider } from '@/contexts/ThemeContext';
@@ -52,25 +52,52 @@ function extractFontWeight(style: any): string | undefined {
 
 // Set Inter as the default font for ALL Text components app-wide,
 // automatically mapping fontWeight → correct Inter variant.
-const originalRender = (Text as any).render;
-if (originalRender) {
-  (Text as any).render = function (...args: any[]) {
+const applyInterFontRenderPatch = (Component: any) => {
+  if (!Component || !Component.render || Component.__interFontPatched) return;
+
+  const originalRender = Component.render;
+  Component.render = function (...args: any[]) {
     const origin = originalRender.call(this, ...args);
-    const weight = extractFontWeight(origin.props.style);
+    const weight = extractFontWeight(origin?.props?.style);
     const interFamily = INTER_WEIGHT_MAP[weight ?? '400'] ?? 'Inter_400Regular';
+
     return {
       ...origin,
       props: {
         ...origin.props,
-        style: [
-          { fontFamily: interFamily },
-          origin.props.style,
-          { fontFamily: interFamily },  // override again after user styles to enforce Inter
-        ],
+        style: [{ fontFamily: interFamily }, origin.props.style, { fontFamily: interFamily }],
       },
     };
   };
-}
+
+  Component.__interFontPatched = true;
+};
+
+applyInterFontRenderPatch(Text as any);
+applyInterFontRenderPatch(TextInput as any);
+
+const paperFontConfig = {
+  displayLarge: { fontFamily: 'Inter_700Bold', fontWeight: '700' as const },
+  displayMedium: { fontFamily: 'Inter_700Bold', fontWeight: '700' as const },
+  displaySmall: { fontFamily: 'Inter_600SemiBold', fontWeight: '600' as const },
+  headlineLarge: { fontFamily: 'Inter_700Bold', fontWeight: '700' as const },
+  headlineMedium: { fontFamily: 'Inter_700Bold', fontWeight: '700' as const },
+  headlineSmall: { fontFamily: 'Inter_600SemiBold', fontWeight: '600' as const },
+  titleLarge: { fontFamily: 'Inter_600SemiBold', fontWeight: '600' as const },
+  titleMedium: { fontFamily: 'Inter_600SemiBold', fontWeight: '600' as const },
+  titleSmall: { fontFamily: 'Inter_600SemiBold', fontWeight: '600' as const },
+  bodyLarge: { fontFamily: 'Inter_400Regular', fontWeight: '400' as const },
+  bodyMedium: { fontFamily: 'Inter_400Regular', fontWeight: '400' as const },
+  bodySmall: { fontFamily: 'Inter_400Regular', fontWeight: '400' as const },
+  labelLarge: { fontFamily: 'Inter_500Medium', fontWeight: '500' as const },
+  labelMedium: { fontFamily: 'Inter_500Medium', fontWeight: '500' as const },
+  labelSmall: { fontFamily: 'Inter_500Medium', fontWeight: '500' as const },
+};
+
+const paperTheme = {
+  ...MD3LightTheme,
+  fonts: configureFonts({ config: paperFontConfig }),
+};
 
 export default function RootLayout() {
   useFrameworkReady();
@@ -105,10 +132,10 @@ export default function RootLayout() {
     };
   }, []);
 
-  // Hide the native splash once our layout is rendered
-  const onLayoutReady = useCallback(async () => {
+  // Hide native splash immediately when app resources are ready
+  useEffect(() => {
     if (appReady && fontsLoaded) {
-      await SplashScreen.hideAsync();
+      SplashScreen.hideAsync().catch(() => {});
     }
   }, [appReady, fontsLoaded]);
 
@@ -118,11 +145,11 @@ export default function RootLayout() {
   }
 
   return (
-    <View style={{ flex: 1 }} onLayout={onLayoutReady}>
+    <View style={{ flex: 1 }}>
       <Provider store={store}>
         <ThemeProvider>
           <AuthProvider>
-            <PaperProvider>
+            <PaperProvider theme={paperTheme}>
               <StripeProvider publishableKey={publishableKey || ''}>
                 <Stack screenOptions={{ headerShown: false }}>
                   <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -130,6 +157,7 @@ export default function RootLayout() {
                   <Stack.Screen name="product" options={{ headerShown: false }} />
                   <Stack.Screen name="checkout" options={{ headerShown: false }} />
                   <Stack.Screen name="seller" options={{ headerShown: false }} />
+                  <Stack.Screen name="notifications" options={{ headerShown: false }} />
                   <Stack.Screen name="+not-found" />
                 </Stack>
                 <StatusBar style="auto" />

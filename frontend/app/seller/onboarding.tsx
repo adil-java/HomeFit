@@ -195,7 +195,7 @@ export default function OnboardingPage() {
 
   const renderOnboardingStatus = () => {
     if (!onboardingStatus) return null;
-    console.log('Onboarding Status:', onboardingStatus);
+    // console.log('Onboarding Status:', onboardingStatus);
     
     // Determine the actual onboarding status based on all available flags
     const isFullyOnboarded = onboardingStatus.isOnboarded && onboardingStatus.chargesEnabled;
@@ -495,7 +495,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "700",
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'Inter_700Bold',
     color: "#000",
     marginBottom: 8,
   },
@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
   benefitsTitle: {
     fontSize: 14,
     fontWeight: "600",
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'Inter_600SemiBold',
     color: "#16a34a",
     marginBottom: 12,
   },
@@ -529,7 +529,7 @@ const styles = StyleSheet.create({
     color: "#22c55e",
     marginRight: 10,
     fontWeight: "600",
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'Inter_600SemiBold',
   },
   benefitText: {
     fontSize: 13,
@@ -545,7 +545,7 @@ const styles = StyleSheet.create({
   requirementsTitle: {
     fontSize: 14,
     fontWeight: "600",
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'Inter_600SemiBold',
     color: "#000",
     marginBottom: 12,
   },
@@ -559,7 +559,7 @@ const styles = StyleSheet.create({
     color: "#999",
     marginRight: 10,
     fontWeight: "600",
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'Inter_600SemiBold',
   },
   requirementText: {
     fontSize: 13,
@@ -575,7 +575,7 @@ const styles = StyleSheet.create({
   timelineTitle: {
     fontSize: 14,
     fontWeight: "600",
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'Inter_600SemiBold',
     color: "#000",
     marginBottom: 16,
   },
@@ -598,7 +598,7 @@ const styles = StyleSheet.create({
   timelineStep: {
     fontSize: 13,
     fontWeight: "500",
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'Inter_500Medium',
     color: "#000",
     marginBottom: 4,
   },
@@ -620,7 +620,7 @@ const styles = StyleSheet.create({
     color: "#0284c7",
     marginRight: 10,
     fontWeight: "600",
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'Inter_600SemiBold',
   },
   infoText: {
     fontSize: 12,
@@ -646,7 +646,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 15,
     fontWeight: "600",
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'Inter_600SemiBold',
   },
   secondaryButton: {
     backgroundColor: "#f0f0f0",
@@ -655,7 +655,7 @@ const styles = StyleSheet.create({
     color: "#007AFF",
     fontSize: 15,
     fontWeight: "600",
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'Inter_600SemiBold',
   },
   disabledButton: {
     opacity: 0.6,

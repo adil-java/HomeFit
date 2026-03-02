@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
   },
   arrow: {
     fontSize: 20,
-    fontWeight: '300',
+    fontWeight: '400',
     fontFamily: 'Inter_400Regular',
   },
 });

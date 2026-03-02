@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 
 let cachedResult: boolean | null = null;
+const ENABLE_ANDROID_NATIVE_AR_FALLBACK = process.env.EXPO_PUBLIC_ENABLE_ANDROID_NATIVE_AR === 'true';
 
 /**
  * Check if the device supports ARCore (Android) or ARKit (iOS).
@@ -41,9 +42,22 @@ export async function checkARSupport(): Promise<boolean> {
         // libraries are linked correctly in this build.
         const viro = await import('@reactvision/react-viro');
         
-        // If the import succeeds the native modules are present, which means
-        // ARCore is available (Viro requires it at build time on Android).
-        if (viro && viro.ViroARSceneNavigator) {
+        if (!viro || !viro.ViroARSceneNavigator) {
+          cachedResult = false;
+          return false;
+        }
+
+        // Prefer explicit runtime capability check if provided by Viro.
+        const runtimeSupportCheck = (viro.ViroARSceneNavigator as any).isARSupportedOnDevice;
+        if (typeof runtimeSupportCheck === 'function') {
+          const isSupported = await runtimeSupportCheck();
+          cachedResult = Boolean(isSupported);
+          return cachedResult;
+        }
+
+        // Fallback behavior for builds where the runtime check is unavailable.
+        // Keep this opt-in to avoid crashes on unsupported devices.
+        if (ENABLE_ANDROID_NATIVE_AR_FALLBACK) {
           cachedResult = true;
           return true;
         }
