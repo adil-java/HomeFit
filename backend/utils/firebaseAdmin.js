@@ -1,4 +1,4 @@
-console.log('[Firebase Admin DEBUG] Loading Firebase Admin credentials...');
+// console.log('[Firebase Admin DEBUG] Loading Firebase Admin credentials...');
 
 const rawPrivateKey = process.env.FIREBASE_PRIVATE_KEY || '';
 const b64PrivateKey = process.env.FIREBASE_PRIVATE_KEY_BASE64 || '';
@@ -6,24 +6,24 @@ const resolvedPrivateKey = rawPrivateKey
   ? rawPrivateKey.replace(/\\n/g, '\n')
   : (b64PrivateKey ? Buffer.from(b64PrivateKey, 'base64').toString('utf8') : undefined);
 
-console.log('[Firebase Admin DEBUG] Raw private key present:', !!rawPrivateKey, 'length:', rawPrivateKey?.length);
-console.log('[Firebase Admin DEBUG] Base64 private key present:', !!b64PrivateKey, 'length:', b64PrivateKey?.length);
-console.log('[Firebase Admin DEBUG] Resolved private key present:', !!resolvedPrivateKey, 'length:', resolvedPrivateKey?.length);
+// console.log('[Firebase Admin DEBUG] Raw private key present:', !!rawPrivateKey, 'length:', rawPrivateKey?.length);
+// console.log('[Firebase Admin DEBUG] Base64 private key present:', !!b64PrivateKey, 'length:', b64PrivateKey?.length);
+// console.log('[Firebase Admin DEBUG] Resolved private key present:', !!resolvedPrivateKey, 'length:', resolvedPrivateKey?.length);
 
 if (!resolvedPrivateKey) {
   console.error('[Firebase Admin DEBUG] Missing FIREBASE_PRIVATE_KEY or FIREBASE_PRIVATE_KEY_BASE64');
   throw new Error('Missing FIREBASE_PRIVATE_KEY or FIREBASE_PRIVATE_KEY_BASE64');
 }
 
-console.log('[Firebase Admin DEBUG] FIREBASE_PROJECT_ID:', process.env.FIREBASE_PROJECT_ID);
-console.log('[Firebase Admin DEBUG] FIREBASE_CLIENT_EMAIL:', process.env.FIREBASE_CLIENT_EMAIL);
+// console.log('[Firebase Admin DEBUG] FIREBASE_PROJECT_ID:', process.env.FIREBASE_PROJECT_ID);
+// console.log('[Firebase Admin DEBUG] FIREBASE_CLIENT_EMAIL:', process.env.FIREBASE_CLIENT_EMAIL);
 
 if (!process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PROJECT_ID) {
   console.error('[Firebase Admin DEBUG] Missing FIREBASE_CLIENT_EMAIL or FIREBASE_PROJECT_ID');
   throw new Error('Missing FIREBASE_CLIENT_EMAIL or FIREBASE_PROJECT_ID');
 }
 
-console.log('[Firebase Admin DEBUG] All required Firebase credentials loaded successfully');
+// console.log('[Firebase Admin DEBUG] All required Firebase credentials loaded successfully');
 
 const serviceAccount = {
   "type": process.env.FIREBASE_TYPE,
