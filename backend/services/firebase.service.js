@@ -12,9 +12,15 @@ class FirebaseServices {
       return FirebaseServices.instance;
     }
 
+    console.log('[Firebase Service DEBUG] Initializing Firebase Admin SDK');
+    console.log('[Firebase Service DEBUG] Project ID:', serviceAccount?.project_id);
+    console.log('[Firebase Service DEBUG] Client Email:', serviceAccount?.client_email);
+    
     this.app = initializeApp({
       credential: cert(serviceAccount),
     });
+    
+    console.log('[Firebase Service DEBUG] Firebase Admin SDK initialized successfully');
 
     this.messaging = getMessaging(this.app);
     this.auth = getAuth(this.app);
@@ -49,8 +55,16 @@ class FirebaseServices {
   
   async verifyToken(idToken) {
     try {
+      console.log('[Firebase DEBUG] verifyToken called');
+      console.log('[Firebase DEBUG] Token (first 50 chars):', idToken?.substring(0, 50) + '...');
+      console.log('[Firebase DEBUG] Project ID from service account:', process.env.FIREBASE_PROJECT_ID);
+      
       const decoded = await this.auth.verifyIdToken(idToken);
+      console.log('[Firebase DEBUG] Token decoded successfully, UID:', decoded.uid);
+      
       const user = await this.auth.getUser(decoded.uid);
+      console.log('[Firebase DEBUG] User fetched from Firebase:', user.uid, user.email);
+      
       return {
         uid: user.uid,
         email: user.email,
@@ -59,7 +73,8 @@ class FirebaseServices {
         phoneNumber: user.phoneNumber,
       };
     } catch (error) {
-      console.error("Error verifying token:", error);
+      console.error("[Firebase DEBUG] Error verifying token:", error.code, error.message);
+      console.error("[Firebase DEBUG] Full error:", error);
       throw error;
     }
   }

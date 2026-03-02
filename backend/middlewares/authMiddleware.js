@@ -26,15 +26,19 @@ const verifyFirebaseToken = async (req, res, next) => {
 const protect = async (req, res, next) => {
   try {
     let token;
+    console.log('[Auth DEBUG] protect middleware called for:', req.method, req.path);
+    console.log('[Auth DEBUG] Authorization header present:', !!req.headers.authorization);
 
     if (
       req.headers.authorization &&
       req.headers.authorization.startsWith('Bearer')
     ) {
       token = req.headers.authorization.split(' ')[1];
+      console.log('[Auth DEBUG] Token extracted (first 50 chars):', token?.substring(0, 50) + '...');
     }
 
     if (!token) {
+      console.log('[Auth DEBUG] No token provided');
       return res.status(401).json({
         success: false,
         error: 'Not authorized to access this route',
@@ -42,7 +46,9 @@ const protect = async (req, res, next) => {
     }
 
     try {
+      console.log('[Auth DEBUG] Attempting Firebase token verification...');
       const firebaseUser = await firebaseService.verifyToken(token);
+      console.log('[Auth DEBUG] Firebase user verified:', firebaseUser.uid, firebaseUser.email);
       
       // For auth bootstrap routes, allow the controller to create/sync the user
       if (req.method === 'POST' && AUTH_BOOTSTRAP_POST_PATHS.has(req.path)) {
@@ -58,12 +64,15 @@ const protect = async (req, res, next) => {
       }
 
       // For all other protected routes, check if user exists in database
+      console.log('[Auth DEBUG] Checking for user in database with UID:', firebaseUser.uid);
       let dbUser = await prisma.user.findUnique({
         where: { firebaseUid: firebaseUser.uid }
       });
+      console.log('[Auth DEBUG] Database user found:', !!dbUser, dbUser?.id);
 
       if (!dbUser) {
         // Auto-provision user from Firebase token to avoid authorization deadlocks
+        console.log('[Auth DEBUG] Auto-provisioning new user from Firebase data');
         dbUser = await prisma.user.create({
           data: {
             firebaseUid: firebaseUser.uid,
@@ -79,6 +88,7 @@ const protect = async (req, res, next) => {
               : 'CUSTOMER',
           },
         });
+        console.log('[Auth DEBUG] New user created in DB:', dbUser.id);
       }
 
       req.user = {
@@ -90,10 +100,12 @@ const protect = async (req, res, next) => {
         phoneNumber: firebaseUser.phoneNumber,
         role: dbUser.role || 'customer',
       };
+      console.log('[Auth DEBUG] User set on request, proceeding to next middleware');
 
       next();
     } catch (error) {
-      console.error('Token verification failed:', error);
+      console.error('[Auth DEBUG] Token verification failed:', error.code, error.message);
+      console.error('[Auth DEBUG] Full verification error:', error);
       return res.status(401).json({
         success: false,
         error: 'Not authorized, token failed',

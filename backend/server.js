@@ -60,14 +60,24 @@ const PORT = process.env.PORT || 8080;
 
 async function startServer() {
   try {
+    console.log('[Server DEBUG] Starting server...');
+    console.log('[Server DEBUG] NODE_ENV:', process.env.NODE_ENV);
+    console.log('[Server DEBUG] PORT:', PORT);
+    console.log('[Server DEBUG] DATABASE_URL present:', !!process.env.DATABASE_URL);
+    console.log('[Server DEBUG] FIREBASE_PROJECT_ID:', process.env.FIREBASE_PROJECT_ID);
+    
     await prisma.$connect();
-    console.log("Database connected");
+    console.log("[Server DEBUG] Database connected successfully");
+
+    // List users in database to check sync status
+    const userCount = await prisma.user.count();
+    console.log("[Server DEBUG] Total users in database:", userCount);
 
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`Server running on port ${PORT}`);
     });
   } catch (err) {
-    console.error("Database connection error:", err);
+    console.error("[Server DEBUG] Database connection error:", err);
     process.exit(1);
   }
 }
