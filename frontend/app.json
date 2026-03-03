@@ -8,9 +8,6 @@
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "splash": {
-      "backgroundColor": "#2f3b4b"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -100,12 +97,6 @@
       "expo-router",
       "expo-font",
       "expo-web-browser",
-      [
-        "expo-splash-screen",
-        {
-          "backgroundColor": "#2f3b4b"
-        }
-      ],
       "expo-secure-store",
       "@reactvision/react-viro"
     ],
