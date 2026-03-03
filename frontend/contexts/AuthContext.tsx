@@ -273,23 +273,71 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const credential = GoogleAuthProvider.credential(idToken);
       const result = await signInWithCredential(auth, credential);
       
-      // Check if user exists in backend database by calling login endpoint
+      // Get Firebase token for backend API calls
+      const firebaseToken = await result.user.getIdToken();
+      setToken(firebaseToken);
+      
+      // Sync with backend database (same flow as manual login)
       try {
-        await apiService.login();
+        // First try login (existing user)
+        const backendResponse = await apiService.login();
+        console.log('Google login backend response:', backendResponse);
+        
+        const userData = backendResponse.user || backendResponse;
+        const role = userData.role?.toLowerCase() || 
+                    (result.user.email?.toLowerCase().includes('seller') ? 'seller' : 'customer');
+        
+        const user: User = {
+          id: result.user.uid,
+          uid: userData.id,
+          email: result.user.email || '',
+          name: result.user.displayName || (result.user.email?.split('@')[0] || ''),
+          role: role,
+        };
+        
+        setUser(user);
+        await SecureStore.setItemAsync('token', firebaseToken);
+        await SecureStore.setItemAsync('user', JSON.stringify(user));
+        
         Alert.alert('Welcome Back!', `Signed in as ${result.user.email}`, [{ text: 'OK' }]);
       } catch (loginError: any) {
-        // If user doesn't exist (login fails), register them
+        // If user doesn't exist, register them
         try {
-          await apiService.register();
+          const backendResponse = await apiService.register();
+          console.log('Google register backend response:', backendResponse);
+          
+          const userData = backendResponse.user || backendResponse;
+          const user: User = {
+            id: result.user.uid,
+            uid: userData.id,
+            email: result.user.email || '',
+            name: result.user.displayName || (result.user.email?.split('@')[0] || ''),
+            role: userData.role?.toLowerCase() || 'customer',
+          };
+          
+          setUser(user);
+          await SecureStore.setItemAsync('token', firebaseToken);
+          await SecureStore.setItemAsync('user', JSON.stringify(user));
+          
           Alert.alert('Account Created!', `Welcome ${result.user.displayName || result.user.email}!`, [{ text: 'OK' }]);
         } catch (registerError: any) {
-          // Continue anyway - Firebase auth succeeded
+          // Fallback to Firebase-only user if backend fails
+          console.warn('Backend registration failed for Google user, using fallback:', registerError);
+          const fallbackUser: User = {
+            id: result.user.uid,
+            uid: result.user.uid,
+            email: result.user.email || '',
+            name: result.user.displayName || (result.user.email?.split('@')[0] || ''),
+            role: result.user.email?.includes('seller') ? 'seller' : 'customer',
+          };
+          
+          setUser(fallbackUser);
+          await SecureStore.setItemAsync('token', firebaseToken);
+          await SecureStore.setItemAsync('user', JSON.stringify(fallbackUser));
+          
           Alert.alert('Notice', 'Signed in successfully. Profile sync will happen later.', [{ text: 'OK' }]);
         }
       }
-      
-      // Wait a moment for backend operations to complete
-      await new Promise(resolve => setTimeout(resolve, 500));
       
       router.replace('/(tabs)');
       

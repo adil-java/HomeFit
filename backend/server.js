@@ -7,6 +7,7 @@ import categoryRoutes from "./routes/category.routes.js";
 import cartRoutes from "./routes/cart.routes.js";
 import wishlistRoutes from "./routes/wishlist.routes.js";
 import prisma from "./config/db.js";
+import { connectWithRetry } from "./config/db.js";
 import stripeRoutes from "./routes/payment.route.js";
 import StripeRoutes from "./routes/stripe.routes.js"
 import orderRoutes from "./routes/order.route.js";
@@ -60,24 +61,21 @@ const PORT = process.env.PORT || 8080;
 
 async function startServer() {
   try {
-    console.log('[Server DEBUG] Starting server...');
-    console.log('[Server DEBUG] NODE_ENV:', process.env.NODE_ENV);
-    console.log('[Server DEBUG] PORT:', PORT);
-    console.log('[Server DEBUG] DATABASE_URL present:', !!process.env.DATABASE_URL);
-    console.log('[Server DEBUG] FIREBASE_PROJECT_ID:', process.env.FIREBASE_PROJECT_ID);
-    
-    await prisma.$connect();
+       
+    // Use retry mechanism for database connection
+    await connectWithRetry();
     console.log("[Server DEBUG] Database connected successfully");
 
     // List users in database to check sync status
     const userCount = await prisma.user.count();
-    console.log("[Server DEBUG] Total users in database:", userCount);
 
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`Server running on port ${PORT}`);
     });
   } catch (err) {
     console.error("[Server DEBUG] Database connection error:", err);
+    console.error("[Server DEBUG] Check if your Aiven database is running at:");
+    console.error("  https://console.aiven.io - Database may be paused on free tier");
     process.exit(1);
   }
 }
