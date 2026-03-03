@@ -15,6 +15,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/services/api';
 import Toast from 'react-native-toast-message';
+import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 
 export default function SellerApplicationScreen() {
   const { theme } = useTheme();
@@ -153,6 +154,11 @@ export default function SellerApplicationScreen() {
   if (isCheckingStatus) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <View style={styles.header}>
+          <HeaderBackButton onPress={() => router.back()} size={24} />
+          <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Become a Seller</Text>
+          <View style={{ width: 40 }} />
+        </View>
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={[styles.loadingText, { color: theme.colors.text }]}>
@@ -166,11 +172,13 @@ export default function SellerApplicationScreen() {
   if (existingApplication) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <View style={styles.header}>
+          <HeaderBackButton onPress={() => router.back()} size={24} />
+          <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Application Status</Text>
+          <View style={{ width: 40 }} />
+        </View>
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           <View style={styles.content}>
-            <Text style={[styles.title, { color: theme.colors.text }]}>
-              Seller Application Status
-            </Text>
 
             <View style={[styles.statusCard, { backgroundColor: theme.colors.surface, borderColor: getStatusColor(existingApplication.status) }]}>
               <Text style={[styles.statusText, { color: getStatusColor(existingApplication.status) }]}>
@@ -201,7 +209,7 @@ export default function SellerApplicationScreen() {
             </View>
 
             <TouchableOpacity
-              style={[styles.backButton, { backgroundColor: theme.colors.primary }]}
+              style={[styles.backToHomeButton, { backgroundColor: theme.colors.primary }]}
               onPress={() => router.replace('/(tabs)')}
             >
               <Text style={[styles.backButtonText, { color: '#fff' }]}>
@@ -217,6 +225,11 @@ export default function SellerApplicationScreen() {
   if (user?.role === 'seller') {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <View style={styles.header}>
+          <HeaderBackButton onPress={() => router.back()} size={24} />
+          <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Become a Seller</Text>
+          <View style={{ width: 40 }} />
+        </View>
         <View style={styles.centered}>
           <Text style={[styles.title, { color: theme.colors.text }]}>
             You are already a seller!
@@ -225,7 +238,7 @@ export default function SellerApplicationScreen() {
             You can access your seller dashboard from the menu.
           </Text>
           <TouchableOpacity
-            style={[styles.backButton, { backgroundColor: theme.colors.primary }]}
+            style={[styles.backToHomeButton, { backgroundColor: theme.colors.primary }]}
             onPress={() => router.replace('/(tabs)')}
           >
             <Text style={[styles.backButtonText, { color: '#fff' }]}>
@@ -239,15 +252,13 @@ export default function SellerApplicationScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <View style={styles.header}>
+        <HeaderBackButton onPress={() => router.back()} size={24} />
+        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Become a Seller</Text>
+        <View style={{ width: 40 }} />
+      </View>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
-          <Text style={[styles.title, { color: theme.colors.text }]}>
-            Become a Seller
-          </Text>
-          <Text style={[styles.subtitle, { color: theme.colors.text, opacity: 0.7 }]}>
-            Apply to start selling on our platform
-          </Text>
-
           <View style={styles.form}>
             <View style={styles.inputGroup}>
               <Text style={[styles.label, { color: theme.colors.text }]}>
@@ -400,6 +411,18 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
+  },
   centered: {
     flex: 1,
     justifyContent: 'center',
@@ -425,7 +448,7 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   form: {
-    marginTop: 20,
+    marginTop: 0,
   },
   inputGroup: {
     marginBottom: 20,
@@ -479,7 +502,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
   },
-  backButton: {
+  backToHomeButton: {
     padding: 15,
     borderRadius: 8,
     alignItems: 'center',

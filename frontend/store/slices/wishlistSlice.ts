@@ -56,7 +56,7 @@ export const fetchWishlist = createAsyncThunk(
       const startTime = performance.now();
       const response = await apiService.getWishlist();
       const duration = performance.now() - startTime;
-      console.log(`[Performance] fetchWishlist took ${Math.round(duration)}ms`);
+      // console.log(`[Performance] fetchWishlist took ${Math.round(duration)}ms`);
       
       // Always return an array, even if response.items is undefined
       return {
@@ -98,7 +98,7 @@ export const addToWishlist = createAsyncThunk(
       apiService.addToWishlist(product.id)
         .then(() => {
           const duration = performance.now() - startTime;
-          console.log(`[Performance] addToWishlist API call took ${Math.round(duration)}ms`);
+          // console.log(`[Performance] addToWishlist API call took ${Math.round(duration)}ms`);
         })
         .catch(error => {
           console.error('Failed to add to wishlist:', error);
@@ -142,7 +142,7 @@ export const removeFromWishlist = createAsyncThunk(
       const promise = apiService.removeFromWishlist(productId)
         .then(() => {
           const duration = performance.now() - startTime;
-          console.log(`[Performance] removeFromWishlist API call took ${Math.round(duration)}ms`);
+          // console.log(`[Performance] removeFromWishlist API call took ${Math.round(duration)}ms`);
         })
         .catch((error: any) => {
           console.error('Failed to remove from wishlist:', error);

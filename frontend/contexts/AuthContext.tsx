@@ -149,7 +149,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // First try to get the user role from the backend
       try {
         const backendResponse = await apiService.login();
-        console.log('Login backend response:', backendResponse);
+        // console.log('Login backend response:', backendResponse);
         
         const userData = backendResponse.user || backendResponse; // Handle different response formats
         const role = userData.role?.toLowerCase() || 
@@ -281,7 +281,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         // First try login (existing user)
         const backendResponse = await apiService.login();
-        console.log('Google login backend response:', backendResponse);
+        // console.log('Google login backend response:', backendResponse);
         
         const userData = backendResponse.user || backendResponse;
         const role = userData.role?.toLowerCase() || 

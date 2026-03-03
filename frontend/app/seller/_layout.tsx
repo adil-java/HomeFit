@@ -30,13 +30,6 @@ export default function SellerLayout() {
           }}
         />
         <Stack.Screen
-          name="revenue"
-          options={{
-            headerShown: false,
-            title: 'Revenue Streams',
-          }}
-        />
-        <Stack.Screen
           name="products/index"
           options={{
             headerShown: false,

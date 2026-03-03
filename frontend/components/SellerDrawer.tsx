@@ -14,7 +14,6 @@ import {
   Menu,
   ChevronRight,
   ShoppingCart,
-  BarChart2,
   UserCheck,
   Settings,
   Store,
@@ -33,12 +32,6 @@ const DrawerContent = (props: any) => {
       label: 'Dashboard', 
       icon: LayoutDashboard, 
       path: '/seller',
-      roles: ['seller']
-    },
-    { 
-      label: 'Revenue Streams', 
-      icon: BarChart2, 
-      path: '/seller/revenue',
       roles: ['seller']
     },
     { 
