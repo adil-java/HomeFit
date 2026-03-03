@@ -84,7 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Try to verify token with backend but don't block if it fails
           try {
             const backendResponse = await apiService.verifyToken();
-            console.log('Backend response:', backendResponse); // Debug log
+            // console.log('Backend response:', backendResponse); // Debug log
 
             // Check if the response has the expected structure
             const userData = backendResponse.user || backendResponse; // Handle different response formats
@@ -202,7 +202,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // First try to register with the backend to get the user role
       try {
         const backendResponse = await apiService.register();
-        console.log('Registration backend response:', backendResponse);
+        // console.log('Registration backend response:', backendResponse);
         
         const userData = backendResponse.user || backendResponse; // Handle different response formats
         const user: User = {
@@ -310,7 +310,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // If user doesn't exist, register them
         try {
           const backendResponse = await apiService.register();
-          console.log('Google register backend response:', backendResponse);
+          // console.log('Google register backend response:', backendResponse);
           
           const userData = backendResponse.user || backendResponse;
           const user: User = {

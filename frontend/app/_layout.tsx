@@ -116,6 +116,10 @@ export default function RootLayout() {
 
   useEffect(() => {
     let mounted = true;
+    const startupFallbackTimer = setTimeout(() => {
+      if (mounted) setAppReady(true);
+    }, 1500);
+
     (async () => {
       try {
         const { publishableKey } = await apiService.stripeGetKeys();
@@ -123,12 +127,16 @@ export default function RootLayout() {
       } catch (e) {
         console.warn('Failed to load Stripe publishable key', e);
       } finally {
-        // App is ready to render, even if Stripe key failed
-        if (mounted) setAppReady(true);
+        if (mounted) {
+          clearTimeout(startupFallbackTimer);
+          setAppReady(true);
+        }
       }
     })();
+
     return () => {
       mounted = false;
+      clearTimeout(startupFallbackTimer);
     };
   }, []);
 
