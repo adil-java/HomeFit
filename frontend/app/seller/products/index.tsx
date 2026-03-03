@@ -100,22 +100,22 @@ export default function ProductsScreen() {
   
   const fetchProducts = async () => {
     if (!user?.uid) {
-      console.log('No user UID found', user);
+      // console.log('No user UID found', user);
       return;
     }
     
     try {
-      console.log('Fetching products for user:', user.uid);
+      // console.log('Fetching products for user:', user.uid);
       setLoading(true);
       const result = await apiService.getSellerProducts(user.uid);
-      console.log('API Response:', result);
+      // console.log('API Response:', result);
       
       if (result && result.success && Array.isArray(result.data)) {
-        console.log(`Found ${result.data.length} products`);
+        // console.log(`Found ${result.data.length} products`);
         setProducts(result.data);
         setFilteredProducts(result.data);
       } else {
-        console.log('No products found or invalid response format');
+        // console.log('No products found or invalid response format');
         setProducts([]);
         setFilteredProducts([]);
       }

@@ -263,7 +263,7 @@ export default function ProductDetailScreen() {
           
 
           <View style={styles.priceContainer}>
-              <Text style={[styles.productPrice, { color: theme.colors.accent, fontSize: 24, fontWeight: '700' }]}>
+              <Text style={[styles.productPrice, { color: theme.colors.accent, fontSize: 24, fontWeight: '700', fontFamily: 'Inter_700Bold' }]}>
                 {formatPrice(product.price)}
               </Text>
               {product.comparePrice && product.comparePrice > product.price && (
@@ -353,7 +353,7 @@ export default function ProductDetailScreen() {
                         <Text style={[
                           styles.variantOptionText,
                           isSelected ? styles.variantOptionSelectedText : { color: theme.colors.text },
-                          { fontWeight: isSelected ? '600' : '500' }
+                          { fontWeight: isSelected ? '600' : '500', fontFamily: isSelected ? 'Inter_600SemiBold' : 'Inter_500Medium' }
                         ]}>
                           {option}
                         </Text>

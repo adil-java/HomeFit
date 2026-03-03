@@ -241,14 +241,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           <Text 
             style={[
               styles.name, 
-              { 
-                color: theme.colors.text,
-                fontSize: product.name.length > 25 ? 10 : 13,
-              }
+              { color: theme.colors.text }
             ]} 
             numberOfLines={2}
-            adjustsFontSizeToFit
-            minimumFontScale={0.8}
+            ellipsizeMode="tail"
           >
             {product.name}
           </Text>
@@ -278,15 +274,21 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </View>
           
           <View style={styles.priceContainer}>
-            <View>
+            <View style={styles.priceInfo}>
               <Text style={[styles.price, { color: theme.colors.primary }]}>
                 Rs. {product.price?.toFixed(2) || '0.00'}
               </Text>
-              {typeof (product as any)?.comparePrice === 'number' && (product as any).comparePrice > product.price && (
-                <Text style={[styles.originalPrice, { color: theme.colors.textSecondary }]}>
-                  Rs. {(product as any).comparePrice.toFixed(2)}
-                </Text>
-              )}
+              <Text
+                style={[
+                  styles.originalPrice,
+                  { color: theme.colors.textSecondary },
+                  !(typeof (product as any)?.comparePrice === 'number' && (product as any).comparePrice > product.price) && styles.hiddenOriginalPrice,
+                ]}
+              >
+                {typeof (product as any)?.comparePrice === 'number' && (product as any).comparePrice > product.price
+                  ? `Rs. ${(product as any).comparePrice.toFixed(2)}`
+                  : 'Rs. 0.00'}
+              </Text>
             </View>
             
             {/* {showAddToCart && product.inStock && (
@@ -305,6 +307,27 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 };
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    width: 180,
+    height: 280,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginRight: 12,
+    marginBottom: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorContainer: {
+    width: 180,
+    height: 280,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginRight: 12,
+    marginBottom: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+  },
   container: {
     width: 180, // Fixed width for consistency
     borderRadius: 16,
@@ -361,11 +384,12 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   name: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     fontFamily: 'Inter_600SemiBold',
     marginBottom: 8,
     lineHeight: 18,
+    minHeight: 36,
   },
   ratingContainer: {
     flexDirection: 'row',
@@ -403,6 +427,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: -2,
   },
+  priceInfo: {
+    minHeight: 40,
+    justifyContent: 'space-between',
+  },
   price: {
     fontSize: 16,
     fontWeight: '700',
@@ -412,6 +440,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textDecorationLine: 'line-through',
     marginTop: 2,
+  },
+  hiddenOriginalPrice: {
+    opacity: 0,
   },
   cartButton: {
     width: 32,

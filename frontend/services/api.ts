@@ -4,8 +4,8 @@ import { Platform } from 'react-native';
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://home-fit-backend.onrender.com/api';
 
 // Debug: Log API base URL on startup
-console.log('[API DEBUG] API_BASE_URL:', API_BASE_URL);
-console.log('[API DEBUG] EXPO_PUBLIC_API_BASE_URL env:', process.env.EXPO_PUBLIC_API_BASE_URL);
+// console.log('[API DEBUG] API_BASE_URL:', API_BASE_URL);
+// console.log('[API DEBUG] EXPO_PUBLIC_API_BASE_URL env:', process.env.EXPO_PUBLIC_API_BASE_URL);
 
 class ApiService {
   private async getAuthHeaders(): Promise<Record<string, string>> {
@@ -17,11 +17,11 @@ class ApiService {
     if (user) {
       const token = await user.getIdToken();
       headers['Authorization'] = `Bearer ${token}`;
-      console.log('[API DEBUG] User UID:', user.uid);
-      console.log('[API DEBUG] User Email:', user.email);
-      console.log('[API DEBUG] Token (first 50 chars):', token.substring(0, 50) + '...');
+      // console.log('[API DEBUG] User UID:', user.uid);
+      // console.log('[API DEBUG] User Email:', user.email);
+      // console.log('[API DEBUG] Token (first 50 chars):', token.substring(0, 50) + '...');
     } else {
-      console.log('[API DEBUG] No user logged in - no auth token');
+      // console.log('[API DEBUG] No user logged in - no auth token');
     }
 
     return headers;
@@ -50,21 +50,21 @@ class ApiService {
 
   async verifyToken() {
     try {
-      console.log('[API DEBUG] verifyToken - Starting token verification');
-      console.log('[API DEBUG] verifyToken - API URL:', `${API_BASE_URL}/users/verify-token`);
+      // console.log('[API DEBUG] verifyToken - Starting token verification');
+      // console.log('[API DEBUG] verifyToken - API URL:', `${API_BASE_URL}/users/verify-token`);
       const headers = await this.getAuthHeaders();
-      console.log('[API DEBUG] verifyToken - Headers (excluding token):', { 'Content-Type': headers['Content-Type'] });
+      // console.log('[API DEBUG] verifyToken - Headers (excluding token):', { 'Content-Type': headers['Content-Type'] });
       
       const response = await fetch(`${API_BASE_URL}/users/verify-token`, {
         method: 'POST',
         headers,
       });
 
-      console.log('[API DEBUG] verifyToken - Response status:', response.status);
-      console.log('[API DEBUG] verifyToken - Response ok:', response.ok);
+      // console.log('[API DEBUG] verifyToken - Response status:', response.status);
+      // console.log('[API DEBUG] verifyToken - Response ok:', response.ok);
       
       const json = await response.json().catch(() => ({ success: false }));
-      console.log('[API DEBUG] verifyToken - Response body:', JSON.stringify(json).substring(0, 200));
+      // console.log('[API DEBUG] verifyToken - Response body:', JSON.stringify(json).substring(0, 200));
       
       if (!response.ok) {
         const message = (json as any)?.error || 'Token verification failed';
@@ -72,7 +72,7 @@ class ApiService {
         throw new Error(message);
       }
 
-      console.log('[API DEBUG] verifyToken - SUCCESS');
+      // console.log('[API DEBUG] verifyToken - SUCCESS');
       return json;
     } catch (error) {
       console.warn(
@@ -852,10 +852,10 @@ class ApiService {
   async createOrder(orderData: any) {
     try {
       const headers = await this.getAuthHeaders();
-      console.log(
-        'Creating order with data:',
-        JSON.stringify(orderData, null, 2)
-      );
+      // console.log(
+      //   'Creating order with data:',
+      //   JSON.stringify(orderData, null, 2)
+      // );
 
       const response = await fetch(`${API_BASE_URL}/orders`, {
         method: 'POST',
@@ -960,13 +960,13 @@ class ApiService {
     }
 
     try {
-      console.log('Fetching order with ID:', orderId);
+      // console.log('Fetching order with ID:', orderId);
       const headers = await this.getAuthHeaders();
       const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
         headers,
       });
 
-      console.log('Response status:', response.status);
+      // console.log('Response status:', response.status);
       const responseData = await response.json().catch(() => ({}));
 
       if (!response.ok) {
@@ -976,7 +976,7 @@ class ApiService {
         );
       }
 
-      console.log('Order details response:', responseData);
+      // console.log('Order details response:', responseData);
 
       // Handle both nested data and direct response
       const orderData = responseData.data || responseData;

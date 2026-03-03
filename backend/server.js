@@ -64,18 +64,18 @@ async function startServer() {
        
     // Use retry mechanism for database connection
     await connectWithRetry();
-    console.log("[Server DEBUG] Database connected successfully");
+    // console.log("[Server DEBUG] Database connected successfully");
 
     // List users in database to check sync status
     const userCount = await prisma.user.count();
 
     app.listen(PORT, "0.0.0.0", () => {
-      console.log(`Server running on port ${PORT}`);
+      // console.log(`Server running on port ${PORT}`);
     });
   } catch (err) {
-    console.error("[Server DEBUG] Database connection error:", err);
-    console.error("[Server DEBUG] Check if your Aiven database is running at:");
-    console.error("  https://console.aiven.io - Database may be paused on free tier");
+    // console.error("[Server DEBUG] Database connection error:", err);
+    // console.error("[Server DEBUG] Check if your Aiven database is running at:");
+    // console.error("  https://console.aiven.io - Database may be paused on free tier");
     process.exit(1);
   }
 }

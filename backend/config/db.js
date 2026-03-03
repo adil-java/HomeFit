@@ -17,22 +17,22 @@ async function connectWithRetry(retries = MAX_RETRIES, delay = INITIAL_DELAY) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       await prisma.$connect();
-      console.log('[DB] Connected to database successfully');
+      // console.log('[DB] Connected to database successfully');
       return true;
     } catch (error) {
-      console.error(`[DB] Connection attempt ${attempt}/${retries} failed:`, error.message);
+      // console.error(`[DB] Connection attempt ${attempt}/${retries} failed:`, error.message);
       
       if (attempt === retries) {
-        console.error('[DB] All connection attempts failed. Possible causes:');
-        console.error('  1. Database server is down or paused (check Aiven console)');
-        console.error('  2. Network/firewall blocking port 26899');
-        console.error('  3. Invalid credentials in DATABASE_URL');
-        console.error('  4. SSL certificate issues');
+        // console.error('[DB] All connection attempts failed. Possible causes:');
+        // console.error('  1. Database server is down or paused (check Aiven console)');
+        // console.error('  2. Network/firewall blocking port 26899');
+        // console.error('  3. Invalid credentials in DATABASE_URL');
+        // console.error('  4. SSL certificate issues');
         throw error;
       }
       
       const nextDelay = delay * Math.pow(2, attempt - 1); // Exponential backoff
-      console.log(`[DB] Retrying in ${nextDelay}ms...`);
+      // console.log(`[DB] Retrying in ${nextDelay}ms...`);
       await new Promise(resolve => setTimeout(resolve, nextDelay));
     }
   }

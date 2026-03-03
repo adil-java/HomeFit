@@ -129,7 +129,7 @@ function ProductForm() {
         ? prev.colors.filter(c => c !== colorName)
         : [...prev.colors, colorName];
       
-      console.log('Updated colors:', newColors); // Debug log
+      // console.log('Updated colors:', newColors); // Debug log
       return {
         ...prev,
         colors: newColors
@@ -778,7 +778,7 @@ function ProductForm() {
                     })}
                     {formData.colors.length > 2 && (
                       <View style={[styles.moreColorsBadge, { backgroundColor: theme.colors.primary }]}>
-                        <Text style={{ color: 'white', fontSize: 12, fontWeight: '600' }}>
+                        <Text style={{ color: 'white', fontSize: 12, fontWeight: '600', fontFamily: 'Inter_600SemiBold' }}>
 +{formData.colors.length - 2}
                         </Text>
                       </View>

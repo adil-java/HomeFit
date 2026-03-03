@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   userName: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
     fontFamily: 'Inter_700Bold',
     color: '#fff',

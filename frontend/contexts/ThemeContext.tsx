@@ -1,5 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { typography, FONT_FAMILIES, FONT_WEIGHTS } from '@/utils/typography';
+
+// Typography configuration - same for both light and dark modes
+const sharedTypography = {
+  fonts: FONT_FAMILIES,
+  weights: FONT_WEIGHTS,
+  styles: typography,
+};
 
 export interface Theme {
   colors: {
@@ -19,6 +27,7 @@ export interface Theme {
       end: string;
     };
   };
+  typography: typeof sharedTypography;
   dark: boolean;
 }
 
@@ -40,6 +49,7 @@ const lightTheme: Theme = {
       end: '#1E2A5E',     // Darker blue
     },
   },
+  typography: sharedTypography,
   dark: false,
 };
 
@@ -61,6 +71,7 @@ const darkTheme: Theme = {
       end: '#1A202C',     // Darker background
     },
   },
+  typography: sharedTypography,
   dark: true,
 };
 
