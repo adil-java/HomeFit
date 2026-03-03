@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Plus, MapPin, CreditCard as Edit3, Trash2, Chrome as Home, Building, X, Check } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
+import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 
 interface Address {
   id: string;
@@ -226,9 +227,7 @@ export default function AddressesScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <ArrowLeft size={24} color={theme.colors.text} />
-        </TouchableOpacity>
+        <HeaderBackButton onPress={() => router.back()} size={24} />
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Addresses</Text>
         <TouchableOpacity onPress={() => setShowAddModal(true)}>
           <Plus size={24} color={theme.colors.primary} />

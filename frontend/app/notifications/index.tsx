@@ -14,6 +14,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
+import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 import {
   initializeNotifications,
   markAllNotificationsAsRead,
@@ -133,12 +134,7 @@ export default function NotificationsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}> 
       <View style={[styles.header, { borderBottomColor: theme.colors.border }]}> 
-        <TouchableOpacity
-          style={[styles.backButton, { backgroundColor: theme.colors.surface }]}
-          onPress={() => router.back()}
-        >
-          <ChevronLeft size={20} color={theme.colors.text} />
-        </TouchableOpacity>
+        <HeaderBackButton onPress={() => router.back()} />
 
         <View style={styles.headerTitleWrap}>
           <Text style={[styles.title, { color: theme.colors.text }]}>Notifications</Text>

@@ -29,6 +29,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { Platform } from 'react-native';
 import { apiService } from '@/services/api';
+import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 
 interface Category {
   id: string;
@@ -344,26 +345,27 @@ function ProductForm() {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={[styles.header, { borderBottomColor: theme.colors.border }]}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <ArrowLeft size={24} color={theme.colors.text} />
-        </TouchableOpacity>
+          <HeaderBackButton onPress={() => router.back()} size={24} style={styles.backButton} />
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
           Create Product
         </Text>
         <TouchableOpacity
           onPress={handleSubmit}
           disabled={saving}
-          style={[styles.saveButton, { opacity: saving ? 0.6 : 1 }]}
+          style={[
+            styles.saveButton,
+            {
+              backgroundColor: theme.colors.primary,
+              opacity: saving ? 0.6 : 1,
+            },
+          ]}
         >
           {saving ? (
-            <ActivityIndicator size="small" color={theme.colors.primary} />
+            <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <Plus size={20} color={theme.colors.primary} />
+            <Plus size={20} color="#fff" />
           )}
-          <Text style={[styles.saveButtonText, { color: theme.colors.primary }]}>
+          <Text style={styles.saveButtonText}>
             {saving ? 'Saving...' : 'Create'}
           </Text>
         </TouchableOpacity>
@@ -935,15 +937,22 @@ const styles = StyleSheet.create({
   saveButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingVertical: 12,
+    borderRadius: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
   },
   saveButtonText: {
     marginLeft: 8,
     fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
+    color: '#fff',
   },
   scrollView: {
     flex: 1,

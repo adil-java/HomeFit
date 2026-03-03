@@ -26,6 +26,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { apiService } from '@/services/api';
+import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 
 const statusConfig = {
   pending: { icon: Clock, color: '#f59e0b', label: 'Order Pending' },
@@ -138,9 +139,7 @@ export default function OrderDetailScreen() {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <ArrowLeft size={24} color={theme.colors.text} />
-          </TouchableOpacity>
+          <HeaderBackButton onPress={() => router.back()} size={24} />
           <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Order Details</Text>
         </View>
         <View style={styles.centeredContainer}>
@@ -189,9 +188,7 @@ export default function OrderDetailScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <ArrowLeft size={24} color={theme.colors.text} />
-        </TouchableOpacity>
+        <HeaderBackButton onPress={() => router.back()} size={24} />
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Order Details</Text>
       </View>
 

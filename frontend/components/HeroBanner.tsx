@@ -68,9 +68,14 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: '#fff',
-    paddingHorizontal: 28,
-    paddingVertical: 14,
-    borderRadius: 25,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderRadius: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
   },
   buttonText: {
     fontSize: 16,

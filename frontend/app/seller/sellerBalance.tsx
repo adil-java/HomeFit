@@ -10,6 +10,7 @@ import {
   Alert,
   RefreshControl,
 } from "react-native"
+import { useAuth } from "@/contexts/AuthContext"
 
 interface SellerBalanceScreenProps {
   sellerId: string
@@ -37,6 +38,19 @@ export const SellerBalanceScreen: React.FC<SellerBalanceScreenProps> = ({ seller
 
   const fetchBalance = async () => {
     try {
+      if (!sellerId) {
+        setBalance({
+          currentBalance: 0,
+          pendingPayout: 0,
+          pendingAmount: 0,
+          lastPayoutDate: "N/A",
+          nextPayoutDate: "N/A",
+          chargesEnabled: false,
+          isVerified: false,
+        })
+        return
+      }
+
       // API Call: GET /api/stripe/balance
       const response = await fetch(`/api/stripe/balance?sellerId=${sellerId}`)
       const data = await response.json()
@@ -184,6 +198,17 @@ export const SellerBalanceScreen: React.FC<SellerBalanceScreenProps> = ({ seller
         </TouchableOpacity>
       </View>
     </ScrollView>
+  )
+}
+
+export default function SellerBalanceRoute() {
+  const { user } = useAuth()
+
+  return (
+    <SellerBalanceScreen
+      sellerId={user?.uid || user?.id || ""}
+      onRequestPayout={() => Alert.alert("Coming Soon", "Payout requests will be available soon.")}
+    />
   )
 }
 

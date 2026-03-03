@@ -5,6 +5,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { router } from 'expo-router';
 import { checkARSupport } from '../utils/checkARSupport';
 import Toast from 'react-native-toast-message';
+import Constants from 'expo-constants';
 
 interface ARPreviewButtonProps {
 	modelUrl?: string | null;
@@ -28,6 +29,17 @@ export const ARPreviewButton = ({ modelUrl }: ARPreviewButtonProps) => {
 		setIsCheckingSupport(true);
 
 		try {
+			if (Constants.appOwnership === 'expo') {
+				Toast.show({
+					type: 'info',
+					text1: 'AR Preview Unavailable',
+					text2: 'Expo Go does not support AR native modules. Opening 3D viewer.',
+					position: 'top',
+				});
+				router.push(`/product/model-viewer?modelUrl=${encodeURIComponent(modelUrl)}`);
+				return;
+			}
+
 			// Check if device supports AR
 			if (Platform.OS === 'web') {
 				Alert.alert(
@@ -101,14 +113,14 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'center',
-		paddingVertical: 12,
+		paddingVertical: 16,
 		paddingHorizontal: 20,
-		borderRadius: 25,
+		borderRadius: 14,
 		elevation: 3,
 		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.1,
-		shadowRadius: 4,
+		shadowOffset: { width: 0, height: 4 },
+		shadowOpacity: 0.2,
+		shadowRadius: 8,
 	},
 	buttonContent: {
 		flexDirection: 'row',

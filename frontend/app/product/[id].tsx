@@ -29,6 +29,7 @@ import { addToWishlist, removeFromWishlist } from '@/store/slices/wishlistSlice'
 import { addComment, deleteComment, makeSelectCommentsByProductId } from '@/store/slices/commentsSlice';
 import { ARPreviewButton } from '@/components/ARPreviewButton';
 import Toast from 'react-native-toast-message';
+import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 const { width } = Dimensions.get('window');
 
 export default function ProductDetailScreen() {
@@ -62,9 +63,7 @@ export default function ProductDetailScreen() {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <ArrowLeft size={24} color={theme.colors.text} />
-          </TouchableOpacity>
+          <HeaderBackButton onPress={() => router.back()} size={24} />
         </View>
         <View style={styles.centeredContainer}>
           <Text style={[styles.errorText, { color: theme.colors.text }]}>Product not found</Text>
@@ -177,9 +176,7 @@ export default function ProductDetailScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <ArrowLeft size={24} color={theme.colors.text} />
-        </TouchableOpacity>
+        <HeaderBackButton onPress={() => router.back()} size={24} />
         <View style={styles.headerActions}>
           <TouchableOpacity onPress={handleWishlistToggle} style={styles.headerButton}>
             <Heart

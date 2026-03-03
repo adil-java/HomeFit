@@ -28,6 +28,7 @@ import {
 } from 'lucide-react-native';
 
 import { apiService } from '@/services/api';
+import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 
 const getProductById = async (id: string) => {
   try {
@@ -241,12 +242,7 @@ export default function ProductForm() {
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: theme.colors.border }]}>
-        <TouchableOpacity 
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <ArrowLeft size={24} color={theme.colors.text} />
-        </TouchableOpacity>
+        <HeaderBackButton onPress={() => router.back()} size={24} style={styles.backButton} />
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
           {isEditMode ? 'Edit Product' : 'Add New Product'}
         </Text>

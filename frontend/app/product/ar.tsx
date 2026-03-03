@@ -1,408 +1,122 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { router, useLocalSearchParams } from "expo-router";
-import {
-	Viro3DObject,
-	ViroAmbientLight,
-	ViroARPlane,
-	ViroARScene,
-	ViroARSceneNavigator,
-	ViroClickStateTypes,
-	ViroMaterials,
-	ViroQuad,
-	ViroARPlaneSelector,
-	ViroText,
-} from "@reactvision/react-viro";
-import FloatingBackButton from "@/components/Shared/FloatingBackButton";
-import ErrorBoundary from "@/components/ErrorBoundary";
-import { Viro3DPoint } from "@reactvision/react-viro/dist/components/Types/ViroUtils";
-import { View, Text, StyleSheet, Alert, Platform, TouchableOpacity } from "react-native";
-import { useTheme } from "@/contexts/ThemeContext";
-import { Ionicons } from '@expo/vector-icons';
-import { checkARSupport } from '@/utils/checkARSupport';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, Platform, ActivityIndicator } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
+import Constants from 'expo-constants';
 import Toast from 'react-native-toast-message';
+import { checkARSupport } from '@/utils/checkARSupport';
 
-// Define the type for control functions
-interface ControlFunctions {
-	rotateLeft: () => void;
-	rotateRight: () => void;
-	rotateUp: () => void;
-	rotateDown: () => void;
-	zoomIn: () => void;
-	zoomOut: () => void;
-	moveUp: () => void;
-	moveDown: () => void;
-	moveLeft: () => void;
-	moveRight: () => void;
-	fixPosition: () => void;
-	resetModel: () => void;
-}
-
-ViroMaterials.createMaterials({
-	QuadMaterial: {
-		lightingModel: "Constant",
-		diffuseColor: "#888",
-	},
-});
-
-function Scene({ modelUrl, controlFunctions }: { modelUrl: string, controlFunctions: React.MutableRefObject<ControlFunctions> }) {
-	const [position, setPosition] = useState<Viro3DPoint | null>(null);
-	const [rotation, setRotation] = useState<[number, number, number]>([0, 0, 0]);
-	const [scale, setScale] = useState<[number, number, number]>([1, 1, 1]);
-	const [isLoading, setIsLoading] = useState(false);
-	const [error, setError] = useState<string | null>(null);
-	const [isPositionFixed, setIsPositionFixed] = useState(false);
-
-	useEffect(() => {
-		// Check if model URL is valid
-		if (!modelUrl || modelUrl.trim() === '') {
-			setError('No 3D model available for this product');
-			return;
-		}
-
-		setIsLoading(true);
-		setError(null);
-
-		// Simulate loading time for better UX
-		const timer = setTimeout(() => {
-			setIsLoading(false);
-		}, 1000);
-
-		return () => clearTimeout(timer);
-	}, [modelUrl]);
-
-	// Helper functions for model controls
-	const rotateLeft = () => setRotation(prev => [prev[0], prev[1] - 15, prev[2]]);
-	const rotateRight = () => setRotation(prev => [prev[0], prev[1] + 15, prev[2]]);
-	const rotateUp = () => setRotation(prev => [prev[0] - 15, prev[1], prev[2]]);
-	const rotateDown = () => setRotation(prev => [prev[0] + 15, prev[1], prev[2]]);
-	const zoomIn = () => setScale(prev => [prev[0] * 1.2, prev[1] * 1.2, prev[2] * 1.2]);
-	const zoomOut = () => setScale(prev => [Math.max(0.1, prev[0] * 0.8), Math.max(0.1, prev[1] * 0.8), Math.max(0.1, prev[2] * 0.8)]);
-	const moveUp = () => setPosition(prev => prev ? [prev[0], prev[1] + 0.1, prev[2]] : [0, 0.1, 0]);
-	const moveDown = () => setPosition(prev => prev ? [prev[0], prev[1] - 0.1, prev[2]] : [0, -0.1, 0]);
-	const moveLeft = () => setPosition(prev => prev ? [prev[0] - 0.1, prev[1], prev[2]] : [-0.1, 0, 0]);
-	const moveRight = () => setPosition(prev => prev ? [prev[0] + 0.1, prev[1], prev[2]] : [0.1, 0, 0]);
-	const fixPosition = () => setIsPositionFixed(!isPositionFixed);
-	const resetModel = () => {
-		setRotation([0, 0, 0]);
-		setScale([1, 1, 1]);
-		setPosition(null);
-		setIsPositionFixed(false);
-	};
-
-	useEffect(() => {
-		controlFunctions.current = {
-			rotateLeft,
-			rotateRight,
-			rotateUp,
-			rotateDown,
-			zoomIn,
-			zoomOut,
-			moveUp,
-			moveDown,
-			moveLeft,
-			moveRight,
-			fixPosition,
-			resetModel,
-		};
-	}, []);
-
-	if (error) {
-		return (
-			<ViroARScene>
-				<ViroAmbientLight color="white" />
-				<ViroQuad
-					position={[0, 0, -1]}
-					width={2}
-					height={1}
-					materials={["QuadMaterial"]}
-				/>
-				<ViroQuad
-					position={[0, 0.5, -0.9]}
-					width={1.5}
-					height={0.3}
-					materials={["QuadMaterial"]}
-				/>
-			</ViroARScene>
-		);
-	}
-
-	return (
-		<ViroARScene>
-			<ViroAmbientLight color="white" />
-			<ViroARPlane>
-				<Viro3DObject
-					visible={!!position && !isLoading}
-					source={{ uri: modelUrl }}
-					position={position ?? [0, 0, 0]}
-					rotation={rotation}
-					scale={scale}
-					type="GLB"
-					dragType={!isPositionFixed ? "FixedToWorld" : undefined}
-					onDrag={(dragToPos, source) => {
-						if (!isPositionFixed) {
-							setPosition(dragToPos);
-						}
-					}}
-					onLoadStart={() => {
-						// console.log('Starting to load 3D model:', modelUrl);
-					}}
-					onLoadEnd={() => {
-						// console.log('Finished loading 3D model');
-						setIsLoading(false);
-					}}
-					onError={(error) => {
-						console.error('Error loading 3D model:', error);
-						setError('Failed to load 3D model. Please check your internet connection.');
-					}}
-				/>
-				<ViroQuad
-					visible={!position || isLoading}
-					position={[0, 0, 0]}
-					width={1}
-					height={1}
-					rotation={[-90, 0, 0]}
-					materials={["QuadMaterial"]}
-					onClickState={(state, position) => {
-						if (state === ViroClickStateTypes.CLICKED && !isLoading) {
-							setPosition(position);
-						}
-					}}
-				/>
-			</ViroARPlane>
-		</ViroARScene>
-	);
-}
-
-function ErrorFallback() {
-	const { theme } = useTheme();
-
-	return (
-		<View style={[styles.errorContainer, { backgroundColor: theme.colors.background }]}>
-			<Text style={[styles.errorTitle, { color: theme.colors.text }]}>
-				3D Preview Unavailable
-			</Text>
-			<Text style={[styles.errorText, { color: theme.colors.textSecondary }]}>
-				AR functionality is not supported on this device or the 3D model is not available.
-			</Text>
-			<FloatingBackButton onPress={router.back} />
-		</View>
-	);
-}
+type NativeARComponent = React.ComponentType<{ modelUrl: string }>;
 
 export default function ProductARScreen() {
   const { modelUrl } = useLocalSearchParams<{ modelUrl: string }>();
-  const [hasError, setHasError] = useState(false);
-  const [isCheckingSupport, setIsCheckingSupport] = useState(true);
-  const [isARSupported, setIsARSupported] = useState(false);
-  const [controlsVisible, setControlsVisible] = useState(true);
-  const controlFunctions = useRef<ControlFunctions>({} as ControlFunctions);
+  const [isLoading, setIsLoading] = useState(true);
+  const [NativeARScreen, setNativeARScreen] = useState<NativeARComponent | null>(null);
 
-	useEffect(() => {
-		const verifyARSupport = async () => {
-		// Check if we're on a platform that supports Viro
-		if (Platform.OS === 'web') {
-			setHasError(true);
-			setIsCheckingSupport(false);
-			return;
-		}
+  useEffect(() => {
+    let mounted = true;
 
-		// Check if model URL is provided
-		if (!modelUrl || modelUrl.trim() === '') {
-			setIsCheckingSupport(false);
-			Alert.alert(
-				'Model Not Available',
-				'No 3D model is available for this product.',
-				[{ text: 'OK', onPress: () => router.back() }]
-			);
-			return;
-		}
+    const redirectToViewer = (message?: string) => {
+      if (message) {
+        Toast.show({
+          type: 'info',
+          text1: 'AR Preview Unavailable',
+          text2: message,
+          position: 'top',
+        });
+      }
 
-		try {
-			const supported = await checkARSupport();
-			if (!supported) {
-				setIsCheckingSupport(false);
-				Toast.show({
-					type: 'info',
-					text1: 'AR Not Supported',
-					text2: 'Opening 3D viewer instead.',
-					position: 'top',
-				});
-				router.replace(`/product/model-viewer?modelUrl=${encodeURIComponent(modelUrl)}`);
-				return;
-			}
+      router.replace(`/product/model-viewer?modelUrl=${encodeURIComponent(modelUrl || '')}`);
+    };
 
-			setIsARSupported(true);
-		} catch (error) {
-			console.error('AR support check failed:', error);
-			Toast.show({
-				type: 'error',
-				text1: 'AR Preview Unavailable',
-				text2: 'Opening 3D viewer instead.',
-				position: 'top',
-			});
-			router.replace(`/product/model-viewer?modelUrl=${encodeURIComponent(modelUrl)}`);
-		} finally {
-			setIsCheckingSupport(false);
-		}
-		};
+    const loadAR = async () => {
+      try {
+        if (!modelUrl || modelUrl.trim() === '') {
+          redirectToViewer('3D model not found for this product.');
+          return;
+        }
 
-		verifyARSupport();
-	}, [modelUrl]);
+        if (Platform.OS === 'web') {
+          redirectToViewer('AR is not available on web. Opening 3D viewer.');
+          return;
+        }
 
-	if (hasError) {
-		return <ErrorFallback />;
-	}
+        const isExpoGo = Constants.appOwnership === 'expo';
+        if (isExpoGo) {
+          redirectToViewer('Expo Go does not include AR native modules.');
+          return;
+        }
 
-	if (isCheckingSupport || !isARSupported) {
-		return (
-			<View style={[styles.errorContainer, { backgroundColor: '#000' }]}>
-				<Text style={[styles.errorTitle, { color: '#fff' }]}>Preparing AR...</Text>
-				<Text style={[styles.errorText, { color: '#ccc' }]}>Checking device compatibility.</Text>
-			</View>
-		);
-	}
+        const supported = await checkARSupport();
+        if (!supported) {
+          redirectToViewer('This device does not support ARCore/ARKit.');
+          return;
+        }
 
-	const arContent = (
-		<>
-			<FloatingBackButton onPress={router.back} />
-			<ViroARSceneNavigator
-				initialScene={{ scene: () => <Scene modelUrl={modelUrl} controlFunctions={controlFunctions} /> }}
-			/>
-			{/* 2D Control Panel - Fixed at bottom of screen */}
-			<View style={styles.controlPanel}>
-				{/* Rotation Controls Row */}
-				<View style={styles.controlRow}>
-					<TouchableOpacity style={styles.controlButton} onPress={() => controlFunctions.current.rotateLeft?.()}>
-						<Ionicons name="arrow-back" size={24} color="#fff" />
-					</TouchableOpacity>
-					<TouchableOpacity style={styles.controlButton} onPress={() => controlFunctions.current.rotateRight?.()}>
-						<Ionicons name="arrow-forward" size={24} color="#fff" />
-					</TouchableOpacity>
-				</View>
+        const nativeModule = require('./ar-native');
+        if (mounted) {
+          setNativeARScreen(() => nativeModule.default);
+        }
+      } catch (error) {
+        console.error('[AR] Failed to load native AR screen:', error);
+        redirectToViewer('Opening 3D viewer instead.');
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    };
 
-				{/* Up/Down Controls Row */}
-				<View style={styles.controlRow}>
-					<TouchableOpacity style={styles.controlButton} onPress={() => controlFunctions.current.rotateUp?.()}>
-						<Ionicons name="arrow-up" size={24} color="#fff" />
-					</TouchableOpacity>
-					<TouchableOpacity style={styles.controlButton} onPress={() => controlFunctions.current.rotateDown?.()}>
-						<Ionicons name="arrow-down" size={24} color="#fff" />
-					</TouchableOpacity>
-				</View>
+    loadAR();
 
-				{/* Movement Controls Row */}
-				<View style={styles.controlRow}>
-					<TouchableOpacity style={styles.controlButton} onPress={() => controlFunctions.current.moveLeft?.()}>
-						<Ionicons name="arrow-back" size={24} color="#fff" />
-						<Text style={styles.controlButtonText}>Left</Text>
-					</TouchableOpacity>
-					<TouchableOpacity style={styles.controlButton} onPress={() => controlFunctions.current.moveRight?.()}>
-						<Ionicons name="arrow-forward" size={24} color="#fff" />
-						<Text style={styles.controlButtonText}>Right</Text>
-					</TouchableOpacity>
-					<TouchableOpacity style={styles.controlButton} onPress={() => controlFunctions.current.moveUp?.()}>
-						<Ionicons name="arrow-up" size={24} color="#fff" />
-						<Text style={styles.controlButtonText}>Up</Text>
-					</TouchableOpacity>
-					<TouchableOpacity style={styles.controlButton} onPress={() => controlFunctions.current.moveDown?.()}>
-						<Ionicons name="arrow-down" size={24} color="#fff" />
-						<Text style={styles.controlButtonText}>Down</Text>
-					</TouchableOpacity>
-				</View>
+    return () => {
+      mounted = false;
+    };
+  }, [modelUrl]);
 
-				{/* Zoom and Action Controls Row */}
-				<View style={styles.controlRow}>
-					<TouchableOpacity style={styles.controlButton} onPress={() => controlFunctions.current.zoomIn?.()}>
-						<Ionicons name="add" size={24} color="#fff" />
-						<Text style={styles.controlButtonText}>Zoom In</Text>
-					</TouchableOpacity>
-					<TouchableOpacity style={styles.controlButton} onPress={() => controlFunctions.current.zoomOut?.()}>
-						<Ionicons name="remove" size={24} color="#fff" />
-						<Text style={styles.controlButtonText}>Zoom Out</Text>
-					</TouchableOpacity>
-					<TouchableOpacity style={styles.controlButton} onPress={() => controlFunctions.current.fixPosition?.()}>
-						<Ionicons name="pin" size={24} color="#fff" />
-						<Text style={styles.controlButtonText}>Fix</Text>
-					</TouchableOpacity>
-					<TouchableOpacity style={styles.controlButton} onPress={() => controlFunctions.current.resetModel?.()}>
-						<Ionicons name="refresh" size={24} color="#fff" />
-						<Text style={styles.controlButtonText}>Reset</Text>
-					</TouchableOpacity>
-				</View>
-			</View>
-		</>
-	);
+  if (NativeARScreen) {
+    return <NativeARScreen modelUrl={modelUrl || ''} />;
+  }
 
-	return (
-		<ErrorBoundary
-			fallback={
-				<View style={[styles.errorContainer, { backgroundColor: '#000' }]}>
-					<Text style={[styles.errorTitle, { color: '#fff' }]}>
-						AR Preview Unavailable
-					</Text>
-					<Text style={[styles.errorText, { color: '#ccc' }]}>
-						Unable to load AR preview. Please try again or check your device compatibility.
-					</Text>
-					<FloatingBackButton onPress={router.back} />
-				</View>
-			}
-		>
-			{arContent}
-		</ErrorBoundary>
-	);
+  return (
+    <View style={styles.container}>
+      {isLoading ? (
+        <>
+          <ActivityIndicator size="large" color="#ffffff" />
+          <Text style={styles.title}>Preparing AR...</Text>
+          <Text style={styles.subtitle}>Checking device compatibility.</Text>
+        </>
+      ) : (
+        <>
+          <Text style={styles.title}>Opening 3D Preview</Text>
+          <Text style={styles.subtitle}>AR is not available on this device.</Text>
+        </>
+      )}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-	errorContainer: {
-		flex: 1,
-		justifyContent: 'center',
-		alignItems: 'center',
-		padding: 20,
-	},
-	errorTitle: {
-		fontSize: 20,
-		fontWeight: 'bold',
-		fontFamily: 'Inter_700Bold',
-		marginBottom: 12,
-		textAlign: 'center',
-	},
-	errorText: {
-		fontSize: 16,
-		textAlign: 'center',
-		lineHeight: 24,
-		marginBottom: 20,
-	},
-	controlPanel: {
-		position: 'absolute',
-		bottom: 20,
-		left: 20,
-		right: 20,
-		backgroundColor: 'rgba(0, 0, 0, 0.7)',
-		borderRadius: 15,
-		padding: 15,
-		borderWidth: 1,
-		borderColor: 'rgba(255, 255, 255, 0.3)',
-	},
-	controlRow: {
-		flexDirection: 'row',
-		justifyContent: 'space-around',
-		marginBottom: 10,
-	},
-	controlButton: {
-		backgroundColor: 'rgba(255, 255, 255, 0.2)',
-		borderRadius: 25,
-		padding: 12,
-		alignItems: 'center',
-		justifyContent: 'center',
-		minWidth: 60,
-		borderWidth: 1,
-		borderColor: 'rgba(255, 255, 255, 0.3)',
-	},
-	controlButtonText: {
-		color: '#fff',
-		fontSize: 10,
-		fontWeight: 'bold',
-		fontFamily: 'Inter_700Bold',
-		marginTop: 2,
-	},
+  container: {
+    flex: 1,
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  title: {
+    marginTop: 12,
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
+    textAlign: 'center',
+  },
+  subtitle: {
+    marginTop: 8,
+    color: '#ccc',
+    fontSize: 14,
+    fontWeight: '400',
+    fontFamily: 'Inter_400Regular',
+    textAlign: 'center',
+  },
 });

@@ -157,7 +157,7 @@ export default function RootLayout() {
                   <Stack.Screen name="product" options={{ headerShown: false }} />
                   <Stack.Screen name="checkout" options={{ headerShown: false }} />
                   <Stack.Screen name="seller" options={{ headerShown: false }} />
-                  <Stack.Screen name="notifications" options={{ headerShown: false }} />
+                  <Stack.Screen name="notifications/index" options={{ headerShown: false }} />
                   <Stack.Screen name="+not-found" />
                 </Stack>
                 <StatusBar style="auto" />

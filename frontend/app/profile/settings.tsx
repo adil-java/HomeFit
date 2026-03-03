@@ -24,6 +24,7 @@ import {
 } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
+import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 
 export default function SettingsScreen() {
   const { theme, isDark, toggleTheme } = useTheme();
@@ -87,9 +88,7 @@ export default function SettingsScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <ArrowLeft size={24} color={theme.colors.text} />
-        </TouchableOpacity>
+        <HeaderBackButton onPress={() => router.back()} size={24} />
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Settings</Text>
         <View style={{ width: 24 }} />
       </View>

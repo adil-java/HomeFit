@@ -7,7 +7,6 @@ import {
   Dimensions,
   TouchableOpacity,
   Image,
-  FlatList,
   RefreshControl,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -23,7 +22,6 @@ import { fetchWishlist } from '@/store/slices/wishlistSlice';
 import { fetchCart } from '@/store/slices/cartSlice';
 import { apiService } from '@/services/api';
 import { setProducts, setCategories, Category } from '@/store/slices/productsSlice';
-import { Product } from '@/types';
 import { HeroBanner } from '@/components/HeroBanner';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Search, Bell } from 'lucide-react-native';
@@ -186,7 +184,7 @@ export default function HomeScreen() {
         <Text style={[styles.errorText, { color: theme.colors.error }]}>{error}</Text>
         <TouchableOpacity 
           style={[styles.retryButton, { backgroundColor: theme.colors.primary }]}
-          onPress={fetchProducts}
+          onPress={() => fetchProducts()}
         >
           <Text style={styles.retryButtonText}>Retry</Text>
         </TouchableOpacity>
@@ -265,7 +263,7 @@ export default function HomeScreen() {
               style={styles.horizontalScroll}
               contentContainerStyle={styles.productsContent}
             >
-              {featuredProducts.map((product: Product) => (
+              {featuredProducts.map((product: any) => (
                 <ProductCard key={product._id || product.id} product={product} />
               ))}
               <View style={styles.endPadding} />
@@ -312,23 +310,17 @@ export default function HomeScreen() {
             All Products
           </Text>
           {products.length > 0 ? (
-            <FlatList
-              data={products}
-              renderItem={({ item }) => (
-                <View style={styles.productCardWrapper}>
+            <View style={styles.productsGrid}>
+              {products.map((item: any) => (
+                <View key={item._id || item.id} style={styles.productCardWrapper}>
                   <ProductCard 
                     product={item}
                     showAddToCart
                     style={styles.productCard}
                   />
                 </View>
-              )}
-              keyExtractor={(item) => item._id || item.id}
-              numColumns={2}
-              columnWrapperStyle={styles.columnWrapper}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.productsContainer}
-            />
+              ))}
+            </View>
           ) : (
             <View style={styles.emptyState}>
               <Text style={[styles.emptyStateText, { color: theme.colors.text }]}>
@@ -346,20 +338,48 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  scrollView: {
+    flex: 1,
+  },
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 16,
+    fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  retryButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   emptyState: {
     padding: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  productsContainer: {
+  emptyStateText: {
+    fontSize: 14,
+    fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
+    textAlign: 'center',
+  },
+  productsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginHorizontal: -2,
     paddingBottom: 20,
-    paddingHorizontal: 2,
-    marginLeft: -4,
   },
   productCardWrapper: {
     width: '50%',
@@ -368,10 +388,6 @@ const styles = StyleSheet.create({
   productCard: {
     margin: 0,
     width: '100%',
-  },
-  columnWrapper: {
-    justifyContent: 'space-between',
-    gap: 4,
   },
   loadingText: {
     fontSize: 16,
@@ -451,7 +467,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     fontFamily: 'Inter_700Bold',
-    color: '#000',
     color: '#000',
   },
 });

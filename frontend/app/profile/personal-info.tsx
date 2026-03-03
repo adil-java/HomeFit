@@ -13,6 +13,7 @@ import { ArrowLeft, User, Mail, Phone, Calendar, MapPin, CreditCard as Edit3 } f
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
+import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 
 export default function PersonalInfoScreen() {
   const { theme } = useTheme();
@@ -87,9 +88,7 @@ export default function PersonalInfoScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <ArrowLeft size={24} color={theme.colors.text} />
-        </TouchableOpacity>
+        <HeaderBackButton onPress={() => router.back()} size={24} />
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Personal Information</Text>
         {isEditing ? (
           <TouchableOpacity onPress={handleSave}>

@@ -23,6 +23,7 @@ import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import Toast from 'react-native-toast-message';
+import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 
 const mockTransactions = [
   {
@@ -142,9 +143,7 @@ export default function WalletScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <ArrowLeft size={24} color={theme.colors.text} />
-        </TouchableOpacity>
+        <HeaderBackButton onPress={() => router.back()} size={24} />
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Wallet</Text>
         <View style={{ width: 24 }} />
       </View>

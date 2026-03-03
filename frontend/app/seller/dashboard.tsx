@@ -3,6 +3,7 @@ import { View, ScrollView, StyleSheet, Dimensions, TouchableOpacity, Image } fro
 import { useTheme } from '@/contexts/ThemeContext';
 import { Text, Card, ActivityIndicator, Button } from 'react-native-paper';
 import { LineChart, BarChart, PieChart } from 'react-native-chart-kit';
+import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 import { 
   Users, 
   ShoppingBag, 
@@ -295,13 +296,7 @@ export default function DashboardScreen() {
     >
       {/* Header */}
       <View style={styles.headerRow}>
-        <TouchableOpacity 
-          onPress={() => router.replace('/(tabs)')}
-          style={[styles.backButton, { backgroundColor: theme.colors.surface }]}
-          activeOpacity={0.7}
-        >
-          <ArrowLeft size={20} color={theme.colors.text} />
-        </TouchableOpacity>
+          <HeaderBackButton onPress={() => router.replace('/(tabs)')} />
         <Text variant="headlineMedium" style={[styles.title, { color: theme.colors.text }]}>
           Dashboard
         </Text>
@@ -518,6 +513,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: 'Inter_700Bold',
     flex: 1,
+    marginLeft:10,
   },
   
   // Stats Cards

@@ -18,6 +18,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
 import { BackHandler } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 
 type OnboardingStatus = {
   isOnboarded: boolean;
@@ -348,12 +349,7 @@ export default function OnboardingPage() {
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]}>
       <View style={[styles.topBar, { borderBottomColor: theme.colors.border, backgroundColor: theme.colors.background }]}> 
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={[styles.backButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
-        >
-          <Ionicons name="arrow-back" size={20} color={theme.colors.text} />
-        </TouchableOpacity>
+        <HeaderBackButton onPress={() => router.back()} style={styles.backButton} />
         <Text style={[styles.topBarTitle, { color: theme.colors.text }]}>Payment Setup</Text>
         <View style={styles.topBarSpacer} />
       </View>

@@ -19,6 +19,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
+import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 
 const { width } = Dimensions.get('window');
 
@@ -75,12 +76,7 @@ export default function RegisterScreen() {
         <ScrollView showsVerticalScrollIndicator={false}>
           {/* Header with Logo */}
           <View style={styles.header}>
-            <TouchableOpacity
-              onPress={() => router.back()}
-              style={[styles.backButton, { backgroundColor: theme.colors.surface }]}
-            >
-              <ArrowLeft size={24} color={theme.colors.text} />
-            </TouchableOpacity>
+            <HeaderBackButton onPress={() => router.back()} size={24} style={styles.backButton} />
             
             {/* Logo */}
             <View style={[styles.logoContainer, { backgroundColor: isDark ? theme.colors.surface : '#2D3748' }]}>

@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
 let cachedResult: boolean | null = null;
-const ENABLE_ANDROID_NATIVE_AR_FALLBACK = process.env.EXPO_PUBLIC_ENABLE_ANDROID_NATIVE_AR === 'true';
 
 /**
  * Check if the device supports ARCore (Android) or ARKit (iOS).
@@ -21,6 +21,11 @@ export async function checkARSupport(): Promise<boolean> {
 
   try {
     if (Platform.OS === 'web') {
+      cachedResult = false;
+      return false;
+    }
+
+    if (Constants.appOwnership === 'expo') {
       cachedResult = false;
       return false;
     }
@@ -55,15 +60,11 @@ export async function checkARSupport(): Promise<boolean> {
           return cachedResult;
         }
 
-        // Fallback behavior for builds where the runtime check is unavailable.
-        // Keep this opt-in to avoid crashes on unsupported devices.
-        if (ENABLE_ANDROID_NATIVE_AR_FALLBACK) {
-          cachedResult = true;
-          return true;
-        }
-
-        cachedResult = false;
-        return false;
+        // If runtime support API is unavailable but native Viro module is present,
+        // allow AR route to proceed in native/dev-client/standalone builds.
+        // Unsupported devices are still protected by earlier Expo Go + import checks.
+        cachedResult = true;
+        return true;
       } catch {
         // ViroReact native module not available → ARCore not supported
         console.log('[AR Support] ViroReact not available on this device, falling back to 3D viewer');

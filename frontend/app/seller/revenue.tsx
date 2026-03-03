@@ -1,3 +1,6 @@
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+
 // import React, { useState, useEffect } from 'react';
 // import { View, ScrollView, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
 // import { useTheme } from '@/contexts/ThemeContext';
@@ -554,3 +557,36 @@
 //     marginLeft: 2,
 //   },
 // });
+
+export default function RevenueScreen() {
+	return (
+		<View style={styles.container}>
+			<Text style={styles.title}>Revenue</Text>
+			<Text style={styles.subtitle}>Revenue analytics are being prepared for this screen.</Text>
+		</View>
+	);
+}
+
+const styles = StyleSheet.create({
+	container: {
+		flex: 1,
+		backgroundColor: '#fff',
+		justifyContent: 'center',
+		alignItems: 'center',
+		paddingHorizontal: 24,
+	},
+	title: {
+		fontSize: 22,
+		fontWeight: '700',
+		fontFamily: 'Inter_700Bold',
+		color: '#111827',
+		marginBottom: 8,
+	},
+	subtitle: {
+		fontSize: 14,
+		fontWeight: '400',
+		fontFamily: 'Inter_400Regular',
+		color: '#6B7280',
+		textAlign: 'center',
+	},
+});

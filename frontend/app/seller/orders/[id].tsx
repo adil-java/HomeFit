@@ -31,6 +31,7 @@ import { useDispatch } from 'react-redux';
 import { updateOrderStatus } from '@/store/slices/ordersSlice';
 import { apiService } from '@/services/api';
 import { Order } from '@/types/order';
+import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 
 // Helper function to safely get status config with fallback
 const getStatusConfig = (status: string) => {
@@ -125,9 +126,7 @@ export default function OrderDetailScreen() {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <ArrowLeft size={24} color={theme.colors.text} />
-          </TouchableOpacity>
+          <HeaderBackButton onPress={() => router.back()} size={24} />
           <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Order Details</Text>
         </View>
         <View style={styles.centeredContainer}>
@@ -141,9 +140,7 @@ export default function OrderDetailScreen() {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <ArrowLeft size={24} color={theme.colors.text} />
-          </TouchableOpacity>
+          <HeaderBackButton onPress={() => router.back()} size={24} />
           <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Order Details</Text>
         </View>
         <View style={styles.centeredContainer}>
@@ -257,9 +254,7 @@ export default function OrderDetailScreen() {
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <ArrowLeft size={24} color={theme.colors.text} />
-        </TouchableOpacity>
+        <HeaderBackButton onPress={() => router.back()} size={24} />
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Order #{order.orderNumber}</Text>
         <View style={{ width: 24 }} />
       </View>

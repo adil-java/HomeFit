@@ -20,6 +20,7 @@ import { RootState, AppDispatch } from '@/store/store';
 import { setOrders, setLoading } from '@/store/slices/ordersSlice';
 import { apiService } from '@/services/api';
 import { BackHandler } from 'react-native';
+import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 
 // Helper function to safely get status config with fallback
 const getStatusConfig = (status: string) => {
@@ -352,13 +353,7 @@ export default function OrdersScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          onPress={() => router.replace('/(tabs)')}
-          style={[styles.backButton, { backgroundColor: theme.colors.surface }]}
-          activeOpacity={0.8}
-        >
-          <ArrowLeft size={20} color={theme.colors.text} />
-        </TouchableOpacity>
+        <HeaderBackButton onPress={() => router.replace('/(tabs)')} />
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Manage Orders</Text>
         <View style={{ width: 24 }} />
       </View>

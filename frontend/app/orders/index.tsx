@@ -24,6 +24,7 @@ import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { apiService } from '@/services/api';
 import { format } from 'date-fns';
+import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 
 const statusConfig = {
   PENDING: { icon: Clock, color: '#f59e0b', label: 'Pending' },
@@ -217,9 +218,7 @@ export default function OrdersScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <ArrowLeft size={24} color={theme.colors.text} />
-        </TouchableOpacity>
+        <HeaderBackButton onPress={() => router.back()} size={24} />
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>My Orders</Text>
         <View style={{ width: 24 }} />
       </View>

@@ -27,6 +27,7 @@ import { useStripe } from '@stripe/stripe-react-native';
 import { apiService } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import OrderDetailScreen from '../orders/[id]';
+import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 
 const mockAddresses = [
   {
@@ -311,9 +312,7 @@ export default function CheckoutScreen() {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <ArrowLeft size={24} color={theme.colors.text} />
-          </TouchableOpacity>
+          <HeaderBackButton onPress={() => router.back()} size={24} />
           <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Checkout</Text>
         </View>
         <View style={styles.emptyContainer}>
@@ -335,9 +334,7 @@ export default function CheckoutScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <ArrowLeft size={24} color={theme.colors.text} />
-        </TouchableOpacity>
+        <HeaderBackButton onPress={() => router.back()} size={24} />
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Checkout</Text>
       </View>
 

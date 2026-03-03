@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Plus, CreditCard, CreditCard as Edit3, Trash2, X, Check, Smartphone, Building, Wallet } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
+import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 
 interface PaymentMethod {
   id: string;
@@ -449,9 +450,7 @@ export default function PaymentMethodsScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <ArrowLeft size={24} color={theme.colors.text} />
-        </TouchableOpacity>
+        <HeaderBackButton onPress={() => router.back()} size={24} />
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Payment Methods</Text>
         <TouchableOpacity onPress={() => setShowAddModal(true)}>
           <Plus size={24} color={theme.colors.primary} />

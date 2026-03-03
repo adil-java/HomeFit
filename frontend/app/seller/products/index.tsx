@@ -35,6 +35,7 @@ import {
   ChevronRight as ChevronRightIcon,
 } from 'lucide-react-native';
 import { BackHandler } from 'react-native';
+import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 
 import { apiService } from '@/services/api';
 import { useAuth, User } from '@/contexts/AuthContext';
@@ -322,16 +323,11 @@ export default function ProductsScreen() {
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.1)' : theme.colors.border }]}>
         <View style={styles.headerLeft}>
-          <TouchableOpacity
+          <HeaderBackButton
             onPress={() => router.replace('/(tabs)')}
-            style={[styles.backButtonInline, { 
-              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : theme.colors.surface, 
-              borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : theme.colors.border 
-            }]}
-            activeOpacity={0.8}
-          >
-            <ChevronLeft size={18} color={isDark ? '#FFFFFF' : theme.colors.text} />
-          </TouchableOpacity>
+            size={20}
+            style={styles.backButtonInline}
+          />
           <Text style={[styles.headerTitle, { color: isDark ? '#FFFFFF' : theme.colors.text }]}> 
             Products
           </Text>
@@ -748,13 +744,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   backButtonInline: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
     marginRight: 8,
-    borderWidth: 1,
   },
   searchContainer: {
     flexDirection: 'row',

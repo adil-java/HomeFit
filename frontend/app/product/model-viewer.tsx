@@ -12,6 +12,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
+import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 
 /**
  * Theme-aware color sets for the 3D viewer.
@@ -364,9 +365,7 @@ export default function ModelViewerScreen() {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
-          <TouchableOpacity onPress={() => router.back()} style={[styles.backButton, { backgroundColor: colors.backButtonBg }]}>
-            <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
-          </TouchableOpacity>
+          <HeaderBackButton onPress={() => router.back()} size={24} />
           <Text style={[styles.headerTitle, { color: theme.colors.text }]}>3D Preview</Text>
           <View style={styles.headerSpacer} />
         </View>
@@ -394,9 +393,7 @@ export default function ModelViewerScreen() {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <View style={[styles.header, { backgroundColor: theme.colors.background }]}>
-          <TouchableOpacity onPress={() => router.back()} style={[styles.backButton, { backgroundColor: colors.backButtonBg }]}>
-            <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
-          </TouchableOpacity>
+          <HeaderBackButton onPress={() => router.back()} size={24} />
           <Text style={[styles.headerTitle, { color: theme.colors.text }]}>3D Preview</Text>
           <View style={styles.headerSpacer} />
         </View>
@@ -425,9 +422,7 @@ export default function ModelViewerScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.containerBg }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.headerBg }]}>
-        <TouchableOpacity onPress={() => router.back()} style={[styles.backButton, { backgroundColor: colors.backButtonBg }]}>
-          <Ionicons name="arrow-back" size={24} color={colors.backButtonIcon} />
-        </TouchableOpacity>
+        <HeaderBackButton onPress={() => router.back()} size={24} />
         <Text style={[styles.headerTitle, { color: colors.headerText }]}>3D Preview</Text>
         <View style={styles.headerSpacer} />
       </View>
@@ -483,10 +478,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     zIndex: 10,
-  },
-  backButton: {
-    padding: 8,
-    borderRadius: 20,
   },
   headerTitle: {
     fontSize: 18,
