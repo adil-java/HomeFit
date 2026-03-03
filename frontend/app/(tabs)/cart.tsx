@@ -38,7 +38,7 @@ export default function CartScreen() {
   // Handle errors
   useEffect(() => {
     if (error) {
-      Toast.show({ type: 'error', text1: error, position: 'bottom' });
+      Toast.show({ type: 'error', text1: error, position: 'top' });
     }
   }, [error]);
 

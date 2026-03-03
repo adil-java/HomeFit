@@ -132,45 +132,45 @@ export default function RootLayout() {
     };
   }, []);
 
-  // Hide native splash immediately when app resources are ready
+  // Hide native splash as soon as JS root mounts so our animated splash is visible quickly
   useEffect(() => {
-    if (appReady && fontsLoaded) {
-      SplashScreen.hideAsync().catch(() => {});
-    }
-  }, [appReady, fontsLoaded]);
+    SplashScreen.hideAsync().catch(() => {});
+  }, []);
 
-  // Don't render anything until the app and fonts are ready
-  if (!appReady || !fontsLoaded) {
-    return null;
-  }
+  const appCanRender = appReady && fontsLoaded;
 
   return (
     <View style={{ flex: 1 }}>
-      <Provider store={store}>
-        <ThemeProvider>
-          <AuthProvider>
-            <PaperProvider theme={paperTheme}>
-              <StripeProvider publishableKey={publishableKey || ''}>
-                <Stack screenOptions={{ headerShown: false }}>
-                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                  <Stack.Screen name="auth" options={{ headerShown: false }} />
-                  <Stack.Screen name="product" options={{ headerShown: false }} />
-                  <Stack.Screen name="checkout" options={{ headerShown: false }} />
-                  <Stack.Screen name="seller" options={{ headerShown: false }} />
-                  <Stack.Screen name="notifications/index" options={{ headerShown: false }} />
-                  <Stack.Screen name="+not-found" />
-                </Stack>
-                <StatusBar style="auto" />
-                <Toast />
-              </StripeProvider>
-            </PaperProvider>
-          </AuthProvider>
-        </ThemeProvider>
-      </Provider>
+      {appCanRender && (
+        <Provider store={store}>
+          <ThemeProvider>
+            <AuthProvider>
+              <PaperProvider theme={paperTheme}>
+                <StripeProvider publishableKey={publishableKey || ''}>
+                  <Stack screenOptions={{ headerShown: false }}>
+                    <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                    <Stack.Screen name="auth" options={{ headerShown: false }} />
+                    <Stack.Screen name="product" options={{ headerShown: false }} />
+                    <Stack.Screen name="checkout" options={{ headerShown: false }} />
+                    <Stack.Screen name="seller" options={{ headerShown: false }} />
+                    <Stack.Screen name="notifications/index" options={{ headerShown: false }} />
+                    <Stack.Screen name="+not-found" />
+                  </Stack>
+                  <StatusBar style="auto" />
+                  <Toast />
+                </StripeProvider>
+              </PaperProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </Provider>
+      )}
 
       {/* Animated splash overlay — renders on top, then fades out */}
       {!splashDone && (
-        <AnimatedSplashScreen onFinish={() => setSplashDone(true)} />
+        <AnimatedSplashScreen
+          readyToHide={appCanRender}
+          onFinish={() => setSplashDone(true)}
+        />
       )}
     </View>
   );

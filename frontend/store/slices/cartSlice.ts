@@ -10,6 +10,7 @@ export interface CartItem {
   price: number;
   image: string;
   quantity: number;
+  maxQuantity?: number;
   color?: string;
   size?: string;
   options?: Record<string, string>;
@@ -40,6 +41,15 @@ const initialState: CartState = {
 // Utility
 const genId = (p: string) => `${p}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 
+const normalizeOptions = (opts?: Record<string, string>) => {
+  if (!opts) return '';
+  return Object.keys(opts)
+    .map(k => k.trim().toLowerCase())
+    .sort()
+    .map(k => `${k}:${String((opts as any)[k]).trim().toLowerCase()}`)
+    .join('|');
+};
+
 // Thunks
 export const fetchCart = createAsyncThunk(
   'cart/fetchCart',
@@ -54,6 +64,7 @@ export const fetchCart = createAsyncThunk(
             price: it.product?.price ?? it.price ?? 0,
             image: it.product?.images?.[0] || it.image || '',
             quantity: it.quantity ?? 1,
+            maxQuantity: it.product?.quantity ?? it.product?.stock ?? undefined,
             options: it.options || (it.color || it.size ? { color: it.color, size: it.size } : undefined),
             color: (it.options?.color || it.color) ?? undefined,
             size: (it.options?.size || it.size) ?? undefined,
@@ -72,15 +83,46 @@ export const addToCart = createAsyncThunk(
   'cart/addToCart',
   async (
     payload: Omit<CartItem, 'quantity'> & { quantity?: number },
-    { dispatch, rejectWithValue }
+    { dispatch, getState, rejectWithValue }
   ) => {
     const actionId = genId('add');
     const { id, name, price, image, quantity = 1, color, size, options } = payload;
+    const state = getState() as any;
+    const normalizedOptions = normalizeOptions(options ?? { color, size });
+    const existingQty = (state?.cart?.items || [])
+      .filter((i: CartItem) => i.id === id && normalizeOptions(i.options) === normalizedOptions)
+      .reduce((sum: number, i: CartItem) => sum + i.quantity, 0);
+
+    const product = (state?.products?.products || []).find((p: any) => p.id === id);
+    const stockLimitRaw = product?.quantity ?? product?.stock;
+    const stockLimit = typeof stockLimitRaw === 'number' && stockLimitRaw > 0 ? stockLimitRaw : undefined;
+
+    let quantityToAdd = Math.max(1, quantity);
+    if (stockLimit !== undefined) {
+      const remaining = stockLimit - existingQty;
+      if (remaining <= 0) {
+        return rejectWithValue(`Only ${stockLimit} items available in stock`);
+      }
+      quantityToAdd = Math.min(quantityToAdd, remaining);
+    }
+
     // optimistic
     dispatch(cartSlice.actions.setPendingAction({ id: actionId, status: true }));
-    dispatch(cartSlice.actions.addItemOptimistic({ id, name, price, image, quantity, color, size, options }));
+    dispatch(
+      cartSlice.actions.addItemOptimistic({
+        id,
+        name,
+        price,
+        image,
+        quantity: quantityToAdd,
+        maxQuantity: stockLimit,
+        color,
+        size,
+        options,
+      })
+    );
     try {
-      const res = await apiService.addToCart(id, quantity, options ?? { color, size });
+      const res = await apiService.addToCart(id, quantityToAdd, options ?? { color, size });
       if (res && Array.isArray(res.items)) {
         const mapped: CartItem[] = res.items.map((it: any) => ({
           id: it.productId || it.product?.id || it.id,
@@ -89,6 +131,7 @@ export const addToCart = createAsyncThunk(
           price: it.product?.price ?? it.price ?? 0,
           image: it.product?.images?.[0] || it.image || '',
           quantity: it.quantity ?? 1,
+          maxQuantity: it.product?.quantity ?? it.product?.stock ?? undefined,
           options: it.options || (it.color || it.size ? { color: it.color, size: it.size } : undefined),
           color: (it.options?.color || it.color) ?? undefined,
           size: (it.options?.size || it.size) ?? undefined,
@@ -195,6 +238,7 @@ dispatch(cartSlice.actions.removeItemOptimistic(removeKey));
           price: it.product?.price ?? it.price ?? 0,
           image: it.product?.images?.[0] || it.image || '',
           quantity: it.quantity ?? 1,
+          maxQuantity: it.product?.quantity ?? it.product?.stock ?? undefined,
           options: it.options || (it.color || it.size ? { color: it.color, size: it.size } : undefined),
           color: (it.options?.color || it.color) ?? undefined,
           size: (it.options?.size || it.size) ?? undefined,
@@ -244,21 +288,29 @@ const cartSlice = createSlice({
   reducers: {
     // Optimistic reducers
     addItemOptimistic: (state, action: PayloadAction<CartItem>) => {
-      const normalize = (opts?: Record<string, string>) => {
-        if (!opts) return '';
-        return Object.keys(opts)
-          .map(k => k.trim().toLowerCase())
-          .sort()
-          .map(k => `${k}:${String((opts as any)[k]).trim().toLowerCase()}`)
-          .join('|');
-      };
       const isSameVariant = (a: CartItem, b: CartItem) =>
-        a.id === b.id && normalize(a.options) === normalize(b.options);
+        a.id === b.id && normalizeOptions(a.options) === normalizeOptions(b.options);
       const existingItem = state.items.find(i => isSameVariant(i, action.payload));
       if (existingItem) {
+        const maxAllowed =
+          typeof action.payload.maxQuantity === 'number' && action.payload.maxQuantity > 0
+            ? action.payload.maxQuantity
+            : existingItem.maxQuantity;
         existingItem.quantity += action.payload.quantity;
+        if (typeof maxAllowed === 'number') {
+          existingItem.maxQuantity = maxAllowed;
+          existingItem.quantity = Math.min(existingItem.quantity, maxAllowed);
+        }
       } else {
-        state.items.push(action.payload);
+        const maxAllowed =
+          typeof action.payload.maxQuantity === 'number' && action.payload.maxQuantity > 0
+            ? action.payload.maxQuantity
+            : undefined;
+        state.items.push({
+          ...action.payload,
+          quantity: maxAllowed ? Math.min(action.payload.quantity, maxAllowed) : action.payload.quantity,
+          maxQuantity: maxAllowed,
+        });
       }
       state.total = state.items.reduce((s, i) => s + i.price * i.quantity, 0);
       state.itemCount = state.items.reduce((s, i) => s + i.quantity, 0);
@@ -290,7 +342,11 @@ const cartSlice = createSlice({
         return i.cartItemId === key || composite === key;
       });
       if (item) {
-        item.quantity = action.payload.quantity;
+        const maxAllowed = item.maxQuantity;
+        item.quantity =
+          typeof maxAllowed === 'number' && maxAllowed > 0
+            ? Math.min(action.payload.quantity, maxAllowed)
+            : action.payload.quantity;
         if (item.quantity <= 0) {
           state.items = state.items.filter(i => {
             const composite = `${i.id}::${Object.keys(i.options || {})

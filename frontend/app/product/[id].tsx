@@ -9,6 +9,7 @@ import {
   Dimensions,
   FlatList,
   TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
@@ -17,6 +18,7 @@ import {
   Share, 
   Star, 
   ShoppingCart,
+  CreditCard,
   Plus,
   Minus
 } from 'lucide-react-native';
@@ -50,6 +52,7 @@ export default function ProductDetailScreen() {
   const [showCommentForm, setShowCommentForm] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [newCommentRating, setNewCommentRating] = useState(5);
+  const [isBuyingNow, setIsBuyingNow] = useState(false);
   const imageScrollRef = useRef<FlatList>(null);
   
   const isInWishlist = wishlist.some(item => item.id === id);
@@ -97,6 +100,31 @@ export default function ProductDetailScreen() {
   };
 
   const handleAddToCart = () => {
+    const requiredVariants = product.variants?.filter((variant: any) => variant?.name) || [];
+    const missingVariant = requiredVariants.find(
+      (variant: any) => !selectedOptions[variant.name]
+    );
+
+    if (missingVariant) {
+      Toast.show({
+        type: 'info',
+        text1: 'Selection required',
+        text2: `Please select ${missingVariant.name}`,
+        position: 'top',
+      });
+      return;
+    }
+
+    if (!product.quantity || product.quantity <= 0) {
+      Toast.show({
+        type: 'error',
+        text1: 'Out of stock',
+        text2: 'This product is currently unavailable.',
+        position: 'top',
+      });
+      return;
+    }
+
     const opts = Object.fromEntries(
       Object.entries(selectedOptions).map(([k, v]) => [String(k).toLowerCase(), v])
     );
@@ -108,21 +136,92 @@ export default function ProductDetailScreen() {
       color: (opts as any).color,
       size: (opts as any).size,
       sku: product.sku,
-      quantity: 1,
+      quantity,
       options: opts,
     } as any;
 
-    for (let i = 0; i < quantity; i++) {
-      dispatch(addToCart(cartItem));
+    dispatch(addToCart(cartItem) as any)
+      .unwrap()
+      .then(() => {
+        Toast.show({
+          type: 'success',
+          text1: 'Added to cart',
+          text2: `${quantity} ${quantity === 1 ? 'item' : 'items'} added`,
+          position: 'top',
+        });
+      })
+      .catch((error: any) => {
+        Toast.show({
+          type: 'error',
+          text1: 'Could not add to cart',
+          text2: error || 'Please try again',
+          position: 'top',
+        });
+      });
+  };
+
+  const handleBuyNow = () => {
+    if (isBuyingNow) return;
+
+    const requiredVariants = product.variants?.filter((variant: any) => variant?.name) || [];
+    const missingVariant = requiredVariants.find(
+      (variant: any) => !selectedOptions[variant.name]
+    );
+
+    if (missingVariant) {
+      Toast.show({
+        type: 'info',
+        text1: 'Selection required',
+        text2: `Please select ${missingVariant.name}`,
+        position: 'top',
+      });
+      return;
     }
 
-    Toast.show({
-      type: 'success',
-      text1: 'Added to cart',
-      text2: `${quantity} ${quantity === 1 ? 'item' : 'items'} added`,
-      position: 'top',
-    });
+    if (!product.quantity || product.quantity <= 0) {
+      Toast.show({
+        type: 'error',
+        text1: 'Out of stock',
+        text2: 'This product is currently unavailable.',
+        position: 'top',
+      });
+      return;
+    }
+
+    const opts = Object.fromEntries(
+      Object.entries(selectedOptions).map(([k, v]) => [String(k).toLowerCase(), v])
+    );
+
+    const cartItem = {
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.images?.[0] || '',
+      color: (opts as any).color,
+      size: (opts as any).size,
+      sku: product.sku,
+      quantity,
+      options: opts,
+    } as any;
+
+    setIsBuyingNow(true);
+
+    dispatch(addToCart(cartItem) as any)
+      .unwrap()
+      .then(() => {
+        router.push('/checkout');
+      })
+      .catch((error: any) => {
+        setIsBuyingNow(false);
+        Toast.show({
+          type: 'error',
+          text1: 'Could not proceed',
+          text2: error || 'Please try again',
+          position: 'top',
+        });
+      });
   };
+
 
   const renderImageItem = ({ item, index }: { item: string; index: number }) => (
     <Image source={{ uri: item }} style={styles.productImage} />
@@ -428,7 +527,7 @@ export default function ProductDetailScreen() {
           {/* Comments Section */}
           <View style={styles.commentsSection}>
             <View style={styles.commentsHeader}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+              <Text style={[styles.sectionTitle, styles.commentsTitle, { color: theme.colors.text }]}> 
                 Reviews & Comments ({comments.length})
               </Text>
               <TouchableOpacity
@@ -547,14 +646,27 @@ export default function ProductDetailScreen() {
       {/* Bottom Actions */}
       <View style={[styles.bottomActions, { backgroundColor: theme.colors.background, borderColor: theme.colors.border }]}>
         <TouchableOpacity
-          onPress={handleWishlistToggle}
-          style={[styles.wishlistAction, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+          onPress={handleBuyNow}
+          style={[
+            styles.buyNowAction,
+            { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+            isBuyingNow && styles.actionDisabled,
+          ]}
+          disabled={isBuyingNow}
         >
-          <Heart
-            size={24}
-            color={isInWishlist ? theme.colors.accent : theme.colors.text}
-            fill={isInWishlist ? theme.colors.accent : 'transparent'}
-          />
+          <View style={styles.buyNowContent}>
+            {isBuyingNow ? (
+              <>
+                <ActivityIndicator size={16} color={theme.colors.primary} />
+                <Text numberOfLines={1} style={[styles.buyNowLoadingText, { color: theme.colors.text }]}>Processing...</Text>
+              </>
+            ) : (
+              <>
+                <CreditCard size={18} color={theme.colors.text} />
+                <Text numberOfLines={1} style={[styles.buyNowText, { color: theme.colors.text }]}>Buy Now</Text>
+              </>
+            )}
+          </View>
         </TouchableOpacity>
         
         <TouchableOpacity
@@ -812,7 +924,7 @@ const styles = StyleSheet.create({
   quantityButton: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: 12,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
@@ -862,22 +974,47 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     gap: 12,
   },
-  wishlistAction: {
-    width: 56,
+  buyNowAction: {
+    flex: 0.46,
     height: 56,
-    borderRadius: 28,
+    borderRadius: 12,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  buyNowContent: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 10,
+  },
+  buyNowText: {
+    fontSize: 14,
+    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
+    flexShrink: 1,
+    textAlign: 'center',
+  },
+  buyNowLoadingText: {
+    fontSize: 13,
+    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
+    flexShrink: 1,
+    textAlign: 'center',
+  },
   addToCartAction: {
-    flex: 1,
+    flex: 0.54,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     height: 56,
-    borderRadius: 28,
+    borderRadius: 12,
     gap: 8,
+  },
+  actionDisabled: {
+    opacity: 0.82,
   },
   addToCartText: {
     fontSize: 16,
@@ -891,19 +1028,28 @@ const styles = StyleSheet.create({
   commentsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 16,
+  },
+  commentsTitle: {
+    flex: 1,
+    marginRight: 8,
   },
   addCommentButton: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 40,
+    marginLeft: 12,
   },
   addCommentText: {
     fontSize: 14,
     fontWeight: '600',
     fontFamily: 'Inter_600SemiBold',
     color: '#fff',
+    textAlign: 'center',
   },
   commentForm: {
     padding: 16,

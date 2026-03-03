@@ -11,10 +11,11 @@ import {
 const { width, height } = Dimensions.get('window');
 
 interface AnimatedSplashScreenProps {
+  readyToHide: boolean;
   onFinish: () => void;
 }
 
-export default function AnimatedSplashScreen({ onFinish }: AnimatedSplashScreenProps) {
+export default function AnimatedSplashScreen({ readyToHide, onFinish }: AnimatedSplashScreenProps) {
   // Animation values
   const logoScale = useRef(new Animated.Value(0.5)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
@@ -23,9 +24,36 @@ export default function AnimatedSplashScreen({ onFinish }: AnimatedSplashScreenP
   const taglineOpacity = useRef(new Animated.Value(0)).current;
   const taglineTranslateY = useRef(new Animated.Value(15)).current;
   const containerOpacity = useRef(new Animated.Value(1)).current;
+  const introFinishedRef = useRef(false);
+  const exitStartedRef = useRef(false);
+  const readyToHideRef = useRef(readyToHide);
+
+  const startExit = () => {
+    if (exitStartedRef.current) return;
+    exitStartedRef.current = true;
+
+    Animated.sequence([
+      Animated.delay(300),
+      Animated.timing(containerOpacity, {
+        toValue: 0,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      onFinish();
+    });
+  };
 
   useEffect(() => {
-    Animated.sequence([
+    readyToHideRef.current = readyToHide;
+
+    if (readyToHide && introFinishedRef.current) {
+      startExit();
+    }
+  }, [readyToHide]);
+
+  useEffect(() => {
+    const introSequence = Animated.sequence([
       // 1. Logo fades in and scales up with spring
       Animated.parallel([
         Animated.spring(logoScale, {
@@ -74,18 +102,21 @@ export default function AnimatedSplashScreen({ onFinish }: AnimatedSplashScreenP
         }),
       ]),
 
-      // 5. Hold
-      Animated.delay(900),
+      // 5. Hold intro state while app is preparing
+      Animated.delay(250),
+    ]);
 
-      // 6. Fade out
-      Animated.timing(containerOpacity, {
-        toValue: 0,
-        duration: 400,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      onFinish();
+    introSequence.start(() => {
+      introFinishedRef.current = true;
+
+      if (readyToHideRef.current) {
+        startExit();
+      }
     });
+
+    return () => {
+      introSequence.stop();
+    };
   }, []);
 
   return (

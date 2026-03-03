@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Platform, ActivityIndicator } from 'react-nativ
 import { router, useLocalSearchParams } from 'expo-router';
 import Constants from 'expo-constants';
 import Toast from 'react-native-toast-message';
-import { checkARSupport } from '@/utils/checkARSupport';
+import { checkARSupport, resetARSupportCache } from '@/utils/checkARSupport';
 
 type NativeARComponent = React.ComponentType<{ modelUrl: string }>;
 
@@ -30,6 +30,8 @@ export default function ProductARScreen() {
 
     const loadAR = async () => {
       try {
+        resetARSupportCache();
+
         if (!modelUrl || modelUrl.trim() === '') {
           redirectToViewer('3D model not found for this product.');
           return;

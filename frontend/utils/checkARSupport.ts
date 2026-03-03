@@ -60,11 +60,10 @@ export async function checkARSupport(): Promise<boolean> {
           return cachedResult;
         }
 
-        // If runtime support API is unavailable but native Viro module is present,
-        // allow AR route to proceed in native/dev-client/standalone builds.
-        // Unsupported devices are still protected by earlier Expo Go + import checks.
-        cachedResult = true;
-        return true;
+        // Runtime capability API unavailable: fail closed to avoid triggering
+        // ARCore install prompts or black camera screens on unsupported devices.
+        cachedResult = false;
+        return false;
       } catch {
         // ViroReact native module not available → ARCore not supported
         console.log('[AR Support] ViroReact not available on this device, falling back to 3D viewer');

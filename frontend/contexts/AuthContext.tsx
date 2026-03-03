@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
 import { Alert } from 'react-native';
+import Toast from 'react-native-toast-message';
 // Lazy-loaded to prevent crash in Expo Go (native module not available)
 let GoogleSignin: any = null;
 try {
@@ -299,7 +300,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await SecureStore.setItemAsync('token', firebaseToken);
         await SecureStore.setItemAsync('user', JSON.stringify(user));
         
-        Alert.alert('Welcome Back!', `Signed in as ${result.user.email}`, [{ text: 'OK' }]);
+        Toast.show({
+          type: 'success',
+          text1: 'Welcome Back!',
+          text2: `Signed in as ${result.user.email}`,
+          position: 'top',
+        });
       } catch (loginError: any) {
         // If user doesn't exist, register them
         try {
@@ -319,7 +325,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           await SecureStore.setItemAsync('token', firebaseToken);
           await SecureStore.setItemAsync('user', JSON.stringify(user));
           
-          Alert.alert('Account Created!', `Welcome ${result.user.displayName || result.user.email}!`, [{ text: 'OK' }]);
+          Toast.show({
+            type: 'success',
+            text1: 'Account Created!',
+            text2: `Welcome ${result.user.displayName || result.user.email}!`,
+            position: 'top',
+          });
         } catch (registerError: any) {
           // Fallback to Firebase-only user if backend fails
           console.warn('Backend registration failed for Google user, using fallback:', registerError);
@@ -335,7 +346,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           await SecureStore.setItemAsync('token', firebaseToken);
           await SecureStore.setItemAsync('user', JSON.stringify(fallbackUser));
           
-          Alert.alert('Notice', 'Signed in successfully. Profile sync will happen later.', [{ text: 'OK' }]);
+          Toast.show({
+            type: 'info',
+            text1: 'Signed in successfully',
+            text2: 'Profile sync will happen later.',
+            position: 'top',
+          });
         }
       }
       

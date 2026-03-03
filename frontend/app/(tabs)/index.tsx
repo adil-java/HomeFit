@@ -378,12 +378,13 @@ const styles = StyleSheet.create({
   productsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginHorizontal: -2,
+    marginHorizontal: -6,
     paddingBottom: 20,
   },
   productCardWrapper: {
     width: '50%',
-    padding: 2,
+    paddingHorizontal: 6,
+    paddingBottom: 12,
   },
   productCard: {
     margin: 0,

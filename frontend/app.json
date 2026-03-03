@@ -5,6 +5,11 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/LOGO.png",
+    "splash": {
+      "image": "./assets/images/LOGO.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#2f3b4b"
+    },
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,

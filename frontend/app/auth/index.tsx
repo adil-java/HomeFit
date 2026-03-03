@@ -103,9 +103,8 @@ export default function AuthIndex() {
                 onPress={() => router.push('/auth/login')}
                 activeOpacity={0.85}
               >
-                <LogIn size={20} color="#fff" style={styles.buttonIcon} />
+                <LogIn size={20} color="#fff" style={styles.buttonIconLeading} />
                 <Text style={styles.primaryButtonText}>Sign In</Text>
-                <View style={styles.buttonIcon} />
               </TouchableOpacity>
 
               {/* Create Account Button */}
@@ -122,11 +121,10 @@ export default function AuthIndex() {
                 onPress={() => router.push('/auth/register')}
                 activeOpacity={0.85}
               >
-                <UserPlus size={20} color={secondaryBtnText} style={styles.buttonIcon} />
+                <UserPlus size={20} color={secondaryBtnText} style={styles.buttonIconLeading} />
                 <Text style={[styles.secondaryButtonText, { color: secondaryBtnText }]}>
                   Create Account
                 </Text>
-                <View style={styles.buttonIcon} />
               </TouchableOpacity>
 
               {/* Divider */}
@@ -236,6 +234,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  buttonIconLeading: {
+    marginRight: 10,
+  },
   buttonShadow: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -252,11 +253,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: 'Inter_700Bold',
     color: '#fff',
+    textAlign: 'center',
   },
   secondaryButtonText: {
     fontSize: 16,
     fontWeight: '700',
     fontFamily: 'Inter_700Bold',
+    textAlign: 'center',
   },
   dividerContainer: {
     flexDirection: 'row',
