@@ -4,9 +4,8 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Dimensions,
+  FlatList,
   TouchableOpacity,
-  Image,
   RefreshControl,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -25,8 +24,6 @@ import { setProducts, setCategories, Category } from '@/store/slices/productsSli
 import { HeroBanner } from '@/components/HeroBanner';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Search, Bell } from 'lucide-react-native';
-
-const { width } = Dimensions.get('window');
 
 export default function HomeScreen() {
   const { theme } = useTheme();
@@ -196,10 +193,114 @@ export default function HomeScreen() {
     return null;
   }
 
+  const renderHeader = () => (
+    <>
+      <HeroBanner />
+
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: theme.colors.text, marginBottom: 12}]}>Categories</Text>
+        {isLoadingCategories ? (
+          <View style={styles.centered}>
+            <Text style={{ color: theme.colors.text }}>Loading categories...</Text>
+          </View>
+        ) : categories.length > 0 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.horizontalScroll}
+            contentContainerStyle={styles.categoriesContent}
+          >
+            {typedCategories.map((category) => (
+              <CategoryCard
+                key={category.id}
+                categoryId={category.id}
+                category={category.name}
+                image={category.image}
+              />
+            ))}
+            <View style={styles.endPadding} />
+          </ScrollView>
+        ) : (
+          <View style={styles.centered}>
+            <Text style={{ color: theme.colors.text }}>No categories available</Text>
+          </View>
+        )}
+      </View>
+
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Featured Products</Text>
+          <TouchableOpacity onPress={() => router.push('/search')}>
+            <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>See All</Text>
+          </TouchableOpacity>
+        </View>
+        {featuredProducts.length > 0 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.horizontalScroll}
+            contentContainerStyle={styles.productsContent}
+          >
+            {featuredProducts.map((product: any) => (
+              <ProductCard key={product._id || product.id} product={product} />
+            ))}
+            <View style={styles.endPadding} />
+          </ScrollView>
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={[styles.emptyStateText, { color: theme.colors.text }]}>No products available</Text>
+          </View>
+        )}
+      </View>
+
+      {!['seller', 'admin'].includes(user?.role?.toLowerCase()) && (
+        <View style={[styles.section, { paddingHorizontal: 20, marginBottom: 30 }]}> 
+          <LinearGradient
+            colors={[theme.colors.gradient.start, theme.colors.gradient.end]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.dealsBanner}
+          >
+            <View style={styles.dealsContent}>
+              <Text style={styles.dealsBannerTitle}>Become a Seller</Text>
+              <Text style={styles.dealsBannerSubtitle}>
+                List your products and earn money with our platform
+              </Text>
+              <TouchableOpacity style={styles.dealsButton} onPress={() => router.push('/seller-application')}>
+                <Text style={styles.dealsButtonText}>Get Started</Text>
+              </TouchableOpacity>
+            </View>
+          </LinearGradient>
+        </View>
+      )}
+
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: theme.colors.text, marginBottom: 16 }]}>All Products</Text>
+      </View>
+    </>
+  );
+
+  const renderProductItem = ({ item }: { item: any }) => (
+    <View style={styles.productCardWrapper}>
+      <ProductCard product={item} showAddToCart style={styles.productCard} />
+    </View>
+  );
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <ScrollView 
-        style={styles.scrollView}
+      <FlatList
+        data={products}
+        keyExtractor={(item: any) => String(item._id || item.id)}
+        numColumns={2}
+        renderItem={renderProductItem}
+        columnWrapperStyle={styles.productsRow}
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Text style={[styles.emptyStateText, { color: theme.colors.text }]}>No products available</Text>
+          </View>
+        }
+        contentContainerStyle={styles.productsListContainer}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -208,129 +309,13 @@ export default function HomeScreen() {
             tintColor={theme.colors.primary}
           />
         }
-      >
-        {/* Hero Banner */}
-        <HeroBanner />
-
-        {/* Categories */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text, marginBottom: 12}]}>
-            Categories
-          </Text>
-          {isLoadingCategories ? (
-            <View style={styles.centered}>
-              <Text style={{ color: theme.colors.text }}>Loading categories...</Text>
-            </View>
-          ) : categories.length > 0 ? (
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false} 
-              style={styles.horizontalScroll}
-              contentContainerStyle={styles.categoriesContent}
-            >
-              {typedCategories.map((category) => (
-                <CategoryCard 
-                  key={category.id} 
-                  categoryId={category.id}
-                  category={category.name} 
-                  image={category.image}
-                />
-              ))}
-              <View style={styles.endPadding} />
-            </ScrollView>
-          ) : (
-            <View style={styles.centered}>
-              <Text style={{ color: theme.colors.text }}>No categories available</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Featured Products */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-              Featured Products
-            </Text>
-            <TouchableOpacity onPress={() => router.push('/search')}>
-              <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>
-                See All
-              </Text>
-            </TouchableOpacity>
-          </View>
-          {featuredProducts.length > 0 ? (
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false} 
-              style={styles.horizontalScroll}
-              contentContainerStyle={styles.productsContent}
-            >
-              {featuredProducts.map((product: any) => (
-                <ProductCard key={product._id || product.id} product={product} />
-              ))}
-              <View style={styles.endPadding} />
-            </ScrollView>
-          ) : (
-            <View style={styles.emptyState}>
-              <Text style={[styles.emptyStateText, { color: theme.colors.text }]}>
-                No products available
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {/* Deals Section */}
-        {!['seller', 'admin'].includes(user?.role?.toLowerCase()) && (
-          <View style={[styles.section, { paddingHorizontal: 20, marginBottom: 30 }]}>
-            <LinearGradient
-              colors={[theme.colors.gradient.start, theme.colors.gradient.end]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.dealsBanner}
-            >
-              <View style={styles.dealsContent}>
-                <Text style={styles.dealsBannerTitle}>Become a Seller</Text>
-                <Text style={styles.dealsBannerSubtitle}>
-                  List your products and earn money with our platform
-                </Text>
-                <TouchableOpacity
-                  style={styles.dealsButton}
-                  onPress={() => router.push('/seller-application')}
-                >
-                  <Text style={styles.dealsButtonText}>
-                    Get Started
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </LinearGradient>
-          </View>
-        )}
-
-        {/* All Products */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text, marginBottom: 16 }]}>
-            All Products
-          </Text>
-          {products.length > 0 ? (
-            <View style={styles.productsGrid}>
-              {products.map((item: any) => (
-                <View key={item._id || item.id} style={styles.productCardWrapper}>
-                  <ProductCard 
-                    product={item}
-                    showAddToCart
-                    style={styles.productCard}
-                  />
-                </View>
-              ))}
-            </View>
-          ) : (
-            <View style={styles.emptyState}>
-              <Text style={[styles.emptyStateText, { color: theme.colors.text }]}>
-                No products available
-              </Text>
-            </View>
-          )}
-        </View>
-      </ScrollView>
+        removeClippedSubviews
+        initialNumToRender={6}
+        maxToRenderPerBatch={8}
+        windowSize={7}
+        updateCellsBatchingPeriod={50}
+        showsVerticalScrollIndicator={false}
+      />
     </SafeAreaView>
   );
 }
@@ -381,6 +366,13 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     marginHorizontal: -6,
     paddingBottom: 20,
+  },
+  productsListContainer: {
+    paddingBottom: 20,
+  },
+  productsRow: {
+    paddingHorizontal: 20,
+    gap: 12,
   },
   productCardWrapper: {
     width: '50%',

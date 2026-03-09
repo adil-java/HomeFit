@@ -187,6 +187,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await SecureStore.setItemAsync('user', JSON.stringify(optimisticUser));
       }
 
+      Toast.show({
+        type: 'success',
+        text1: 'Welcome Back!',
+        text2: `Signed in as ${userCredential.user.email}`,
+        position: 'top',
+      });
+
       router.replace('/(tabs)');
     } catch (error: any) {
       console.error('Login error:', error);
@@ -237,6 +244,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await SecureStore.setItemAsync('token', token);
         await SecureStore.setItemAsync('user', JSON.stringify(optimisticUser));
       }
+
+      Toast.show({
+        type: 'success',
+        text1: 'Account Created!',
+        text2: `Welcome ${name || userCredential.user.email}!`,
+        position: 'top',
+      });
 
       router.replace('/(tabs)');
     } catch (error: any) {

@@ -25,7 +25,7 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '@/store/store';
+import { RootState, AppDispatch } from '@/store/store';
 import { addToCart } from '@/store/slices/cartSlice';
 import { addToWishlist, removeFromWishlist } from '@/store/slices/wishlistSlice';
 import { addComment, deleteComment, makeSelectCommentsByProductId } from '@/store/slices/commentsSlice';
@@ -38,7 +38,7 @@ const responsiveProductImageHeight = Math.min(Math.max(width * 0.9, 300), 420);
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams();
   const { theme } = useTheme();
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const product = useSelector((state: RootState) => 
     state.products.products.find(p => p.id === id)
   );
@@ -78,7 +78,7 @@ export default function ProductDetailScreen() {
 
   const handleWishlistToggle = () => {
     if (isInWishlist) {
-      dispatch(removeFromWishlist(product.id));
+      dispatch(removeFromWishlist(product.id) as any);
       Toast.show({
         type: 'info',
         text1: 'Removed from wishlist',
@@ -91,7 +91,7 @@ export default function ProductDetailScreen() {
         price: product.price,
         image: product.image,
         rating: product.rating,
-      }));
+      }) as any);
       Toast.show({
         type: 'success',
         text1: 'Added to wishlist',
@@ -141,16 +141,15 @@ export default function ProductDetailScreen() {
       options: opts,
     } as any;
 
+    Toast.show({
+      type: 'success',
+      text1: 'Added to cart',
+      text2: `${quantity} ${quantity === 1 ? 'item' : 'items'} added`,
+      position: 'top',
+    });
+
     dispatch(addToCart(cartItem) as any)
       .unwrap()
-      .then(() => {
-        Toast.show({
-          type: 'success',
-          text1: 'Added to cart',
-          text2: `${quantity} ${quantity === 1 ? 'item' : 'items'} added`,
-          position: 'top',
-        });
-      })
       .catch((error: any) => {
         Toast.show({
           type: 'error',
@@ -281,6 +280,7 @@ export default function ProductDetailScreen() {
   const sellerEmail = sellerData?.email;
   const sellerWebsite = sellerData?.sellerApplication?.website;
   const sellerPhone = sellerData?.sellerApplication?.phone;
+  const stockQty = product.quantity ?? 0;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -312,6 +312,15 @@ export default function ProductDetailScreen() {
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
+            removeClippedSubviews
+            initialNumToRender={1}
+            maxToRenderPerBatch={2}
+            windowSize={3}
+            getItemLayout={(_, index) => ({
+              length: width,
+              offset: width * index,
+              index,
+            })}
             onMomentumScrollEnd={(event) => {
               const index = Math.round(event.nativeEvent.contentOffset.x / width);
               setSelectedImageIndex(index);
@@ -370,7 +379,7 @@ export default function ProductDetailScreen() {
           
 
           <View style={styles.priceContainer}>
-              <Text style={[styles.productPrice, { color: theme.colors.accent, fontSize: 24, fontWeight: '700', fontFamily: 'Inter_700Bold' }]}>
+              <Text style={[styles.price, { color: theme.colors.accent, fontSize: 24, fontWeight: '700', fontFamily: 'Inter_700Bold' }]}> 
                 {formatPrice(product.price)}
               </Text>
               {product.comparePrice && product.comparePrice > product.price && (
@@ -386,10 +395,10 @@ export default function ProductDetailScreen() {
             <View style={[
               styles.stockBadge, 
               { 
-                backgroundColor: product.quantity > 0 
+                backgroundColor: stockQty > 0 
                   ? (theme.dark ? 'rgba(76, 175, 80, 0.2)' : 'rgba(76, 175, 80, 0.1)') 
                   : (theme.dark ? 'rgba(244, 67, 54, 0.2)' : 'rgba(244, 67, 54, 0.1)'),
-                borderColor: product.quantity > 0 ? '#4CAF50' : '#F44336',
+                borderColor: stockQty > 0 ? '#4CAF50' : '#F44336',
                 borderWidth: 1,
               }
             ]}>
@@ -397,13 +406,13 @@ export default function ProductDetailScreen() {
                 width: 8,
                 height: 8,
                 borderRadius: 4,
-                backgroundColor: product.quantity > 0 ? '#4CAF50' : '#F44336',
+                backgroundColor: stockQty > 0 ? '#4CAF50' : '#F44336',
               }} />
               <Text style={[
                 styles.stockText, 
-                { color: product.quantity > 0 ? '#4CAF50' : '#F44336' }
+                { color: stockQty > 0 ? '#4CAF50' : '#F44336' }
               ]}>
-                {product.quantity > 0 ? `In Stock (${product.quantity} available)` : 'Out of Stock'}
+                {stockQty > 0 ? `In Stock (${stockQty} available)` : 'Out of Stock'}
               </Text>
             </View>
            
@@ -462,7 +471,7 @@ export default function ProductDetailScreen() {
               styles.variantSection, 
               { 
                 borderColor: theme.colors.border,
-                backgroundColor: theme.colors.surfaceVariant
+                backgroundColor: theme.colors.surface
               }
             ]}>
               <View style={styles.variantHeader}>
@@ -534,13 +543,13 @@ export default function ProductDetailScreen() {
               <Text style={[styles.quantityText, { color: theme.colors.text }]}>{quantity}</Text>
               <TouchableOpacity
                 onPress={() => {
-                  if (product.quantity && quantity < product.quantity) {
+                  if (stockQty > 0 && quantity < stockQty) {
                     setQuantity(quantity + 1);
                   } else {
                     Toast.show({
                       type: 'info',
                       text1: 'Maximum quantity reached',
-                      text2: `Only ${product.quantity} items available in stock`,
+                      text2: `Only ${stockQty} items available in stock`,
                       position: 'top',
                     });
                   }
@@ -550,14 +559,14 @@ export default function ProductDetailScreen() {
                   { 
                     backgroundColor: theme.colors.surface, 
                     borderColor: theme.colors.border,
-                    opacity: (product.quantity && quantity >= product.quantity) ? 0.5 : 1
+                    opacity: (stockQty > 0 && quantity >= stockQty) ? 0.5 : 1
                   }
                 ]}
-                disabled={product.quantity && quantity >= product.quantity}
+                disabled={stockQty > 0 && quantity >= stockQty}
               >
                 <Plus 
                   size={20} 
-                  color={product.quantity && quantity >= product.quantity 
+                  color={stockQty > 0 && quantity >= stockQty 
                     ? theme.colors.textSecondary 
                     : theme.colors.text} 
                 />
@@ -743,7 +752,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  priceContainer: {
+  priceContainerTop: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 4,
@@ -817,7 +826,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  variantOptionSelected: {
+  variantOptionSelectedBase: {
     backgroundColor: '#007AFF',
     borderColor: '#007AFF',
   },

@@ -15,6 +15,15 @@ export const store = configureStore({
     comments: commentsReducer,
     notifications: notificationsReducer,
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        warnAfter: 128,
+      },
+      immutableCheck: {
+        warnAfter: 128,
+      },
+    }),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

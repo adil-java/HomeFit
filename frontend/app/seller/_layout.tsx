@@ -1,9 +1,8 @@
 import { Stack } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
-import { Redirect, router } from 'expo-router';
+import { Redirect } from 'expo-router';
 import SellerDrawer from '@/components/SellerDrawer';
-import { View, BackHandler } from 'react-native';
-import { useEffect } from 'react';
+import { View } from 'react-native';
 
 export default function SellerLayout() {
   const { user } = useAuth();
@@ -23,59 +22,24 @@ export default function SellerLayout() {
       />
       <SellerDrawer>
         <Stack.Screen
-          name="index"
+          name="dashboard"
           options={{
             headerShown: false,
             title: 'Dashboard',
           }}
         />
         <Stack.Screen
-          name="products/index"
+          name="products"
           options={{
             headerShown: false,
             title: 'Products',
           }}
         />
         <Stack.Screen
-          name="products/[id]"
-          options={{
-            headerShown: false,
-            title: 'Product Details',
-          }}
-        />
-        <Stack.Screen
-          name="products/new"
-          options={{
-            headerShown: false,
-            title: 'New Product',
-          }}
-        />
-        <Stack.Screen
-          name="orders/index"
+          name="orders"
           options={{
             headerShown: false,
             title: 'Orders',
-          }}
-        />
-        <Stack.Screen
-          name="orders/[id]"
-          options={{
-            headerShown: false,
-            title: 'Order Details',
-          }}
-        />
-        <Stack.Screen
-          name="sellers"
-          options={{
-            headerShown: false,
-            title: 'Sellers',
-          }}
-        />
-        <Stack.Screen
-          name="settings"
-          options={{
-            headerShown: false,
-            title: 'Settings',
           }}
         />
         <Stack.Screen
@@ -83,6 +47,13 @@ export default function SellerLayout() {
           options={{
             headerShown: false,
             title: 'Payment Setup',
+          }}
+        />
+        <Stack.Screen
+          name="sellerBalance"
+          options={{
+            headerShown: false,
+            title: 'Seller Balance',
           }}
         />
       </SellerDrawer>

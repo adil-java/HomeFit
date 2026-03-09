@@ -7,7 +7,6 @@ import {
   Image,
   useWindowDimensions,
   ActivityIndicator,
-  FlatList
 } from 'react-native';
 import { Heart, Star, ShoppingCart } from 'lucide-react-native';
 import { router } from 'expo-router';
@@ -16,7 +15,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/store/store';
 import { addToCart } from '@/store/slices/cartSlice';
 import { addToWishlist, removeFromWishlist } from '@/store/slices/wishlistSlice';
-import { Product, setProducts } from '@/store/slices/productsSlice';
+import { Product } from '@/store/slices/productsSlice';
 import Toast from 'react-native-toast-message';
 import { apiService } from '@/services/api';
 
@@ -36,7 +35,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const { theme } = useTheme();
   const { width: screenWidth } = useWindowDimensions();
   const dispatch = useDispatch<AppDispatch>();
-  const wishlist = useSelector((state: RootState) => state.wishlist.items);
   const [product, setProduct] = useState<Product | null>(initialProduct || null);
   const [loading, setLoading] = useState(!initialProduct);
   const [error, setError] = useState<string | null>(null);
@@ -129,7 +127,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     );
   }
 
-  const isInWishlist = wishlist.some(item => item.id === product.id);
+  const isInWishlist = useSelector((state: RootState) => {
+    if (!product?.id) return false;
+    return state.wishlist.items.some(item => item.id === product.id);
+  });
 
   const handleProductPress = () => {
     if (!product) return;

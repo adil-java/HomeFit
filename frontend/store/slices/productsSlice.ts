@@ -13,7 +13,7 @@ export interface Category {
 }
 
 export interface Product {
-  comparePrice: boolean;
+  comparePrice?: number;
   id: string;
   name: string;
   price: number;
@@ -27,9 +27,13 @@ export interface Product {
   categories?: Category[]; // New field for multiple categories
   tags: string[];
   inStock: boolean;
+  quantity?: number;
+  sku?: string;
+  variants?: Array<{ id?: string; name?: string; options: string[] }>;
   colors?: string[];
   sizes?: string[];
   modelUrl: string;
+  ARModelUrl?: string | null;
   comments?: Comment[];
 }
 
