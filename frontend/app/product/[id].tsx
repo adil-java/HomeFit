@@ -271,6 +271,16 @@ export default function ProductDetailScreen() {
     });
   };
 
+  const sellerData = (product as any)?.seller;
+  const sellerBusinessName =
+    sellerData?.sellerApplication?.businessName ||
+    sellerData?.businessName ||
+    (sellerData?.name ? `${sellerData.name} Store` : 'HomeFit Partner Seller');
+  const sellerType = sellerData?.sellerApplication?.businessType || 'Furniture Seller';
+  const sellerEmail = sellerData?.email;
+  const sellerWebsite = sellerData?.sellerApplication?.website;
+  const sellerPhone = sellerData?.sellerApplication?.phone;
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
@@ -396,6 +406,53 @@ export default function ProductDetailScreen() {
               </Text>
             </View>
            
+          </View>
+
+          {/* Seller Information */}
+          <View style={[styles.sellerSection, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}> 
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Seller Information</Text>
+
+            <View style={styles.sellerHeader}>
+              <View style={[styles.sellerAvatarWrap, { backgroundColor: theme.colors.background, borderColor: theme.colors.border }]}> 
+                {sellerData?.photoURL ? (
+                  <Image source={{ uri: sellerData.photoURL }} style={styles.sellerAvatar} />
+                ) : (
+                  <Text style={[styles.sellerAvatarFallback, { color: theme.colors.primary }]}> 
+                    {String(sellerBusinessName || 'S').charAt(0).toUpperCase()}
+                  </Text>
+                )}
+              </View>
+
+              <View style={styles.sellerMeta}>
+                <Text style={[styles.sellerBusinessName, { color: theme.colors.text }]} numberOfLines={1}>
+                  {sellerBusinessName}
+                </Text>
+                <Text style={[styles.sellerType, { color: theme.colors.textSecondary }]} numberOfLines={1}>
+                  {sellerType}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.sellerDetailsList}>
+              {!!sellerEmail && (
+                <Text style={[styles.sellerDetailText, { color: theme.colors.textSecondary }]} numberOfLines={1}>
+                  Email: {sellerEmail}
+                </Text>
+              )}
+              {!!sellerWebsite && (
+                <Text style={[styles.sellerDetailText, { color: theme.colors.textSecondary }]} numberOfLines={1}>
+                  Website: {sellerWebsite}
+                </Text>
+              )}
+              {!!sellerPhone && (
+                <Text style={[styles.sellerDetailText, { color: theme.colors.textSecondary }]} numberOfLines={1}>
+                  Phone: {sellerPhone}
+                </Text>
+              )}
+              <Text style={[styles.sellerVerified, { color: theme.colors.success }]}> 
+                {sellerData?.stripeOnboarded ? 'Verified seller account' : 'Trusted marketplace seller'}
+              </Text>
+            </View>
           </View>
 
           {/* Product Variants */}
@@ -938,6 +995,61 @@ const styles = StyleSheet.create({
   },
   descriptionSection: {
     marginBottom: 24,
+  },
+  sellerSection: {
+    marginBottom: 24,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 14,
+  },
+  sellerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  sellerAvatarWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  sellerAvatar: {
+    width: '100%',
+    height: '100%',
+  },
+  sellerAvatarFallback: {
+    fontSize: 18,
+    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
+  },
+  sellerMeta: {
+    marginLeft: 10,
+    flex: 1,
+  },
+  sellerBusinessName: {
+    fontSize: 16,
+    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
+  },
+  sellerType: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  sellerDetailsList: {
+    gap: 4,
+  },
+  sellerDetailText: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  sellerVerified: {
+    marginTop: 4,
+    fontSize: 13,
+    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   sectionTitle: {
     fontSize: 18,

@@ -3,7 +3,6 @@ import { TouchableOpacity, StyleSheet, View, Text, Alert, Platform } from 'react
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { router } from 'expo-router';
-import { checkARSupport } from '../utils/checkARSupport';
 import Toast from 'react-native-toast-message';
 import Constants from 'expo-constants';
 
@@ -50,22 +49,9 @@ export const ARPreviewButton = ({ modelUrl }: ARPreviewButtonProps) => {
 				return;
 			}
 
-			// Check ARCore/ARKit support
-			const arSupported = await checkARSupport();
-
-			if (arSupported) {
-				// ARCore/ARKit available → use full AR experience
-				router.push(`/product/ar?modelUrl=${encodeURIComponent(modelUrl)}`);
-			} else {
-				// No AR support → use interactive 3D viewer fallback
-				Toast.show({
-					type: 'info',
-					text1: 'AR Not Supported',
-					text2: 'Opening 3D viewer instead.',
-					position: 'top',
-				});
-				router.push(`/product/model-viewer?modelUrl=${encodeURIComponent(modelUrl)}`);
-			}
+			// Always delegate capability gating to /product/ar screen.
+			// That route performs strict checks and safely falls back to 3D viewer.
+			router.push(`/product/ar?modelUrl=${encodeURIComponent(modelUrl)}`);
 		} catch (error) {
 			console.error('Error checking AR support:', error);
 			// On any error, default to the safer 3D viewer fallback

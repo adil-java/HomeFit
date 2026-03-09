@@ -53,7 +53,7 @@ export const WishlistItem: React.FC<WishlistItemProps> = ({ item, onRemove, onAd
             style={[styles.addToCartButton, { backgroundColor: theme.colors.primary }]}
           >
             <ShoppingCart size={16} color="#fff" />
-            <Text style={styles.addToCartText}>Add to Cart</Text>
+            <Text style={styles.addToCartText}>Choose Variant</Text>
           </TouchableOpacity>
           
           <TouchableOpacity

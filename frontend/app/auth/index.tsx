@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Image } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Image, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,6 +12,20 @@ const { width, height } = Dimensions.get('window');
 export default function AuthIndex() {
   const { theme, isDark } = useTheme();
   const { user, isLoading, loginWithGoogle } = useAuth();
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+  const handleGoogleLogin = async () => {
+    if (isGoogleLoading) return;
+
+    try {
+      setIsGoogleLoading(true);
+      await loginWithGoogle();
+    } catch {
+      // Errors are already handled in AuthContext alerts/toasts.
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!isLoading && user) {
@@ -143,10 +157,12 @@ export default function AuthIndex() {
                     borderWidth: 1,
                     borderColor: googleBtnBorder,
                   },
+                  isGoogleLoading && styles.googleButtonDisabled,
                   !isDark && styles.buttonShadow,
                 ]}
-                onPress={loginWithGoogle}
+                onPress={handleGoogleLogin}
                 activeOpacity={0.85}
+                disabled={isGoogleLoading}
               >
                 <Image
                   source={{ uri: 'https://res.cloudinary.com/dmpinsiam/image/upload/v1762603041/google-icon_vqmcjy.png' }}
@@ -154,7 +170,7 @@ export default function AuthIndex() {
                   resizeMode="contain"
                 />
                 <Text style={[styles.googleButtonText, { color: googleBtnText }]}>
-                  Continue with Google
+                  {isGoogleLoading ? 'Signing in with Google...' : 'Continue with Google'}
                 </Text>
                 <ArrowRight size={18} color={googleBtnText} style={styles.buttonIcon} />
               </TouchableOpacity>
@@ -168,6 +184,16 @@ export default function AuthIndex() {
             </View>
           </View>
         </SafeAreaView>
+
+        {isGoogleLoading && (
+          <View style={[styles.loadingOverlay, { backgroundColor: isDark ? 'rgba(0, 0, 0, 0.45)' : 'rgba(255, 255, 255, 0.55)' }]}> 
+            <View style={[styles.loadingCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}> 
+              <ActivityIndicator size="small" color={theme.colors.primary} />
+              <Text style={[styles.loadingTitle, { color: theme.colors.text }]}>Signing you in</Text>
+              <Text style={[styles.loadingSubtitle, { color: theme.colors.textSecondary }]}>Please wait a moment...</Text>
+            </View>
+          </View>
+        )}
       </LinearGradient>
     </View>
   );
@@ -286,6 +312,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: 'Inter_600SemiBold',
   },
+  googleButtonDisabled: {
+    opacity: 0.75,
+  },
   footer: {
     alignItems: 'center',
     paddingTop: 4,
@@ -299,5 +328,30 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     marginTop: height * 0.45,
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 100,
+  },
+  loadingCard: {
+    minWidth: 200,
+    borderRadius: 14,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  loadingTitle: {
+    marginTop: 10,
+    fontSize: 15,
+    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
+  },
+  loadingSubtitle: {
+    marginTop: 4,
+    fontSize: 13,
+    textAlign: 'center',
   },
 });

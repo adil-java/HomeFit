@@ -3,6 +3,10 @@ import Constants from 'expo-constants';
 
 let cachedResult: boolean | null = null;
 
+interface ARSupportOptions {
+  strict?: boolean;
+}
+
 /**
  * Check if the device supports ARCore (Android) or ARKit (iOS).
  * 
@@ -13,7 +17,7 @@ let cachedResult: boolean | null = null;
  * Results are cached after the first check to avoid repeated lookups.
  * If detection fails for any reason, defaults to false (safer fallback to 3D viewer).
  */
-export async function checkARSupport(): Promise<boolean> {
+export async function checkARSupport(options: ARSupportOptions = {}): Promise<boolean> {
   // Return cached result if available
   if (cachedResult !== null) {
     return cachedResult;
@@ -38,13 +42,10 @@ export async function checkARSupport(): Promise<boolean> {
     }
 
     if (Platform.OS === 'android') {
-      // On Android, we try to dynamically import ViroARSceneNavigator.
-      // If ViroReact/ARCore is not properly set up the import or instantiation
-      // will throw, letting us know AR is not available.
+      // On Android, if Viro native module is available in this build,
+      // we should treat AR as supported by default.
+      // Some versions do not expose a runtime support API even on ARCore devices.
       try {
-        // Check if the ViroReact native module can be resolved.
-        // This will succeed only if ARCore is installed and the Viro native
-        // libraries are linked correctly in this build.
         const viro = await import('@reactvision/react-viro');
         
         if (!viro || !viro.ViroARSceneNavigator) {
@@ -60,10 +61,16 @@ export async function checkARSupport(): Promise<boolean> {
           return cachedResult;
         }
 
-        // Runtime capability API unavailable: fail closed to avoid triggering
-        // ARCore install prompts or black camera screens on unsupported devices.
-        cachedResult = false;
-        return false;
+        // Runtime capability API missing: in strict mode fail closed
+        // to avoid ARCore install prompts/crashes on unsupported devices.
+        if (options.strict) {
+          cachedResult = false;
+          return false;
+        }
+
+        // Non-strict mode: assume support when native module exists.
+        cachedResult = true;
+        return true;
       } catch {
         // ViroReact native module not available → ARCore not supported
         console.log('[AR Support] ViroReact not available on this device, falling back to 3D viewer');

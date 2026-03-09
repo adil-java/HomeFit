@@ -48,7 +48,7 @@ export default function ProductARScreen() {
           return;
         }
 
-        const supported = await checkARSupport();
+        const supported = await checkARSupport({ strict: true });
         if (!supported) {
           redirectToViewer('This device does not support ARCore/ARKit.');
           return;

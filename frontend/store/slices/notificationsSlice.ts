@@ -34,6 +34,18 @@ const initialState: NotificationsState = {
   loading: false,
 };
 
+const loadStoredNotifications = async (): Promise<NotificationItem[]> => {
+  try {
+    const raw = await AsyncStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as NotificationItem[];
+    if (!Array.isArray(parsed)) return [];
+    return parsed;
+  } catch {
+    return [];
+  }
+};
+
 const toSafeDateString = (value: string | undefined) => {
   if (!value) return new Date().toISOString();
   const date = new Date(value);
@@ -62,7 +74,7 @@ const buildNotificationFromOrder = (order: any): NotificationItem[] => {
   const orderStatus = normalizeOrderStatus(order?.status);
   if (orderStatus && orderStatus !== 'pending') {
     notifications.push({
-      id: `order-status-${orderId}-${orderStatus}-${updatedAt}`,
+      id: `order-status-${orderId}-${orderStatus}`,
       type: 'ORDER_STATUS',
       title: `Order ${orderNumber} updated`,
       message: `Your order is now ${orderStatus}.`,
@@ -75,7 +87,7 @@ const buildNotificationFromOrder = (order: any): NotificationItem[] => {
   const paymentStatus = normalizePaymentStatus(order?.paymentStatus);
   if (paymentStatus === 'paid') {
     notifications.push({
-      id: `payment-${orderId}-paid-${updatedAt}`,
+      id: `payment-${orderId}-paid`,
       type: 'PAYMENT_SUCCESS',
       title: `Payment received for ${orderNumber}`,
       message: 'Your payment was successful.',
@@ -85,7 +97,7 @@ const buildNotificationFromOrder = (order: any): NotificationItem[] => {
     });
   } else if (paymentStatus === 'failed') {
     notifications.push({
-      id: `payment-${orderId}-failed-${updatedAt}`,
+      id: `payment-${orderId}-failed`,
       type: 'PAYMENT_FAILED',
       title: `Payment failed for ${orderNumber}`,
       message: 'Please retry your payment method.',
@@ -95,7 +107,7 @@ const buildNotificationFromOrder = (order: any): NotificationItem[] => {
     });
   } else if (paymentStatus === 'refunded' || paymentStatus === 'partially_refunded') {
     notifications.push({
-      id: `payment-${orderId}-refund-${updatedAt}`,
+      id: `payment-${orderId}-refund-${paymentStatus}`,
       type: 'REFUND',
       title: `Refund update for ${orderNumber}`,
       message:
@@ -114,15 +126,7 @@ const buildNotificationFromOrder = (order: any): NotificationItem[] => {
 export const initializeNotifications = createAsyncThunk(
   'notifications/initialize',
   async () => {
-    try {
-      const raw = await AsyncStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
-      if (!raw) return [] as NotificationItem[];
-      const parsed = JSON.parse(raw) as NotificationItem[];
-      if (!Array.isArray(parsed)) return [] as NotificationItem[];
-      return parsed;
-    } catch {
-      return [] as NotificationItem[];
-    }
+    return await loadStoredNotifications();
   }
 );
 
@@ -130,7 +134,8 @@ export const syncNotifications = createAsyncThunk(
   'notifications/sync',
   async (_, { getState }) => {
     const state = getState() as RootState;
-    const existing = state.notifications.items;
+    const stored = await loadStoredNotifications();
+    const existing = [...stored, ...state.notifications.items];
     const existingMap = new Map(existing.map((item) => [item.id, item]));
 
     const response = await apiService.getUserOrders({ page: 1, limit: 30 });

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, User, Mail, Phone, Calendar, MapPin, CreditCard as Edit3 } from 'lucide-react-native';
@@ -105,7 +106,11 @@ export default function PersonalInfoScreen() {
         {/* Profile Picture Section */}
         <View style={styles.profileSection}>
           <View style={[styles.avatarContainer, { backgroundColor: theme.colors.surface }]}>
-            <User size={40} color={theme.colors.primary} />
+            {user?.photoURL ? (
+              <Image source={{ uri: user.photoURL }} style={styles.avatarImage} />
+            ) : (
+              <User size={40} color={theme.colors.primary} />
+            )}
           </View>
           <TouchableOpacity style={[styles.changePhotoButton, { backgroundColor: theme.colors.primary }]}>
             <Text style={styles.changePhotoText}>Change Photo</Text>
@@ -254,6 +259,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
   },
   changePhotoButton: {
     paddingHorizontal: 20,

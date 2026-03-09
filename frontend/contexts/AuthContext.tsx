@@ -29,6 +29,7 @@ interface User {
   name: string;
   role: string;
   uid: string;
+  photoURL?: string | null;
 }
 
 interface AuthContextType {
@@ -98,7 +99,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               uid: userData.id,
               email: firebaseUser.email || "",
               name: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "",
-              role: role
+              role: role,
+              photoURL: firebaseUser.photoURL || userData?.photoURL || userData?.avatar || userData?.profileImage || null,
             };
 
             setUser(user);
@@ -115,7 +117,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               uid: firebaseUser.uid,
               email: firebaseUser.email || "",
               name: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "",
-              role: firebaseUser.email?.includes('seller') ? 'seller' : 'customer'
+              role: firebaseUser.email?.includes('seller') ? 'seller' : 'customer',
+              photoURL: firebaseUser.photoURL || null,
             };
 
             setUser(user);
@@ -162,6 +165,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: userCredential.user.email || '',
           name: userCredential.user.displayName || (userCredential.user.email?.split('@')[0] || ''),
           role: role,
+          photoURL: userCredential.user.photoURL || userData?.photoURL || userData?.avatar || userData?.profileImage || null,
         };
         
         setUser(user);
@@ -176,6 +180,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: userCredential.user.email || '',
           name: userCredential.user.displayName || (userCredential.user.email?.split('@')[0] || ''),
           role: userCredential.user.email?.includes('seller') ? 'seller' : 'customer',
+          photoURL: userCredential.user.photoURL || null,
         };
         setUser(optimisticUser);
         await SecureStore.setItemAsync('token', token);
@@ -211,6 +216,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: userCredential.user.email || '',
           name: name || userCredential.user.displayName || (userCredential.user.email?.split('@')[0] || ''),
           role: userData.role || (userCredential.user.email?.includes('seller') ? 'seller' : 'customer'),
+          photoURL: userCredential.user.photoURL || userData?.photoURL || userData?.avatar || userData?.profileImage || null,
         };
         
         setUser(user);
@@ -225,6 +231,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: userCredential.user.email || '',
           name: name || userCredential.user.displayName || (userCredential.user.email?.split('@')[0] || ''),
           role: userCredential.user.email?.includes('seller') ? 'seller' : 'customer',
+          photoURL: userCredential.user.photoURL || null,
         };
         setUser(optimisticUser);
         await SecureStore.setItemAsync('token', token);
@@ -294,6 +301,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: result.user.email || '',
           name: result.user.displayName || (result.user.email?.split('@')[0] || ''),
           role: role,
+          photoURL: result.user.photoURL || userData?.photoURL || userData?.avatar || userData?.profileImage || null,
         };
         
         setUser(user);
@@ -319,6 +327,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             email: result.user.email || '',
             name: result.user.displayName || (result.user.email?.split('@')[0] || ''),
             role: userData.role?.toLowerCase() || 'customer',
+            photoURL: result.user.photoURL || userData?.photoURL || userData?.avatar || userData?.profileImage || null,
           };
           
           setUser(user);
@@ -340,6 +349,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             email: result.user.email || '',
             name: result.user.displayName || (result.user.email?.split('@')[0] || ''),
             role: result.user.email?.includes('seller') ? 'seller' : 'customer',
+            photoURL: result.user.photoURL || null,
           };
           
           setUser(fallbackUser);

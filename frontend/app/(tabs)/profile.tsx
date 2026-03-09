@@ -107,7 +107,11 @@ export default function ProfileScreen() {
           <View style={styles.profileSection}>
             <View style={styles.avatarContainer}>
               <View style={[styles.avatar, { backgroundColor: theme.colors.surface }]}>
-                <User size={40} color={theme.colors.primary} />
+                {user?.photoURL ? (
+                  <Image source={{ uri: user.photoURL }} style={styles.avatarImage} />
+                ) : (
+                  <User size={40} color={theme.colors.primary} />
+                )}
               </View>
             </View>
             <Text style={styles.userName}>{user?.name || 'User'}</Text>
@@ -274,6 +278,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
   },
   userName: {
     fontSize: 20,

@@ -111,6 +111,15 @@ export const getProducts = async (queryParams) => {
             photoURL: true,
             stripeConnectId: true,
             stripeOnboarded: true,
+            sellerApplication: {
+              select: {
+                businessName: true,
+                businessType: true,
+                website: true,
+                address: true,
+                phone: true,
+              },
+            },
           },
         },
       },
@@ -150,6 +159,15 @@ export const getProductById = async (id) => {
           photoURL: true,
           stripeConnectId: true,
           stripeOnboarded: true,
+          sellerApplication: {
+            select: {
+              businessName: true,
+              businessType: true,
+              website: true,
+              address: true,
+              phone: true,
+            },
+          },
         },
       },
       reviews: {
@@ -193,6 +211,15 @@ export const getProductBySlug = async (slug) => {
           photoURL: true,
           stripeConnectId: true,
           stripeOnboarded: true,
+          sellerApplication: {
+            select: {
+              businessName: true,
+              businessType: true,
+              website: true,
+              address: true,
+              phone: true,
+            },
+          },
         },
       },
       reviews: {

@@ -12,6 +12,7 @@ const CARD_WIDTH = width * 0.6;
 const CARD_HEIGHT = CARD_WIDTH * 0.7;
 
 interface CategoryCardProps {
+  categoryId?: string;
   category: string;
   image?: string | null;
 }
@@ -44,7 +45,7 @@ const categoryData = {
   },
 };
 
-export const CategoryCard: React.FC<CategoryCardProps> = ({ category, image }) => {
+export const CategoryCard: React.FC<CategoryCardProps> = ({ categoryId, category, image }) => {
   const { theme } = useTheme();
   const dispatch = useDispatch();
   
@@ -55,7 +56,7 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({ category, image }) =
   };
 
   const handlePress = () => {
-    dispatch(setSelectedCategory(category));
+    dispatch(setSelectedCategory(categoryId || category));
     router.push('/search');
   };
 

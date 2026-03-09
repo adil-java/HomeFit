@@ -250,6 +250,7 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
+        animation: 'shift',
         headerShown: true,
         headerStyle: {
           backgroundColor: theme.colors.background,

@@ -203,5 +203,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     fontWeight: '400',
     fontFamily: 'Inter_400Regular',
+    textAlign: 'center',
+    width: '100%',
+    paddingHorizontal: 24,
+    lineHeight: 22,
   },
 });

@@ -15,7 +15,6 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import type { RootState } from '@/store/store';
 import { fetchWishlist, removeFromWishlist } from '@/store/slices/wishlistSlice';
-import { addToCart } from '@/store/slices/cartSlice';
 import { WishlistItem } from '@/components/WishlistItem';
 import Toast from 'react-native-toast-message';
 
@@ -61,17 +60,7 @@ export default function WishlistScreen() {
   };
 
   const handleAddToCart = (item: any) => {
-    dispatch(addToCart({
-      id: item.id,
-      name: item.name,
-      price: item.price,
-      image: item.image,
-    }));
-    Toast.show({
-      type: 'success',
-      text1: 'Added to cart',
-      position: 'top',
-    });
+    router.push(`/product/${item.id}`);
   };
 
   // Show loading state only on initial load

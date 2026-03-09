@@ -15,7 +15,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Search, Filter, X } from 'lucide-react-native';
+import { Search, X } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store/store';
@@ -30,7 +30,6 @@ export default function SearchScreen() {
     (state: RootState) => state.products
   );
 
-  const [showFilters, setShowFilters] = useState(false);
   const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
   const [fadeAnim] = useState(new Animated.Value(1));
   const [isFocused, setIsFocused] = useState(false);
@@ -119,6 +118,8 @@ export default function SearchScreen() {
     dispatch(setSearchQuery(text));
   };
 
+  const hasActiveFilters = !!selectedCategory || selectedTags.length > 0 || localSearchQuery.length > 0;
+
   return (
     <KeyboardAvoidingView 
       style={{ flex: 1 }}
@@ -182,58 +183,70 @@ export default function SearchScreen() {
                 />
               </TouchableOpacity>
             )}
-            <TouchableOpacity 
-              style={[styles.filterButton, { backgroundColor: theme.colors.primary }]}
-              onPress={() => setShowFilters(!showFilters)}
-            >
-              <Filter size={16} color="#fff" />
-            </TouchableOpacity>
           </Animated.View>
 
-          {/* Filters */}
-          {showFilters && (
-            <View style={[styles.filtersContainer, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-              <View style={styles.filtersHeader}>
-                <Text style={[styles.filtersTitle, { color: theme.colors.text }]}>Filters</Text>
+          {/* Always-visible categories */}
+          <View style={[styles.categoriesContainer, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}> 
+            <View style={styles.categoriesHeader}>
+              <Text style={[styles.categoriesTitle, { color: theme.colors.text }]}>Categories</Text>
+              {hasActiveFilters && (
                 <TouchableOpacity onPress={clearFilters}>
-                  <Text style={[styles.clearFiltersText, { color: theme.colors.primary }]}>Clear All</Text>
+                  <Text style={[styles.clearFiltersText, { color: theme.colors.primary }]}>Clear</Text>
                 </TouchableOpacity>
-              </View>
-
-              {/* Categories */}
-              <View style={styles.filterSection}>
-                <Text style={[styles.filterSectionTitle, { color: theme.colors.text }]}>Categories</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
-                  {categories.map((category) => (
-                    <TouchableOpacity
-                      key={category.id}
-                      style={[
-                        styles.filterChip,
-                        {
-                          backgroundColor: selectedCategory === category.id ? theme.colors.primary : theme.colors.background,
-                          borderColor: theme.colors.border,
-                        },
-                      ]}
-                      onPress={() => handleCategoryPress(category.id)}
-                    >
-                      <Text
-                        style={[
-                          styles.filterChipText,
-                          {
-                            color: selectedCategory === category.id ? '#fff' : theme.colors.text,
-                          },
-                        ]}
-                      >
-                        {category.name}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-
-              
+              )}
             </View>
-          )}
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.categoriesScrollContent}
+            >
+              <TouchableOpacity
+                style={[
+                  styles.filterChip,
+                  {
+                    backgroundColor: selectedCategory === '' ? theme.colors.primary : theme.colors.background,
+                    borderColor: theme.colors.border,
+                  },
+                ]}
+                onPress={() => dispatch(setSelectedCategory(''))}
+              >
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    { color: selectedCategory === '' ? '#fff' : theme.colors.text },
+                  ]}
+                >
+                  All
+                </Text>
+              </TouchableOpacity>
+
+              {categories.map((category) => (
+                <TouchableOpacity
+                  key={category.id}
+                  style={[
+                    styles.filterChip,
+                    {
+                      backgroundColor: selectedCategory === category.id ? theme.colors.primary : theme.colors.background,
+                      borderColor: theme.colors.border,
+                    },
+                  ]}
+                  onPress={() => handleCategoryPress(category.id)}
+                >
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      {
+                        color: selectedCategory === category.id ? '#fff' : theme.colors.text,
+                      },
+                    ]}
+                  >
+                    {category.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
 
           {/* Results */}
           <View style={styles.resultsContainer}>
@@ -282,7 +295,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#fff',
     borderRadius: 12,
-    margin: 16,
+    marginHorizontal: 16,
+    marginTop: -26,
+    marginBottom: 12,
     paddingHorizontal: 12,
     height: 52,
     shadowColor: '#000',
@@ -304,44 +319,22 @@ const styles = StyleSheet.create({
     padding: 8,
     marginRight: -8,
   },
-  filterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 8,
-    position: 'relative',
-  },
-  filterButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
-  },
-  filterBadge: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  filtersContainer: {
-    margin: 20,
-    marginTop: 0,
+  categoriesContainer: {
+    marginHorizontal: 16,
+    marginTop: -2,
+    marginBottom: 12,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
   },
-  filtersHeader: {
+  categoriesHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
-  filtersTitle: {
-    fontSize: 18,
+  categoriesTitle: {
+    fontSize: 17,
     fontWeight: '600',
     fontFamily: 'Inter_600SemiBold',
   },
@@ -350,39 +343,24 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: 'Inter_600SemiBold',
   },
-  filterSection: {
-    marginBottom: 16,
-  },
-  filterSectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
-    marginBottom: 8,
-  },
-  filterScroll: {
-    marginHorizontal: -16,
-    paddingHorizontal: 16,
+  categoriesScrollContent: {
+    paddingRight: 8,
   },
   filterChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 18,
     borderWidth: 1,
-    marginRight: 8,
+    marginRight: 10,
   },
   filterChipText: {
     fontSize: 14,
     fontWeight: '500',
     fontFamily: 'Inter_500Medium',
   },
-  tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
   resultsContainer: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
   },
   resultsText: {
     fontSize: 14,

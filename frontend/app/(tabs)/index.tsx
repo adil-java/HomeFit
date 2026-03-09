@@ -231,6 +231,7 @@ export default function HomeScreen() {
               {typedCategories.map((category) => (
                 <CategoryCard 
                   key={category.id} 
+                  categoryId={category.id}
                   category={category.name} 
                   image={category.image}
                 />
