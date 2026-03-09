@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Switch,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
@@ -28,6 +29,9 @@ import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 
 export default function SettingsScreen() {
   const { theme, isDark, toggleTheme } = useTheme();
+  const { width } = useWindowDimensions();
+  const compact = width < 360;
+  const horizontalPadding = compact ? 14 : 20;
 
   const SettingItem = ({ 
     icon: Icon, 
@@ -52,19 +56,29 @@ export default function SettingsScreen() {
   }) => (
     <TouchableOpacity
       onPress={onPress}
-      style={[styles.settingItem, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+      style={[
+        styles.settingItem,
+        compact && styles.settingItemCompact,
+        { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+      ]}
       disabled={showSwitch}
     >
       <View style={styles.settingLeft}>
-        <View style={[styles.iconContainer, { backgroundColor: danger ? theme.colors.error + '20' : theme.colors.background }]}>
+        <View
+          style={[
+            styles.iconContainer,
+            compact && styles.iconContainerCompact,
+            { backgroundColor: danger ? theme.colors.error + '20' : theme.colors.background },
+          ]}
+        > 
           <Icon size={20} color={danger ? theme.colors.error : theme.colors.primary} />
         </View>
         <View>
-          <Text style={[styles.settingTitle, { color: danger ? theme.colors.error : theme.colors.text }]}>
+          <Text style={[styles.settingTitle, compact && styles.settingTitleCompact, { color: danger ? theme.colors.error : theme.colors.text }]}> 
             {title}
           </Text>
           {subtitle && (
-            <Text style={[styles.settingSubtitle, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.settingSubtitle, compact && styles.settingSubtitleCompact, { color: theme.colors.textSecondary }]}> 
               {subtitle}
             </Text>
           )}
@@ -87,7 +101,7 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingHorizontal: horizontalPadding }]}>
         <HeaderBackButton onPress={() => router.back()} size={24} />
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Settings</Text>
         <View style={{ width: 24 }} />
@@ -95,7 +109,7 @@ export default function SettingsScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Notifications */}
-        <View style={styles.section}>
+        <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}> 
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
             Notifications
           </Text>
@@ -129,7 +143,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* Appearance */}
-        <View style={styles.section}>
+        <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}> 
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
             Appearance
           </Text>
@@ -152,7 +166,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* Privacy & Security */}
-        <View style={styles.section}>
+        <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}> 
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
             Privacy & Security
           </Text>
@@ -180,7 +194,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* Data & Storage */}
-        <View style={styles.section}>
+        <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}> 
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
             Data & Storage
           </Text>
@@ -201,7 +215,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* Danger Zone */}
-        <View style={styles.section}>
+        <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}> 
           <Text style={[styles.sectionTitle, { color: theme.colors.error }]}>
             Danger Zone
           </Text>
@@ -255,6 +269,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 8,
   },
+  settingItemCompact: {
+    padding: 12,
+  },
   settingLeft: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -268,14 +285,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
+  iconContainerCompact: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    marginRight: 10,
+  },
   settingTitle: {
     fontSize: 16,
     fontWeight: '600',
     fontFamily: 'Inter_600SemiBold',
     marginBottom: 2,
   },
+  settingTitleCompact: {
+    fontSize: 15,
+  },
   settingSubtitle: {
     fontSize: 14,
+  },
+  settingSubtitleCompact: {
+    fontSize: 12,
   },
   arrow: {
     fontSize: 20,

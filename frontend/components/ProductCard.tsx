@@ -5,7 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
-  Dimensions,
+  useWindowDimensions,
   ActivityIndicator,
   FlatList
 } from 'react-native';
@@ -19,9 +19,6 @@ import { addToWishlist, removeFromWishlist } from '@/store/slices/wishlistSlice'
 import { Product, setProducts } from '@/store/slices/productsSlice';
 import Toast from 'react-native-toast-message';
 import { apiService } from '@/services/api';
-
-const { width } = Dimensions.get('window');
-const cardWidth = (width - 60) / 2;
 
 interface ProductCardProps {
   product?: Product;
@@ -37,11 +34,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   style
 }) => {
   const { theme } = useTheme();
+  const { width: screenWidth } = useWindowDimensions();
   const dispatch = useDispatch<AppDispatch>();
   const wishlist = useSelector((state: RootState) => state.wishlist.items);
   const [product, setProduct] = useState<Product | null>(initialProduct || null);
   const [loading, setLoading] = useState(!initialProduct);
   const [error, setError] = useState<string | null>(null);
+
+  const responsiveCardWidth = Math.max(158, Math.min(210, (screenWidth - 52) / 2));
+  const responsiveImageHeight = Math.round(responsiveCardWidth * 1.02);
 
   useEffect(() => {
     if (productId && !initialProduct) {
@@ -114,7 +115,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
   if (loading) {
     return (
-      <View style={[styles.loadingContainer, style]}>
+      <View style={[styles.loadingContainer, { width: responsiveCardWidth, height: responsiveImageHeight + 96 }, style]}>
         <ActivityIndicator size="small" color={theme.colors.primary} />
       </View>
     );
@@ -122,7 +123,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
   if (error || !product) {
     return (
-      <View style={[styles.errorContainer, style]}>
+      <View style={[styles.errorContainer, { width: responsiveCardWidth, height: responsiveImageHeight + 96 }, style]}>
         <Text style={{ color: theme.colors.error }}>{error || 'Product not available'}</Text>
       </View>
     );
@@ -206,9 +207,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const displayRating = (product as any)?.rating ?? (product as any)?.averageRating ?? (product as any)?.averagerating ?? 'N/A';
 
   return (
-    <View style={[styles.container, { borderColor: theme.colors.border }, style]}>
+    <View style={[styles.container, { borderColor: theme.colors.border, width: responsiveCardWidth }, style]}>
       <TouchableOpacity onPress={handleProductPress}>
-        <View style={styles.imageContainer}>
+        <View style={[styles.imageContainer, { height: responsiveImageHeight }]}>
           <Image 
             source={{ uri: mainImage }} 
             style={styles.image} 
@@ -308,8 +309,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
 const styles = StyleSheet.create({
   loadingContainer: {
-    width: 180,
-    height: 280,
     borderRadius: 16,
     borderWidth: 1,
     marginRight: 12,
@@ -318,8 +317,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   errorContainer: {
-    width: 180,
-    height: 280,
     borderRadius: 16,
     borderWidth: 1,
     marginRight: 12,
@@ -329,7 +326,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   container: {
-    width: 180, // Fixed width for consistency
     borderRadius: 16,
     borderWidth: 1,
     marginRight: 12,
@@ -342,7 +338,6 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     position: 'relative',
-    height: 180,
   },
   image: {
     width: '100%',

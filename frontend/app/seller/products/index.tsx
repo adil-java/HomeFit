@@ -12,7 +12,7 @@ import {
   ActivityIndicator,
   Modal,
   Pressable,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { router } from 'expo-router';
@@ -66,6 +66,9 @@ interface Product {
 
 export default function ProductsScreen() {
   const { theme, isDark } = useTheme();
+  const { width } = useWindowDimensions();
+  const compact = width < 360;
+  const horizontalPadding = compact ? 12 : 16;
   const { user } = useAuth();
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
@@ -235,7 +238,8 @@ export default function ProductsScreen() {
   const renderProductItem = ({ item }) => (
     <View key={item.id} style={[styles.productCard, { 
       backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : theme.colors.surface,
-      borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : theme.colors.border 
+      borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : theme.colors.border,
+      padding: compact ? 10 : 12,
     }]}>
       <View style={[
         styles.productImageContainer,
@@ -251,14 +255,14 @@ export default function ProductsScreen() {
       </View>
       <View style={styles.productInfo}>
         <View>
-          <Text style={[styles.productName, { color: isDark ? '#FFFFFF' : theme.colors.text }]}>
+          <Text style={[styles.productName, compact && styles.productNameCompact, { color: isDark ? '#FFFFFF' : theme.colors.text }]}>
             {item.name}
           </Text>
           <Text style={[styles.productSku, { color: isDark ? 'rgba(255, 255, 255, 0.6)' : theme.colors.textSecondary }]}>
             SKU: {item.sku}
           </Text>
           
-          <View style={styles.productMeta}>
+          <View style={[styles.productMeta, compact && styles.productMetaCompact]}>
             {item.categories && item.categories.length > 0 && (
               <Text style={[styles.productCategory, { 
                 backgroundColor: `${theme.colors.primary}${isDark ? '25' : '10'}`,
@@ -295,13 +299,13 @@ export default function ProductsScreen() {
           <Eye size={18} color={theme.colors.primary} />
         </TouchableOpacity> */}
         <TouchableOpacity 
-          style={[styles.iconButton, { backgroundColor: `${theme.colors.primary}${isDark ? '20' : '10'}` }]}
+          style={[styles.iconButton, compact && styles.iconButtonCompact, { backgroundColor: `${theme.colors.primary}${isDark ? '20' : '10'}` }]}
           onPress={() => navigateToEditProduct(item.id)}
         >
           <Edit size={18} color={theme.colors.primary} />
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.iconButton, { backgroundColor: isDark ? '#EF444420' : '#EF444410' }]}
+          style={[styles.iconButton, compact && styles.iconButtonCompact, { backgroundColor: isDark ? '#EF444420' : '#EF444410' }]}
           onPress={() => handleDelete(item.id)}
         >
           <Trash2 size={18} color="#EF4444" />
@@ -321,7 +325,7 @@ export default function ProductsScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.1)' : theme.colors.border }]}>
+      <View style={[styles.header, { borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.1)' : theme.colors.border, paddingHorizontal: horizontalPadding, paddingVertical: compact ? 12 : 16 }]}> 
         <View style={styles.headerLeft}>
           <HeaderBackButton
             onPress={() => router.replace('/(tabs)')}
@@ -334,11 +338,11 @@ export default function ProductsScreen() {
         </View>
         <View style={styles.headerActions}>
           <TouchableOpacity 
-            style={[styles.addButton, { backgroundColor: theme.colors.primary }]}
+            style={[styles.addButton, compact && styles.addButtonCompact, { backgroundColor: theme.colors.primary }]}
             onPress={navigateToAddProduct}
           >
             <Plus size={18} color="white" />
-            <Text style={styles.addButtonText}>
+            <Text style={[styles.addButtonText, compact && styles.addButtonTextCompact]}>
               Add Product
             </Text>
           </TouchableOpacity>
@@ -346,7 +350,7 @@ export default function ProductsScreen() {
       </View>
 
       {/* Search and Filter */}
-      <View style={styles.searchContainer}>
+      <View style={[styles.searchContainer, { paddingHorizontal: horizontalPadding }]}> 
         <View style={[styles.searchBar, { 
           backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : theme.colors.surface, 
           borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : theme.colors.border 
@@ -380,7 +384,8 @@ export default function ProductsScreen() {
       {showFilters && (
         <View style={[styles.filtersPanel, { 
           backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : theme.colors.surface, 
-          borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : theme.colors.border 
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : theme.colors.border,
+          paddingHorizontal: horizontalPadding,
         }]}>
         <View style={styles.filterSection}>
           <Text style={[styles.filterLabel, { color: isDark ? '#FFFFFF' : theme.colors.text }]}>Category</Text>
@@ -530,7 +535,7 @@ export default function ProductsScreen() {
         data={filteredProducts}
         renderItem={renderProductItem}
         keyExtractor={item => item.id}
-        contentContainerStyle={styles.productsList}
+        contentContainerStyle={[styles.productsList, { paddingHorizontal: horizontalPadding }]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -555,7 +560,8 @@ export default function ProductsScreen() {
       {/* Pagination */}
       <View style={[styles.pagination, { 
         borderTopColor: isDark ? 'rgba(255, 255, 255, 0.1)' : theme.colors.border,
-        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.02)' : 'transparent'
+        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.02)' : 'transparent',
+        paddingHorizontal: horizontalPadding,
       }]}>
         <TouchableOpacity style={styles.paginationButton} disabled={true}>
           <ChevronLeft size={18} color={isDark ? 'rgba(255, 255, 255, 0.3)' : theme.colors.textSecondary} />
@@ -736,12 +742,20 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 2,
   },
+  addButtonCompact: {
+    paddingHorizontal: 12,
+    height: 36,
+  },
   addButtonText: {
     marginLeft: 6,
     fontSize: 14,
     fontWeight: '600',
     fontFamily: 'Inter_600SemiBold',
     color: '#fff',
+  },
+  addButtonTextCompact: {
+    fontSize: 12,
+    marginLeft: 4,
   },
   backButtonInline: {
     marginRight: 8,
@@ -886,6 +900,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginRight: 12,
   },
+  productNameCompact: {
+    fontSize: 13,
+  },
   productImage: {
     width: '100%',
     height: '100%',
@@ -910,6 +927,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 6,
     justifyContent: 'space-between',
+  },
+  productMetaCompact: {
+    flexWrap: 'wrap',
+    rowGap: 6,
   },
   ratingContainer: {
     flexDirection: 'row',
@@ -971,6 +992,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 4,
+  },
+  iconButtonCompact: {
+    width: 28,
+    height: 28,
   },
   emptyState: {
     alignItems: 'center',

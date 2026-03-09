@@ -10,6 +10,7 @@ import {
   RefreshControl,
   Modal,
   Alert,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Package, Truck, CircleCheck as CheckCircle, Clock, Circle as XCircle, MessageCircle, Edit } from 'lucide-react-native';
@@ -23,8 +24,24 @@ import { BackHandler } from 'react-native';
 import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 
 // Helper function to safely get status config with fallback
+const normalizeStatusKey = (status: string) => {
+  const normalized = (status || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_');
+
+  const aliases: Record<string, string> = {
+    pending_payment: 'pending',
+    payment_pending: 'pending',
+    in_progress: 'processing',
+    completed: 'delivered',
+  };
+
+  return aliases[normalized] || normalized;
+};
+
 const getStatusConfig = (status: string) => {
-  const statusLower = status.toLowerCase();
+  const statusLower = normalizeStatusKey(status);
   
   // Map of all possible status values from the API to our config
   const statusMap: Record<string, { icon: any; color: string; label: string }> = {
@@ -66,6 +83,9 @@ const statusOptions = [
 
 export default function OrdersScreen() {
   const { theme } = useTheme();
+  const { width } = useWindowDimensions();
+  const compact = width < 360;
+  const horizontalPadding = compact ? 14 : 20;
   const dispatch = useDispatch<AppDispatch>();
   const { orders, loading } = useSelector((state: RootState) => state.orders);
   const [error, setError] = useState<string | null>(null);
@@ -129,7 +149,15 @@ export default function OrdersScreen() {
         setIsLoadingMore(true);
       }
 
-      const status = selectedFilter !== 'all' ? selectedFilter.toUpperCase() : undefined;
+      const statusParamMap: Record<string, string | undefined> = {
+        all: undefined,
+        pending: 'PENDING',
+        processing: 'PROCESSING',
+        shipped: 'SHIPPED',
+        delivered: 'DELIVERED',
+        cancelled: 'CANCELLED',
+      };
+      const status = statusParamMap[selectedFilter] ?? undefined;
       const response = await apiService.getSellerOrders({
         status,
         page: currentPage,
@@ -181,7 +209,15 @@ export default function OrdersScreen() {
       setPage(1);
       setHasMore(true);
       
-      const status = selectedFilter !== 'all' ? selectedFilter.toUpperCase() : undefined;
+      const statusParamMap: Record<string, string | undefined> = {
+        all: undefined,
+        pending: 'PENDING',
+        processing: 'PROCESSING',
+        shipped: 'SHIPPED',
+        delivered: 'DELIVERED',
+        cancelled: 'CANCELLED',
+      };
+      const status = statusParamMap[selectedFilter] ?? undefined;
       const response = await apiService.getSellerOrders({
         status,
         page: 1,
@@ -252,11 +288,15 @@ export default function OrdersScreen() {
     return (
       <TouchableOpacity
         onPress={() => router.push(`/seller/orders/${order.id}`)}
-        style={[styles.orderCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+        style={[styles.orderCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, padding: compact ? 12 : 16 }]}
       >
         <View style={styles.orderHeader}>
-          <View>
-            <Text style={[styles.orderId, { color: theme.colors.text }]}>
+          <View style={styles.orderHeaderLeft}>
+            <Text
+              style={[styles.orderId, { color: theme.colors.text }]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            > 
               Order #{order.orderNumber}
             </Text>
             <Text style={[styles.customerName, { color: theme.colors.primary }]}>
@@ -266,7 +306,7 @@ export default function OrdersScreen() {
               {new Date(order.createdAt).toLocaleString()}
             </Text>
           </View>
-          <View style={[styles.statusBadge, { backgroundColor: statusColor + '20' }]}>
+          <View style={[styles.statusBadge, compact && styles.statusBadgeCompact, { backgroundColor: statusColor + '20' }]}> 
             <StatusIcon size={14} color={statusColor} />
             <Text style={[styles.statusText, { color: statusColor }]}>
               {statusLabel}
@@ -352,14 +392,14 @@ export default function OrdersScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingHorizontal: horizontalPadding }]}> 
         <HeaderBackButton onPress={() => router.replace('/(tabs)')} />
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Manage Orders</Text>
         <View style={{ width: 24 }} />
       </View>
 
       {/* Filter Tabs */}
-      <View style={styles.filterContainer}>
+      <View style={[styles.filterContainer, { paddingHorizontal: compact ? 12 : 16 }]}> 
         <ScrollView 
           horizontal 
           showsHorizontalScrollIndicator={false}
@@ -402,7 +442,7 @@ export default function OrdersScreen() {
       </View>
 
       {/* Results Count */}
-      <View style={styles.resultsContainer}>
+      <View style={[styles.resultsContainer, { paddingHorizontal: horizontalPadding }]}> 
         <Text style={[styles.resultsText, { color: theme.colors.textSecondary }]}>
           {orders.length} orders found
         </Text>
@@ -415,6 +455,7 @@ export default function OrdersScreen() {
         renderItem={({ item }) => <OrderCard order={item} />}
         contentContainerStyle={[
           styles.ordersList,
+          { paddingHorizontal: horizontalPadding },
           loading && orders.length === 0 && { flex: 1, justifyContent: 'center' }
         ]}
         showsVerticalScrollIndicator={false}
@@ -440,7 +481,7 @@ export default function OrdersScreen() {
         onRequestClose={() => !isUpdating && setIsStatusModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: theme.colors.background }]}>
+          <View style={[styles.modalContent, { backgroundColor: theme.colors.background, width: compact ? '94%' : '90%', padding: compact ? 14 : 20 }]}>
             <Text style={[styles.modalTitle, { color: theme.colors.text }]}>
               Update Order Status
             </Text>
@@ -470,7 +511,7 @@ export default function OrdersScreen() {
               ))}
             </ScrollView>
             
-            <View style={styles.modalButtons}>
+            <View style={[styles.modalButtons, compact && styles.modalButtonsCompact]}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => setIsStatusModalVisible(false)}
@@ -481,6 +522,7 @@ export default function OrdersScreen() {
               <TouchableOpacity
                 style={[
                   styles.modalButton, 
+                  compact && styles.modalButtonCompact,
                   styles.updateButton, 
                   { backgroundColor: theme.colors.primary },
                   (isUpdating || !selectedStatus) && { opacity: 0.5 }
@@ -546,8 +588,11 @@ const styles = StyleSheet.create({
   filterTab: {
     paddingHorizontal: 16,
     paddingVertical: 8,
+    minHeight: 34,
     borderRadius: 20,
     borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   filterText: {
     fontSize: 14,
@@ -599,6 +644,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 12,
+    gap: 8,
+  },
+  orderHeaderLeft: {
+    flex: 1,
+    minWidth: 0,
+    paddingRight: 4,
   },
   orderId: {
     fontSize: 16,
@@ -621,16 +672,25 @@ const styles = StyleSheet.create({
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
+    flexShrink: 0,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
     gap: 4,
+    minWidth: 78,
+  },
+  statusBadgeCompact: {
+    paddingHorizontal: 6,
+    paddingVertical: 3,
   },
   statusText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '600',
     fontFamily: 'Inter_600SemiBold',
     marginLeft: 4,
+    textTransform: 'capitalize',
   },
   orderSummary: {
     flexDirection: 'row',
@@ -729,12 +789,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 20,
   },
+  modalButtonsCompact: {
+    flexDirection: 'column',
+    gap: 8,
+  },
   modalButton: {
     flex: 1,
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
     marginHorizontal: 5,
+  },
+  modalButtonCompact: {
+    marginHorizontal: 0,
   },
   cancelButton: {
     backgroundColor: '#f1f1f1',

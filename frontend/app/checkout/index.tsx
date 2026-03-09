@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
@@ -48,6 +49,7 @@ const paymentMethods = [
 
 export default function CheckoutScreen() {
   const { theme } = useTheme();
+  const { width: screenWidth } = useWindowDimensions();
   const dispatch = useDispatch();
   const { items, total } = useSelector((state: RootState) => state.cart);
   const { user } = useAuth();
@@ -59,6 +61,8 @@ export default function CheckoutScreen() {
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentSheetInitialized, setPaymentSheetInitialized] = useState(false);
+  const compact = screenWidth < 360;
+  const horizontalPadding = compact ? 14 : 20;
 
   const shippingCost = 0; // Free shipping
   const discount = appliedCoupon?.discount || 0;
@@ -311,11 +315,11 @@ export default function CheckoutScreen() {
   if (items.length === 0) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingHorizontal: horizontalPadding }]}> 
           <HeaderBackButton onPress={() => router.back()} size={24} />
           <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Checkout</Text>
         </View>
-        <View style={styles.emptyContainer}>
+        <View style={[styles.emptyContainer, { paddingHorizontal: compact ? 24 : 40 }]}> 
           <Text style={[styles.emptyText, { color: theme.colors.text }]}>
             No items to checkout
           </Text>
@@ -333,14 +337,14 @@ export default function CheckoutScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingHorizontal: horizontalPadding }]}> 
         <HeaderBackButton onPress={() => router.back()} size={24} />
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Checkout</Text>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Shipping Address */}
-        <View style={styles.section}>
+        <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}> 
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
               Shipping Address
@@ -394,7 +398,7 @@ export default function CheckoutScreen() {
         </View>
 
         {/* Payment Method */}
-        <View style={styles.section}>
+        <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}> 
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
             Payment Method
           </Text>
@@ -413,7 +417,7 @@ export default function CheckoutScreen() {
             >
               <View style={styles.paymentContent}>
                 <method.icon size={20} color={theme.colors.primary} />
-                <Text style={[styles.paymentName, { color: theme.colors.text }]}>
+                <Text style={[styles.paymentName, { color: theme.colors.text }]} numberOfLines={1}> 
                   {method.name}
                 </Text>
                 {method.id === 'wallet' && typeof (method as any).balance === 'number' && (
@@ -432,7 +436,7 @@ export default function CheckoutScreen() {
         </View>
 
         {/* Coupon Code */}
-        <View style={styles.section}>
+        <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}> 
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
             Coupon Code
           </Text>
@@ -452,10 +456,11 @@ export default function CheckoutScreen() {
               </TouchableOpacity>
             </View>
           ) : (
-            <View style={styles.couponInput}>
+            <View style={[styles.couponInput, compact && styles.couponInputCompact]}>
               <TextInput
                 style={[
                   styles.couponField,
+                  compact && styles.couponFieldCompact,
                   {
                     backgroundColor: theme.colors.surface,
                     borderColor: theme.colors.border,
@@ -469,7 +474,7 @@ export default function CheckoutScreen() {
               />
               <TouchableOpacity
                 onPress={applyCoupon}
-                style={[styles.applyButton, { backgroundColor: theme.colors.primary }]}
+                style={[styles.applyButton, compact && styles.applyButtonCompact, { backgroundColor: theme.colors.primary }]}
                 disabled={!couponCode.trim()}
               >
                 <Text style={styles.applyButtonText}>Apply</Text>
@@ -479,7 +484,7 @@ export default function CheckoutScreen() {
         </View>
 
         {/* Order Summary */}
-        <View style={styles.section}>
+        <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}> 
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
             Order Summary
           </Text>
@@ -527,7 +532,7 @@ export default function CheckoutScreen() {
       </ScrollView>
 
       {/* Place Order Button */}
-      <View style={[styles.bottomSection, { backgroundColor: theme.colors.background, borderColor: theme.colors.border }]}>
+      <View style={[styles.bottomSection, { backgroundColor: theme.colors.background, borderColor: theme.colors.border, paddingHorizontal: horizontalPadding }]}> 
         <TouchableOpacity
           onPress={placeOrder}
           style={[
@@ -567,7 +572,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
   },
   emptyText: {
     fontSize: 18,
@@ -587,7 +591,6 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   section: {
-    paddingHorizontal: 20,
     marginBottom: 24,
   },
   sectionHeader: {
@@ -696,6 +699,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
   },
+  couponInputCompact: {
+    flexDirection: 'column',
+    gap: 10,
+  },
   couponField: {
     flex: 1,
     borderWidth: 1,
@@ -704,11 +711,20 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 16,
   },
+  couponFieldCompact: {
+    fontSize: 15,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
   applyButton: {
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+  applyButtonCompact: {
+    width: '100%',
   },
   applyButtonText: {
     fontSize: 16,
@@ -753,7 +769,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_700Bold',
   },
   bottomSection: {
-    paddingHorizontal: 20,
     paddingVertical: 16,
     borderTopWidth: 1,
   },

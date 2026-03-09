@@ -8,6 +8,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   Image,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ShoppingBag, Minus, Plus, Trash2 } from 'lucide-react-native';
@@ -20,8 +21,11 @@ import Toast from 'react-native-toast-message';
 
 export default function CartScreen() {
   const { theme } = useTheme();
+  const { width: screenWidth } = useWindowDimensions();
   const dispatch = useAppDispatch();
   const { items, total, itemCount, loading, error, isInitialized } = useAppSelector((state) => state.cart);
+  const horizontalPadding = screenWidth < 360 ? 12 : 20;
+  const emptyHorizontalPadding = screenWidth < 360 ? 24 : 40;
 
   // Fetch cart on initial load if not already initialized
   useEffect(() => {
@@ -84,7 +88,7 @@ export default function CartScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}> 
       {items.length === 0 ? (
-        <View style={styles.emptyContainer}>
+        <View style={[styles.emptyContainer, { paddingHorizontal: emptyHorizontalPadding }]}>
           <ShoppingBag size={64} color={theme.colors.textSecondary} />
           <Text style={[styles.emptyText, { color: theme.colors.text }]}>
             Your cart is empty
@@ -118,7 +122,7 @@ export default function CartScreen() {
                 onUpdateQuantity={handleUpdateQuantity}
               />
             )}
-            contentContainerStyle={styles.listContent}
+            contentContainerStyle={[styles.listContent, { paddingHorizontal: horizontalPadding }]}
             showsVerticalScrollIndicator={false}
             refreshControl={
               <RefreshControl
@@ -129,7 +133,7 @@ export default function CartScreen() {
               />
             }
           />
-          <View style={[styles.footer, { borderTopColor: theme.colors.border }]}>
+          <View style={[styles.footer, { borderTopColor: theme.colors.border, paddingHorizontal: horizontalPadding }]}> 
             <View style={styles.totalContainer}>
               <Text style={[styles.totalLabel, { color: theme.colors.text }]}>
                 Total ({itemCount} {itemCount === 1 ? 'item' : 'items'}):
@@ -159,7 +163,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
   },
   emptyText: {
     fontSize: 24,
@@ -185,11 +188,10 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   listContent: {
-    paddingHorizontal: 20,
     paddingBottom: 20,
   },
   footer: {
-    padding: 20,
+    paddingVertical: 20,
     borderTopWidth: 1,
   },
   totalContainer: {

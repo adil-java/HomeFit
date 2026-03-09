@@ -7,6 +7,7 @@ import {
   FlatList,
   ActivityIndicator,
   RefreshControl,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Heart, ShoppingCart } from 'lucide-react-native';
@@ -20,6 +21,7 @@ import Toast from 'react-native-toast-message';
 
 export default function WishlistScreen() {
   const { theme } = useTheme();
+  const { width: screenWidth } = useWindowDimensions();
   const dispatch = useAppDispatch();
   const { 
     items, 
@@ -27,6 +29,8 @@ export default function WishlistScreen() {
     error, 
     isInitialized 
   } = useAppSelector((state: RootState) => state.wishlist);
+  const horizontalPadding = screenWidth < 360 ? 12 : 20;
+  const emptyHorizontalPadding = screenWidth < 360 ? 24 : 40;
 
   // Fetch wishlist on initial load if not already initialized
   useEffect(() => {
@@ -80,7 +84,7 @@ export default function WishlistScreen() {
   if (items.length === 0) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        <View style={styles.emptyContainer}>
+        <View style={[styles.emptyContainer, { paddingHorizontal: emptyHorizontalPadding }]}>
           <Heart size={64} color={theme.colors.textSecondary} />
           <Text style={[styles.emptyText, { color: theme.colors.text }]}>
             Your wishlist is empty
@@ -111,7 +115,7 @@ export default function WishlistScreen() {
             onAddToCart={handleAddToCart}
           />
         )}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { paddingHorizontal: horizontalPadding }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -134,7 +138,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
   },
   emptyText: {
     fontSize: 24,
@@ -160,7 +163,6 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   listContent: {
-    paddingHorizontal: 20,
     paddingBottom: 20,
   },
 });

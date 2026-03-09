@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
+  useWindowDimensions,
 } from 'react-native';
 import { Minus, Plus, Trash2 } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -18,6 +19,9 @@ interface CartItemProps {
 
 export const CartItem: React.FC<CartItemProps> = ({ item, onUpdateQuantity, onRemove }) => {
   const { theme } = useTheme();
+  const { width: screenWidth } = useWindowDimensions();
+  const compact = screenWidth < 360;
+  const imageSize = compact ? 68 : 80;
 
   const handleQuantityChange = (change: number) => {
     const newQuantity = item.quantity + change;
@@ -30,10 +34,10 @@ export const CartItem: React.FC<CartItemProps> = ({ item, onUpdateQuantity, onRe
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-      <Image source={{ uri: item.image }} style={styles.image} />
+      <Image source={{ uri: item.image }} style={[styles.image, { width: imageSize, height: imageSize }]} />
       
       <View style={styles.content}>
-        <Text style={[styles.name, { color: theme.colors.text }]} numberOfLines={2}>
+        <Text style={[styles.name, compact && styles.nameCompact, { color: theme.colors.text }]} numberOfLines={2}>
           {item.name}
         </Text>
         
@@ -49,7 +53,7 @@ export const CartItem: React.FC<CartItemProps> = ({ item, onUpdateQuantity, onRe
           </Text>
         )}
         
-        <Text style={[styles.price, { color: theme.colors.text }]}>
+        <Text style={[styles.price, compact && styles.priceCompact, { color: theme.colors.text }]}>
           Rs. {item.price.toFixed(2)}
         </Text>
         
@@ -57,18 +61,18 @@ export const CartItem: React.FC<CartItemProps> = ({ item, onUpdateQuantity, onRe
           <View style={styles.quantityContainer}>
             <TouchableOpacity
               onPress={() => handleQuantityChange(-1)}
-              style={[styles.quantityButton, { backgroundColor: theme.colors.background, borderColor: theme.colors.border }]}
+              style={[styles.quantityButton, compact && styles.iconButtonCompact, { backgroundColor: theme.colors.background, borderColor: theme.colors.border }]}
             >
               <Minus size={16} color={theme.colors.text} />
             </TouchableOpacity>
             
-            <Text style={[styles.quantity, { color: theme.colors.text }]}>
+            <Text style={[styles.quantity, compact && styles.quantityCompact, { color: theme.colors.text }]}>
               {item.quantity}
             </Text>
             
             <TouchableOpacity
               onPress={() => handleQuantityChange(1)}
-              style={[styles.quantityButton, { backgroundColor: theme.colors.background, borderColor: theme.colors.border }]}
+              style={[styles.quantityButton, compact && styles.iconButtonCompact, { backgroundColor: theme.colors.background, borderColor: theme.colors.border }]}
             >
               <Plus size={16} color={theme.colors.text} />
             </TouchableOpacity>
@@ -76,7 +80,7 @@ export const CartItem: React.FC<CartItemProps> = ({ item, onUpdateQuantity, onRe
           
           <TouchableOpacity
             onPress={() => onRemove(item.id)}
-            style={[styles.removeButton, { backgroundColor: theme.colors.error }]}
+            style={[styles.removeButton, compact && styles.iconButtonCompact, { backgroundColor: theme.colors.error }]}
           >
             <Trash2 size={16} color="#fff" />
           </TouchableOpacity>
@@ -110,6 +114,10 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     lineHeight: 20,
   },
+  nameCompact: {
+    fontSize: 15,
+    lineHeight: 18,
+  },
   variant: {
     fontSize: 14,
     marginBottom: 2,
@@ -119,6 +127,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: 'Inter_700Bold',
     marginBottom: 12,
+  },
+  priceCompact: {
+    fontSize: 16,
+    marginBottom: 10,
   },
   controls: {
     flexDirection: 'row',
@@ -145,11 +157,19 @@ const styles = StyleSheet.create({
     minWidth: 24,
     textAlign: 'center',
   },
+  quantityCompact: {
+    marginHorizontal: 10,
+    minWidth: 20,
+  },
   removeButton: {
     width: 32,
     height: 32,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  iconButtonCompact: {
+    width: 30,
+    height: 30,
   },
 });

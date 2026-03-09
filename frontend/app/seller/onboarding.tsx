@@ -8,7 +8,8 @@ import {
   Linking, 
   Platform, 
   TouchableOpacity,
-  ScrollView
+  ScrollView,
+  useWindowDimensions
 } from "react-native";
 import { apiService } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -39,6 +40,9 @@ type OnboardingData = {
 
 export default function OnboardingPage() {
   const { theme } = useTheme();
+  const { width } = useWindowDimensions();
+  const compact = width < 360;
+  const horizontalPadding = compact ? 14 : 20;
   const { user } = useAuth();
   const sellerId = user?.id || '';
   
@@ -348,7 +352,7 @@ export default function OnboardingPage() {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]}>
-      <View style={[styles.topBar, { borderBottomColor: theme.colors.border, backgroundColor: theme.colors.background }]}> 
+      <View style={[styles.topBar, { borderBottomColor: theme.colors.border, backgroundColor: theme.colors.background, paddingHorizontal: compact ? 12 : 16 }]}> 
         <HeaderBackButton onPress={() => router.back()} style={styles.backButton} />
         <Text style={[styles.topBarTitle, { color: theme.colors.text }]}>Payment Setup</Text>
         <View style={styles.topBarSpacer} />
@@ -356,12 +360,12 @@ export default function OnboardingPage() {
 
       <ScrollView
         style={styles.container}
-        contentContainerStyle={styles.contentContainer}
+        contentContainerStyle={[styles.contentContainer, { paddingHorizontal: horizontalPadding }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.colors.text }]}>Connect Your Bank Account</Text>
+          <Text style={[styles.title, compact && styles.titleCompact, { color: theme.colors.text }]}>Connect Your Bank Account</Text>
           <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}> 
             Get paid directly to your bank account. Complete verification to start accepting payments.
           </Text>
@@ -438,7 +442,7 @@ export default function OnboardingPage() {
         {renderOnboardingStatus()}
 
         {(!onboardingStatus?.isOnboarded || !onboardingStatus?.chargesEnabled) && (
-          <View style={styles.buttonContainer}>
+          <View style={[styles.buttonContainer, compact && styles.buttonContainerCompact]}>
             <TouchableOpacity
               style={[styles.button, styles.secondaryButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
               onPress={() => router.replace('/(tabs)')}
@@ -510,6 +514,9 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontFamily: 'Inter_700Bold',
     marginBottom: 10,
+  },
+  titleCompact: {
+    fontSize: 24,
   },
   subtitle: {
     fontSize: 15,
@@ -628,6 +635,9 @@ const styles = StyleSheet.create({
   buttonContainer: {
     flexDirection: "row",
     gap: 12,
+  },
+  buttonContainerCompact: {
+    flexDirection: 'column',
   },
   button: {
     flex: 1,

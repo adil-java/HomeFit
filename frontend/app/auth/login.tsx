@@ -10,7 +10,7 @@ import {
   Platform,
   ScrollView,
   Image,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -22,8 +22,6 @@ import { Formik } from 'formik';
 import * as Yup from 'yup';
 import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 
-const { width } = Dimensions.get('window');
-
 const loginSchema = Yup.object().shape({
   email: Yup.string().email('Invalid email').required('Email is required'),
   password: Yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
@@ -32,7 +30,9 @@ const loginSchema = Yup.object().shape({
 export default function LoginScreen() {
 
   const { theme, isDark } = useTheme();
+  const { height: screenHeight } = useWindowDimensions();
   const { login,token} = useAuth();
+  const logoTopMargin = screenHeight < 700 ? 22 : 50;
 
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -72,7 +72,7 @@ export default function LoginScreen() {
             <HeaderBackButton onPress={() => router.back()} size={24} style={styles.backButton} />
             
             {/* Logo */}
-            <View style={[styles.logoContainer, { backgroundColor: isDark ? theme.colors.surface : '#2D3748' }]}>
+            <View style={[styles.logoContainer, { backgroundColor: isDark ? theme.colors.surface : '#2D3748', marginTop: logoTopMargin }]}> 
               <Image 
                 source={require('@/assets/images/LOGO.png')} 
                 style={styles.logo}
@@ -215,7 +215,6 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 50,
     marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },

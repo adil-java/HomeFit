@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, StyleSheet, Dimensions, TouchableOpacity, Image } from 'react-native';
+import { View, ScrollView, StyleSheet, TouchableOpacity, Image, useWindowDimensions } from 'react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Text, Card, ActivityIndicator, Button } from 'react-native-paper';
 import { LineChart, BarChart, PieChart } from 'react-native-chart-kit';
@@ -23,8 +23,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { router } from 'expo-router';
 import { BackHandler } from 'react-native';
 import { apiService } from '@/services/api';
-
-const { width } = Dimensions.get('window');
 
 // Types for our dashboard data
 type DashboardStats = {
@@ -101,9 +99,11 @@ const StatCard: React.FC<StatCardProps> = ({
 }) => {
   const isPositive = change >= 0;
   const { theme } = useTheme();
+  const { width } = useWindowDimensions();
+  const isNarrow = width < 360;
   
   return (
-    <Card style={[styles.statCard, { backgroundColor: theme.colors.surface }]}>
+    <Card style={[styles.statCard, { width: isNarrow ? '100%' : '48%', backgroundColor: theme.colors.surface }]}> 
       <Card.Content style={styles.statCardContent}>
         <View style={styles.statHeader}>
           <View style={[styles.statIcon, { backgroundColor: `${theme.colors.primary}20` }]}>
@@ -137,6 +137,7 @@ const StatCard: React.FC<StatCardProps> = ({
 
 export default function DashboardScreen() {
   const { theme, isDark } = useTheme();
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>(defaultStats);
@@ -273,6 +274,10 @@ export default function DashboardScreen() {
     },
   };
 
+  const chartWidth = Math.max(280, screenWidth - 56);
+  const contentTopMargin = screenHeight < 700 ? 18 : 32;
+  const contentHorizontalPadding = screenWidth < 360 ? 12 : 16;
+
   // Format revenue by category for the pie chart
   const revenueByCategoryData = revenueByCategory.map((item, index) => ({
     ...item,
@@ -291,7 +296,7 @@ export default function DashboardScreen() {
   return (
     <ScrollView 
       style={[styles.container, { backgroundColor: theme.colors.background }]}
-      contentContainerStyle={styles.contentContainer}
+      contentContainerStyle={[styles.contentContainer, { marginTop: contentTopMargin, paddingHorizontal: contentHorizontalPadding }]}
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
@@ -340,7 +345,7 @@ export default function DashboardScreen() {
           {monthlyRevenue.labels.length > 0 ? (
             <LineChart
               data={monthlyRevenue}
-              width={width - 64}
+              width={chartWidth}
               height={220}
               chartConfig={chartConfig}
               bezier
@@ -364,7 +369,7 @@ export default function DashboardScreen() {
             <View style={styles.pieChartWrapper}>
               <PieChart
                 data={revenueByCategoryData}
-                width={width - 64}
+                width={chartWidth}
                 height={200}
                 chartConfig={chartConfig}
                 accessor="population"
@@ -485,8 +490,9 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   contentContainer: {
-    marginTop: 50,
-    padding: 16,
+    marginTop: 32,
+    paddingHorizontal: 16,
+    paddingTop: 0,
     paddingBottom: 32,
   },
   
@@ -524,7 +530,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   statCard: {
-    width: '48%',
     marginBottom: 12,
     borderRadius: 16,
     elevation: 2,

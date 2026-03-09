@@ -8,7 +8,8 @@ import {
   TextInput, 
   Image,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -46,6 +47,9 @@ const getProductById = async (id: string) => {
 export default function ProductForm() {
   const { id } = useLocalSearchParams();
   const { theme } = useTheme();
+  const { width } = useWindowDimensions();
+  const compact = width < 360;
+  const horizontalPadding = compact ? 12 : 16;
   const isEditMode = !!id;
   
   const [loading, setLoading] = useState(isEditMode);
@@ -241,7 +245,7 @@ export default function ProductForm() {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { borderBottomColor: theme.colors.border }]}>
+      <View style={[styles.header, { borderBottomColor: theme.colors.border, paddingHorizontal: horizontalPadding }]}> 
         <HeaderBackButton onPress={() => router.back()} size={24} style={styles.backButton} />
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
           {isEditMode ? 'Edit Product' : 'Add New Product'}
@@ -249,7 +253,7 @@ export default function ProductForm() {
         <TouchableOpacity 
           onPress={handleSubmit}
           disabled={saving}
-          style={[styles.saveButton, { opacity: saving ? 0.6 : 1 }]}
+          style={[styles.saveButton, compact && styles.saveButtonCompact, { opacity: saving ? 0.6 : 1 }]}
         >
           {saving ? (
             <ActivityIndicator size="small" color={theme.colors.primary} />
@@ -264,7 +268,7 @@ export default function ProductForm() {
 
       <ScrollView 
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingHorizontal: horizontalPadding }]}
       >
         {/* Product Image */}
         <View style={styles.imageSection}>
@@ -280,7 +284,7 @@ export default function ProductForm() {
             )}
           </View>
           <TouchableOpacity 
-            style={[styles.uploadButton, { backgroundColor: theme.colors.primary }]}
+            style={[styles.uploadButton, compact && styles.uploadButtonCompact, { backgroundColor: theme.colors.primary }]}
             onPress={() => {/* Implement image upload */}}
           >
             <Text style={styles.uploadButtonText}>Upload Image</Text>
@@ -428,7 +432,7 @@ export default function ProductForm() {
               onPress={() => setShowColors(!showColors)}
               style={[styles.selectContainer, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
             >
-              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, flexWrap: compact ? 'wrap' : 'nowrap' }}>
                 {formData.colors.length ? (
                   <>
                     {formData.colors.slice(0, 3).map(c => (
@@ -439,7 +443,7 @@ export default function ProductForm() {
                     )}
                   </>
                 ) : null}
-                <Text style={[styles.selectInput, { color: theme.colors.text }]}> 
+                <Text style={[styles.selectInput, compact && styles.selectInputCompact, { color: theme.colors.text }]}> 
                   {formData.colors.length ? 'Selected colors' : 'Select colors'}
                 </Text>
               </View>
@@ -623,6 +627,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
   },
+  saveButtonCompact: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
   saveButtonText: {
     marginLeft: 8,
     fontWeight: '500',
@@ -636,7 +644,7 @@ const styles = StyleSheet.create({
   },
   imageSection: {
     alignItems: 'center',
-    padding: 16,
+    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.1)',
   },
@@ -658,13 +666,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 8,
   },
+  uploadButtonCompact: {
+    paddingHorizontal: 14,
+  },
   uploadButtonText: {
     color: 'white',
     fontWeight: '500',
     fontFamily: 'Inter_500Medium',
   },
   section: {
-    padding: 16,
+    paddingVertical: 16,
   },
   sectionTitle: {
     fontSize: 16,
@@ -713,6 +724,10 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 12,
     fontSize: 16,
+  },
+  selectInputCompact: {
+    paddingHorizontal: 8,
+    fontSize: 14,
   },
   dropdownPanel: {
     marginTop: 8,

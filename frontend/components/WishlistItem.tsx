@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
+  useWindowDimensions,
 } from 'react-native';
 import { Heart, ShoppingCart, Star } from 'lucide-react-native';
 import { router } from 'expo-router';
@@ -19,6 +20,9 @@ interface WishlistItemProps {
 
 export const WishlistItem: React.FC<WishlistItemProps> = ({ item, onRemove, onAddToCart }) => {
   const { theme } = useTheme();
+  const { width: screenWidth } = useWindowDimensions();
+  const compact = screenWidth < 360;
+  const imageSize = compact ? 68 : 80;
 
   const handleProductPress = () => {
     router.push(`/product/${item.id}`);
@@ -29,10 +33,10 @@ export const WishlistItem: React.FC<WishlistItemProps> = ({ item, onRemove, onAd
       onPress={handleProductPress}
       style={[styles.container, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
     >
-      <Image source={{ uri: item.image }} style={styles.image} />
+      <Image source={{ uri: item.image }} style={[styles.image, { width: imageSize, height: imageSize }]} />
       
       <View style={styles.content}>
-        <Text style={[styles.name, { color: theme.colors.text }]} numberOfLines={2}>
+        <Text style={[styles.name, compact && styles.nameCompact, { color: theme.colors.text }]} numberOfLines={2}>
           {item.name}
         </Text>
         
@@ -43,7 +47,7 @@ export const WishlistItem: React.FC<WishlistItemProps> = ({ item, onRemove, onAd
           </Text>
         </View>
         
-        <Text style={[styles.price, { color: theme.colors.text }]}>
+        <Text style={[styles.price, compact && styles.priceCompact, { color: theme.colors.text }]}> 
           Rs. {typeof item.price === 'number' ? item.price.toFixed(2) : '0.00'}
         </Text>
         
@@ -53,7 +57,7 @@ export const WishlistItem: React.FC<WishlistItemProps> = ({ item, onRemove, onAd
             style={[styles.addToCartButton, { backgroundColor: theme.colors.primary }]}
           >
             <ShoppingCart size={16} color="#fff" />
-            <Text style={styles.addToCartText}>Choose Variant</Text>
+            <Text style={[styles.addToCartText, compact && styles.addToCartTextCompact]}>Choose Variant</Text>
           </TouchableOpacity>
           
           <TouchableOpacity
@@ -92,6 +96,10 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     lineHeight: 20,
   },
+  nameCompact: {
+    fontSize: 15,
+    lineHeight: 18,
+  },
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -106,6 +114,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: 'Inter_700Bold',
     marginBottom: 12,
+  },
+  priceCompact: {
+    fontSize: 16,
+    marginBottom: 10,
   },
   actions: {
     flexDirection: 'row',
@@ -126,6 +138,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: 'Inter_600SemiBold',
     color: '#fff',
+  },
+  addToCartTextCompact: {
+    fontSize: 13,
   },
   removeButton: {
     width: 40,

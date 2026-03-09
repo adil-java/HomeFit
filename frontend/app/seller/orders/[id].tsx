@@ -9,6 +9,7 @@ import {
   Modal,
   TouchableWithoutFeedback,
   ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
@@ -69,6 +70,9 @@ const statusConfig = {
 export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams();
   const { theme } = useTheme();
+  const { width } = useWindowDimensions();
+  const compact = width < 360;
+  const horizontalPadding = compact ? 14 : 20;
   const dispatch = useDispatch();
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -125,7 +129,7 @@ export default function OrderDetailScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingHorizontal: horizontalPadding }]}> 
           <HeaderBackButton onPress={() => router.back()} size={24} />
           <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Order Details</Text>
         </View>
@@ -139,7 +143,7 @@ export default function OrderDetailScreen() {
   if (!order) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingHorizontal: horizontalPadding }]}> 
           <HeaderBackButton onPress={() => router.back()} size={24} />
           <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Order Details</Text>
         </View>
@@ -253,16 +257,16 @@ export default function OrderDetailScreen() {
       </Modal>
 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingHorizontal: horizontalPadding }]}> 
         <HeaderBackButton onPress={() => router.back()} size={24} />
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Order #{order.orderNumber}</Text>
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 12 }}>
         {/* Order Status */}
         <TouchableOpacity 
-          style={[styles.statusSection, { backgroundColor: statusColor + '10' }]}
+          style={[styles.statusSection, { backgroundColor: statusColor + '10', marginHorizontal: horizontalPadding, padding: compact ? 14 : 20 }]}
           onPress={() => setShowStatusModal(true)}
         >
           <View style={styles.statusHeader}>
@@ -282,14 +286,14 @@ export default function OrderDetailScreen() {
           
           <View style={styles.sellerStatusActions}>
             <TouchableOpacity 
-              style={[styles.statusActionButton, { backgroundColor: theme.colors.primary }]}
+              style={[styles.statusActionButton, compact && styles.statusActionButtonCompact, { backgroundColor: theme.colors.primary }]}
               onPress={() => {}}
             >
               <Edit size={16} color="#fff" />
               <Text style={styles.statusActionText}>Update Status</Text>
             </TouchableOpacity>
             <TouchableOpacity 
-              style={[styles.statusActionButton, { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border }]}
+              style={[styles.statusActionButton, compact && styles.statusActionButtonCompact, { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border }]}
               onPress={() => {}}
             >
               <MessageCircle size={16} color={theme.colors.primary} />
@@ -299,7 +303,7 @@ export default function OrderDetailScreen() {
         </TouchableOpacity>
 
         {/* Order Summary */}
-        <View style={styles.section}>
+        <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}> 
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
             Order Summary
           </Text>
@@ -307,7 +311,7 @@ export default function OrderDetailScreen() {
           <View style={[styles.summaryCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
             {order.items.map((item, index) => (
               <View key={index} style={styles.orderItem}>
-                <Image source={{ uri: item?.product?.images[0] }} style={styles.itemImage} />
+                <Image source={{ uri: item?.product?.images[0] }} style={[styles.itemImage, compact && styles.itemImageCompact]} />
                 <View style={styles.itemInfo}>
                   <Text style={[styles.itemName, { color: theme.colors.text }]}>
                     {item?.product?.name}
@@ -374,7 +378,7 @@ export default function OrderDetailScreen() {
         </View>
 
         {/* Customer Information */}
-        <View style={styles.section}>
+        <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}> 
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
             Customer Information
           </Text>
@@ -398,7 +402,7 @@ export default function OrderDetailScreen() {
         </View>
 
         {/* Shipping & Billing */}
-        <View style={styles.twoColumnSection}>
+        <View style={[styles.twoColumnSection, compact && styles.twoColumnSectionCompact, { paddingHorizontal: horizontalPadding }]}> 
           <View style={[styles.column, { marginRight: 8 }]}>
             <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
               Shipping Address
@@ -459,7 +463,7 @@ export default function OrderDetailScreen() {
         </View>
 
         {/* Order Notes */}
-        <View style={styles.section}>
+        <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}> 
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
               Order Notes
@@ -497,7 +501,7 @@ export default function OrderDetailScreen() {
         </View>
 
         {/* Order Timeline */}
-        <View style={styles.section}>
+        <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}> 
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
             Order Timeline
           </Text>
@@ -531,9 +535,9 @@ export default function OrderDetailScreen() {
       </ScrollView>
 
       {/* Bottom Actions */}
-      <View style={[styles.bottomActions, { borderTopColor: theme.colors.border }]}>
+      <View style={[styles.bottomActions, compact && styles.bottomActionsCompact, { borderTopColor: theme.colors.border, paddingHorizontal: horizontalPadding }]}>
         <TouchableOpacity 
-          style={[styles.actionButton, { backgroundColor: theme.colors.background, borderColor: theme.colors.border }]}
+          style={[styles.actionButton, compact && styles.actionButtonCompact, { backgroundColor: theme.colors.background, borderColor: theme.colors.border }]}
           onPress={() => {}}
         >
           <Printer size={20} color={theme.colors.primary} />
@@ -543,7 +547,7 @@ export default function OrderDetailScreen() {
         </TouchableOpacity>
         
         <TouchableOpacity 
-          style={[styles.actionButton, { backgroundColor: theme.colors.primary }]}
+          style={[styles.actionButton, compact && styles.actionButtonCompact, { backgroundColor: theme.colors.primary }]}
           onPress={() => {}}
         >
           <Truck size={20} color="#fff" />
@@ -648,6 +652,11 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 8,
     marginRight: 12,
+  },
+  itemImageCompact: {
+    width: 52,
+    height: 52,
+    marginRight: 10,
   },
   itemInfo: {
     flex: 1,
@@ -769,6 +778,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 12,
+    gap: 8,
+  },
+  statusActionButtonCompact: {
+    flex: 1,
+    paddingHorizontal: 10,
   },
   statusActionButton: {
     flexDirection: 'row',
@@ -835,6 +849,10 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     paddingHorizontal: 20,
     marginBottom: 24,
+  },
+  twoColumnSectionCompact: {
+    flexDirection: 'column',
+    gap: 12,
   },
   column: {
     flex: 1,
@@ -924,6 +942,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderTopWidth: 1,
+    gap: 8,
+  },
+  bottomActionsCompact: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
   },
   actionButton: {
     flexDirection: 'row',
@@ -933,6 +956,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 8,
     gap: 8,
+  },
+  actionButtonCompact: {
+    width: '100%',
   },
   actionButtonText: {
     fontSize: 14,

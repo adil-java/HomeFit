@@ -33,6 +33,7 @@ import { ARPreviewButton } from '@/components/ARPreviewButton';
 import Toast from 'react-native-toast-message';
 import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 const { width } = Dimensions.get('window');
+const responsiveProductImageHeight = Math.min(Math.max(width * 0.9, 300), 420);
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -224,7 +225,7 @@ export default function ProductDetailScreen() {
 
 
   const renderImageItem = ({ item, index }: { item: string; index: number }) => (
-    <Image source={{ uri: item }} style={styles.productImage} />
+    <Image source={{ uri: item }} style={[styles.productImage, { height: responsiveProductImageHeight }]} />
   );
 
   const handleAddComment = () => {
@@ -302,7 +303,7 @@ export default function ProductDetailScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Product Images */}
-        <View style={styles.imageContainer}>
+        <View style={[styles.imageContainer, { height: responsiveProductImageHeight }]}> 
           <FlatList
             ref={imageScrollRef}
             data={product.images}
@@ -862,12 +863,10 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_500Medium',
   },
   imageContainer: {
-    height: 400,
     position: 'relative',
   },
   productImage: {
     width: width,
-    height: 400,
     resizeMode: 'cover',
   },
   imageIndicators: {

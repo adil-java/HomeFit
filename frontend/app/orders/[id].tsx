@@ -7,6 +7,7 @@ import {
   TouchableOpacity, 
   Image, 
   ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
@@ -79,6 +80,9 @@ export interface Order {
 export default function OrderDetailScreen() {
   const params = useLocalSearchParams();
   const { theme } = useTheme();
+  const { width } = useWindowDimensions();
+  const compact = width < 360;
+  const horizontalPadding = compact ? 14 : 20;
   const [order, setOrder] = React.useState<Order | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -138,7 +142,7 @@ export default function OrderDetailScreen() {
   if (loading || !order) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingHorizontal: horizontalPadding }]}>
           <HeaderBackButton onPress={() => router.back()} size={24} />
           <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Order Details</Text>
         </View>
@@ -187,18 +191,18 @@ export default function OrderDetailScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingHorizontal: horizontalPadding }]}>
         <HeaderBackButton onPress={() => router.back()} size={24} />
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Order Details</Text>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
         {/* Order Status */}
-        <View style={[styles.statusSection, { backgroundColor: statusColor + '10' }]}>
+        <View style={[styles.statusSection, { backgroundColor: statusColor + '10', marginHorizontal: horizontalPadding, padding: compact ? 14 : 20 }]}> 
           <View style={styles.statusHeader}>
-            <StatusIcon size={32} color={statusColor} />
+            <StatusIcon size={compact ? 26 : 32} color={statusColor} />
             <View style={styles.statusInfo}>
-              <Text style={[styles.statusLabel, { color: statusColor }]}>
+              <Text style={[styles.statusLabel, compact && styles.statusLabelCompact, { color: statusColor }]}> 
                 {statusLabel}
               </Text>
               <Text style={[styles.orderId, { color: theme.colors.text }]}>
@@ -222,7 +226,7 @@ export default function OrderDetailScreen() {
         </View>
 
         {/* Order Items */}
-        <View style={styles.section}>
+        <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}> 
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
             Items ({totalItems})
           </Text>
@@ -234,7 +238,7 @@ export default function OrderDetailScreen() {
             >
               <Image 
                 source={{ uri: item.options?.imageUrl || 'https://via.placeholder.com/60' }} 
-                style={styles.itemImage} 
+                style={[styles.itemImage, compact && styles.itemImageCompact]} 
               />
               <View style={styles.itemInfo}>
                 <Text style={[styles.itemName, { color: theme.colors.text }]} numberOfLines={2}>
@@ -252,12 +256,12 @@ export default function OrderDetailScreen() {
         </View>
 
         {/* Shipping Address */}
-        <View style={styles.section}>
+        <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}> 
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
             Shipping Address
           </Text>
           
-          <View style={[styles.addressCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+          <View style={[styles.addressCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, padding: compact ? 12 : 16 }]}> 
             <MapPin size={20} color={theme.colors.primary} />
             <View style={styles.addressInfo}>
               <Text style={[styles.addressName, { color: theme.colors.text }]}>
@@ -280,12 +284,12 @@ export default function OrderDetailScreen() {
         </View>
 
         {/* Payment Information */}
-        <View style={styles.section}>
+        <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}> 
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
             Payment Information
           </Text>
           
-          <View style={[styles.paymentCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+          <View style={[styles.paymentCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, padding: compact ? 12 : 16 }]}> 
             <CreditCard size={20} color={theme.colors.primary} />
             <View style={styles.paymentInfo}>
               <Text style={[styles.paymentMethod, { color: theme.colors.text }]}>
@@ -299,12 +303,12 @@ export default function OrderDetailScreen() {
         </View>
 
         {/* Order Summary */}
-        <View style={styles.section}>
+        <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}> 
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
             Order Summary
           </Text>
           
-          <View style={[styles.summaryCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+          <View style={[styles.summaryCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, padding: compact ? 12 : 16 }]}> 
             <View style={styles.summaryRow}>
               <Text style={[styles.summaryLabel, { color: theme.colors.textSecondary }]}>
                 Subtotal ({totalItems} items)
@@ -335,14 +339,14 @@ export default function OrderDetailScreen() {
         </View>
 
         {/* Support Actions */}
-        <View style={styles.section}>
+        <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}> 
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
             Need Help?
           </Text>
           
-          <View style={styles.supportActions}>
+          <View style={[styles.supportActions, compact && styles.supportActionsCompact]}>
             <TouchableOpacity 
-              style={[styles.supportButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+              style={[styles.supportButton, compact && styles.supportButtonCompact, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
               onPress={() => router.push('/support')}
             >
               <Phone size={20} color={theme.colors.primary} />
@@ -352,7 +356,7 @@ export default function OrderDetailScreen() {
             </TouchableOpacity>
             
             <TouchableOpacity 
-              style={[styles.supportButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+              style={[styles.supportButton, compact && styles.supportButtonCompact, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
               onPress={() => router.push('/support')}
             >
               <MessageCircle size={20} color={theme.colors.primary} />
@@ -430,6 +434,9 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_700Bold',
     marginBottom: 4,
   },
+  statusLabelCompact: {
+    fontSize: 16,
+  },
   orderId: {
     fontSize: 16,
     fontWeight: '600',
@@ -476,6 +483,11 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 8,
     marginRight: 12,
+  },
+  itemImageCompact: {
+    width: 52,
+    height: 52,
+    marginRight: 10,
   },
   itemInfo: {
     flex: 1,
@@ -583,6 +595,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
   },
+  supportActionsCompact: {
+    flexDirection: 'column',
+  },
   supportButton: {
     flex: 1,
     flexDirection: 'row',
@@ -592,6 +607,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     gap: 8,
+  },
+  supportButtonCompact: {
+    justifyContent: 'flex-start',
   },
   supportButtonText: {
     fontSize: 14,

@@ -8,6 +8,7 @@ import {
   TextInput,
   Alert,
   Image,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, User, Mail, Phone, Calendar, MapPin, CreditCard as Edit3 } from 'lucide-react-native';
@@ -18,6 +19,9 @@ import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 
 export default function PersonalInfoScreen() {
   const { theme } = useTheme();
+  const { width } = useWindowDimensions();
+  const compact = width < 360;
+  const horizontalPadding = compact ? 14 : 20;
   const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -52,7 +56,7 @@ export default function PersonalInfoScreen() {
     <View style={[styles.fieldContainer, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
       <View style={styles.fieldHeader}>
         <View style={styles.fieldLabelContainer}>
-          <Icon size={20} color={theme.colors.primary} />
+          <Icon size={compact ? 18 : 20} color={theme.colors.primary} />
           <Text style={[styles.fieldLabel, { color: theme.colors.text }]}>{label}</Text>
         </View>
         {editable && !isEditing && (
@@ -88,7 +92,7 @@ export default function PersonalInfoScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingHorizontal: horizontalPadding }]}> 
         <HeaderBackButton onPress={() => router.back()} size={24} />
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Personal Information</Text>
         {isEditing ? (
@@ -104,21 +108,21 @@ export default function PersonalInfoScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false} style={styles.content}>
         {/* Profile Picture Section */}
-        <View style={styles.profileSection}>
+        <View style={[styles.profileSection, { paddingHorizontal: horizontalPadding }]}> 
           <View style={[styles.avatarContainer, { backgroundColor: theme.colors.surface }]}>
             {user?.photoURL ? (
               <Image source={{ uri: user.photoURL }} style={styles.avatarImage} />
             ) : (
-              <User size={40} color={theme.colors.primary} />
+              <User size={compact ? 34 : 40} color={theme.colors.primary} />
             )}
           </View>
-          <TouchableOpacity style={[styles.changePhotoButton, { backgroundColor: theme.colors.primary }]}>
+          <TouchableOpacity style={[styles.changePhotoButton, compact && styles.changePhotoButtonCompact, { backgroundColor: theme.colors.primary }]}> 
             <Text style={styles.changePhotoText}>Change Photo</Text>
           </TouchableOpacity>
         </View>
 
         {/* Personal Information Fields */}
-        <View style={styles.fieldsSection}>
+        <View style={[styles.fieldsSection, { paddingHorizontal: horizontalPadding }]}> 
           <InfoField
             icon={User}
             label="Full Name"
@@ -158,7 +162,7 @@ export default function PersonalInfoScreen() {
         </View>
 
         {/* Account Information */}
-        <View style={styles.section}>
+        <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}> 
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
             Account Information
           </Text>
@@ -197,7 +201,7 @@ export default function PersonalInfoScreen() {
         </View>
 
         {isEditing && (
-          <View style={styles.actionButtons}>
+          <View style={[styles.actionButtons, compact && styles.actionButtonsCompact, { paddingHorizontal: horizontalPadding }]}> 
             <TouchableOpacity
               onPress={() => setIsEditing(false)}
               style={[styles.cancelButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
@@ -269,6 +273,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderRadius: 20,
+  },
+  changePhotoButtonCompact: {
+    paddingHorizontal: 16,
+    paddingVertical: 7,
   },
   changePhotoText: {
     fontSize: 14,
@@ -362,6 +370,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 32,
     gap: 12,
+  },
+  actionButtonsCompact: {
+    flexDirection: 'column',
   },
   cancelButton: {
     flex: 1,

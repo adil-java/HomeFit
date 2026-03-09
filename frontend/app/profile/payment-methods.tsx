@@ -8,6 +8,7 @@ import {
   TextInput,
   Modal,
   Alert,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Plus, CreditCard, CreditCard as Edit3, Trash2, X, Check, Smartphone, Building, Wallet } from 'lucide-react-native';
@@ -42,6 +43,9 @@ const mockPaymentMethods: PaymentMethod[] = [
 
 export default function PaymentMethodsScreen() {
   const { theme } = useTheme();
+  const { width } = useWindowDimensions();
+  const compact = width < 360;
+  const horizontalPadding = compact ? 14 : 20;
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>(mockPaymentMethods);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingMethod, setEditingMethod] = useState<PaymentMethod | null>(null);
@@ -59,7 +63,7 @@ export default function PaymentMethodsScreen() {
     postalCode: '',
     country: '',
     // Card type detection
-    cardType: '',
+    cardType: 'unknown' as 'visa' | 'mastercard' | 'amex' | 'discover' | 'unknown',
     // Other payment types
     phoneNumber: '',
     accountNumber: '',
@@ -187,7 +191,7 @@ export default function PaymentMethodsScreen() {
       state: '',
       postalCode: '',
       country: '',
-      cardType: '',
+      cardType: 'unknown',
       phoneNumber: '',
       accountNumber: '',
       bankName: '',
@@ -234,7 +238,7 @@ export default function PaymentMethodsScreen() {
           <View style={styles.methodActions}>
             <TouchableOpacity
               onPress={() => handleDeleteMethod(method.id)}
-              style={[styles.actionButton, { backgroundColor: theme.colors.error + '20' }]}
+              style={[styles.actionButton, compact && styles.actionButtonCompact, { backgroundColor: theme.colors.error + '20' }]}
             >
               <Trash2 size={16} color={theme.colors.error} />
             </TouchableOpacity>
@@ -449,7 +453,7 @@ export default function PaymentMethodsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingHorizontal: horizontalPadding }]}> 
         <HeaderBackButton onPress={() => router.back()} size={24} />
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Payment Methods</Text>
         <TouchableOpacity onPress={() => setShowAddModal(true)}>
@@ -457,7 +461,7 @@ export default function PaymentMethodsScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} style={styles.content}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: horizontalPadding }}>
         {paymentMethods.map((method) => (
           <PaymentMethodCard key={method.id} method={method} />
         ))}
@@ -488,7 +492,7 @@ export default function PaymentMethodsScreen() {
         presentationStyle="pageSheet"
       >
         <SafeAreaView style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
-          <View style={styles.modalHeader}>
+          <View style={[styles.modalHeader, { paddingHorizontal: horizontalPadding }]}>
             <TouchableOpacity onPress={() => {
               setShowAddModal(false);
               resetForm();
@@ -503,7 +507,7 @@ export default function PaymentMethodsScreen() {
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.modalContent}>
+          <ScrollView style={[styles.modalContent, { paddingHorizontal: horizontalPadding }]}> 
             {/* Payment Type Selection */}
             <View style={styles.inputGroup}>
               <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Payment Type</Text>
@@ -514,6 +518,7 @@ export default function PaymentMethodsScreen() {
                     onPress={() => setSelectedType(type.key as any)}
                     style={[
                       styles.typeCard,
+                      compact && styles.typeCardCompact,
                       {
                         backgroundColor: selectedType === type.key ? theme.colors.primary : theme.colors.surface,
                         borderColor: theme.colors.border,
@@ -566,7 +571,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
   },
   methodCard: {
     borderWidth: 1,
@@ -609,6 +613,11 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  actionButtonCompact: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
   },
   methodFooter: {
     alignItems: 'flex-start',
@@ -724,6 +733,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     gap: 8,
+  },
+  typeCardCompact: {
+    minWidth: '100%',
+    padding: 12,
   },
   typeLabel: {
     fontSize: 12,

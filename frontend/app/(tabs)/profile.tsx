@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
   Switch,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
@@ -34,6 +35,9 @@ import { useAppDispatch } from '@/store/hooks';
 
 export default function ProfileScreen() {
   const { theme, isDark, toggleTheme } = useTheme();
+  const { width } = useWindowDimensions();
+  const compact = width < 360;
+  const horizontalPadding = compact ? 14 : 20;
   const { user, logout } = useAuth();
   const dispatch = useAppDispatch();
   const { items: cartItems } = useAppSelector((state) => state.cart);
@@ -102,7 +106,7 @@ export default function ProfileScreen() {
         {/* Header */}
         <LinearGradient
           colors={[theme.colors.gradient.start, theme.colors.gradient.end]}
-          style={[styles.header, { paddingTop: 0 }]}  
+          style={[styles.header, { paddingTop: 0, paddingHorizontal: horizontalPadding }]}  
         >
           <View style={styles.profileSection}>
             <View style={styles.avatarContainer}>
@@ -126,7 +130,7 @@ export default function ProfileScreen() {
         </LinearGradient>
 
         {/* Quick Stats */}
-        <View style={styles.statsContainer}>
+        <View style={[styles.statsContainer, compact && styles.statsContainerCompact, { paddingHorizontal: horizontalPadding }]}> 
           <TouchableOpacity
             style={[styles.statCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
             onPress={() => router.push('/(tabs)/cart')}
@@ -158,7 +162,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* Settings Options */}
-        <View style={styles.section}>
+        <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}> 
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Account</Text>
           
           <ProfileOption
@@ -190,7 +194,7 @@ export default function ProfileScreen() {
           /> */}
         </View>
 
-        <View style={styles.section}>
+        <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}> 
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Orders & Support</Text>
           
           <ProfileOption
@@ -209,7 +213,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* Theme Toggle */}
-        <View style={[styles.section, { marginBottom: 24 }]}>
+        <View style={[styles.section, { marginBottom: 24, paddingHorizontal: horizontalPadding }]}> 
           <View style={[styles.optionContainer, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
             <View style={styles.optionLeft}>
               <View style={[styles.iconContainer, { backgroundColor: theme.colors.background }]}>
@@ -238,7 +242,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* Logout */}
-        <View style={styles.section}>
+        <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}> 
           <TouchableOpacity
             onPress={handleLogout}
             style={[styles.logoutButton, { backgroundColor: theme.colors.error + '10', borderColor: theme.colors.error + '20' }]}
@@ -318,6 +322,9 @@ const styles = StyleSheet.create({
     marginTop: -15,
     marginBottom: 20,
     gap: 12,
+  },
+  statsContainerCompact: {
+    gap: 8,
   },
   statCard: {
     flex: 1,

@@ -1,15 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, Pressable } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Pressable, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useDispatch } from 'react-redux';
 import { setSelectedCategory } from '@/store/slices/productsSlice';
 import { Ionicons } from '@expo/vector-icons';
-
-const { width } = Dimensions.get('window');
-const CARD_WIDTH = width * 0.6;
-const CARD_HEIGHT = CARD_WIDTH * 0.7;
 
 interface CategoryCardProps {
   categoryId?: string;
@@ -47,7 +43,11 @@ const categoryData = {
 
 export const CategoryCard: React.FC<CategoryCardProps> = ({ categoryId, category, image }) => {
   const { theme } = useTheme();
+  const { width } = useWindowDimensions();
   const dispatch = useDispatch();
+  const cardWidth = Math.min(Math.max(width * 0.56, 180), 260);
+  const cardHeight = cardWidth * 0.7;
+  const compact = width < 360;
   
   const categoryInfo = categoryData[category as keyof typeof categoryData] || {
     colors: [theme.colors.primary, theme.colors.secondary],
@@ -67,10 +67,11 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({ categoryId, category
       onPress={handlePress} 
       style={({ pressed }) => [
         styles.container,
+        { width: cardWidth },
         { opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.99 : 1 }] }
       ]}
     >
-      <View style={styles.card}>
+      <View style={[styles.card, { height: cardHeight }]}> 
         {image ? (
           <Image 
             source={{ uri: image }} 
@@ -92,16 +93,16 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({ categoryId, category
         />
         
         <View style={styles.content}>
-          <View style={styles.iconContainer}>
+          <View style={[styles.iconContainer, compact && styles.iconContainerCompact]}>
             <Ionicons 
               name={categoryInfo.icon as any} 
-              size={24} 
+              size={compact ? 20 : 24} 
               color="white" 
               style={styles.icon}
             />
           </View>
           
-          <Text style={styles.title} numberOfLines={1}>
+          <Text style={[styles.title, compact && styles.titleCompact]} numberOfLines={1}>
             {category}
           </Text>
           
@@ -114,7 +115,6 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({ categoryId, category
 
 const createStyles = (theme: any) => StyleSheet.create({
   container: {
-    width: CARD_WIDTH,
     marginRight: 16,
     borderRadius: 20,
     backgroundColor: theme.colors.surface,
@@ -126,7 +126,6 @@ const createStyles = (theme: any) => StyleSheet.create({
   },
   card: {
     width: '100%',
-    height: CARD_HEIGHT,
     borderRadius: 20,
     overflow: 'hidden',
     position: 'relative',
@@ -154,6 +153,11 @@ const createStyles = (theme: any) => StyleSheet.create({
     alignSelf: 'flex-start',
     marginBottom: 8,
   },
+  iconContainerCompact: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+  },
   icon: {
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowOffset: { width: 0, height: 1 },
@@ -168,6 +172,9 @@ const createStyles = (theme: any) => StyleSheet.create({
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
     marginTop: 'auto',
+  },
+  titleCompact: {
+    fontSize: 17,
   },
   arButton: {
     flexDirection: 'row',

@@ -8,6 +8,7 @@ import {
   Image,
   ActivityIndicator,
   RefreshControl,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
@@ -49,6 +50,9 @@ const ITEMS_PER_PAGE = 10;
 
 export default function OrdersScreen() {
   const { theme } = useTheme();
+  const { width } = useWindowDimensions();
+  const compact = width < 360;
+  const horizontalPadding = compact ? 14 : 20;
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -147,7 +151,7 @@ export default function OrdersScreen() {
 
     return (
       <TouchableOpacity
-        style={[styles.orderCard, { backgroundColor: theme.colors.card }]}
+        style={[styles.orderCard, { backgroundColor: theme.colors.card, padding: compact ? 14 : 16 }]}
         onPress={() => router.push(`/orders/${order.id}`)}
       >
         <View style={styles.orderHeader}>
@@ -166,20 +170,20 @@ export default function OrdersScreen() {
           {firstItem?.product?.images?.[0] ? (
             <Image
               source={{ uri: firstItem.product.images[0] }}
-              style={styles.productImage}
+              style={[styles.productImage, compact && styles.productImageCompact]}
               resizeMode="cover"
             />
           ) : (
-            <View style={[styles.productImage, { backgroundColor: theme.colors.border }]} />
+            <View style={[styles.productImage, compact && styles.productImageCompact, { backgroundColor: theme.colors.border }]} />
           )}
           <View style={styles.orderItemDetails}>
-            <Text style={[styles.productName, { color: theme.colors.text }]} numberOfLines={1}>
+            <Text style={[styles.productName, compact && styles.productNameCompact, { color: theme.colors.text }]} numberOfLines={1}>
               {firstItem?.productName || 'Product'}
             </Text>
             <Text style={[styles.productPrice, { color: theme.colors.text }]}>
               ${firstItem?.price?.toFixed(2) || '0.00'} × {firstItem?.quantity || 1}
             </Text>
-            {itemCount > 1 && (
+            {itemCount > 1 && !compact && (
               <Text style={[styles.additionalItems, { color: theme.colors.text }]}>
                 +{itemCount - 1} more item{itemCount > 2 ? 's' : ''}
               </Text>
@@ -189,7 +193,7 @@ export default function OrdersScreen() {
 
         <View style={styles.orderFooter}>
           <View>
-            <Text style={[styles.orderDate, { color: theme.colors.text }]}>
+            <Text style={[styles.orderDate, compact && styles.orderDateCompact, { color: theme.colors.text }]}> 
               {format(new Date(order.createdAt), 'MMM d, yyyy')}
             </Text>
             <Text style={[styles.orderTotal, { color: theme.colors.text }]}>
@@ -217,14 +221,14 @@ export default function OrdersScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingHorizontal: horizontalPadding }]}> 
         <HeaderBackButton onPress={() => router.back()} size={24} />
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>My Orders</Text>
         <View style={{ width: 24 }} />
       </View>
 
       {/* Filter Tabs */}
-      <View style={styles.filterContainer}>
+      <View style={[styles.filterContainer, { paddingHorizontal: compact ? 12 : 16 }]}> 
         <FlatList
           data={filterOptions}
           horizontal
@@ -271,6 +275,7 @@ export default function OrdersScreen() {
         renderItem={({ item }) => <OrderCard order={item} />}
         contentContainerStyle={[
           styles.ordersList,
+          { paddingHorizontal: horizontalPadding },
           loading && orders.length === 0 && { flex: 1, justifyContent: 'center' }
         ]}
         showsVerticalScrollIndicator={false}
@@ -400,6 +405,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginRight: 12,
   },
+  productImageCompact: {
+    width: 34,
+    height: 34,
+    marginRight: 10,
+  },
   orderItemDetails: {
     flex: 1,
   },
@@ -408,6 +418,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: 'Inter_600SemiBold',
     marginBottom: 2,
+  },
+  productNameCompact: {
+    fontSize: 13,
   },
   productPrice: {
     fontSize: 12,
@@ -430,6 +443,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6b7280',
     marginBottom: 4,
+  },
+  orderDateCompact: {
+    fontSize: 11,
   },
   orderTotal: {
     fontSize: 16,

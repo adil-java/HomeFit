@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
   RefreshControl,
+  useWindowDimensions,
 } from "react-native"
 import { useAuth } from "@/contexts/AuthContext"
 
@@ -28,6 +29,9 @@ interface BalanceData {
 }
 
 export const SellerBalanceScreen: React.FC<SellerBalanceScreenProps> = ({ sellerId, onRequestPayout }) => {
+  const { width } = useWindowDimensions()
+  const compact = width < 360
+  const horizontalPadding = compact ? 12 : 16
   const [balance, setBalance] = useState<BalanceData | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -89,7 +93,7 @@ export const SellerBalanceScreen: React.FC<SellerBalanceScreenProps> = ({ seller
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.contentContainer}
+      contentContainerStyle={[styles.contentContainer, { paddingHorizontal: horizontalPadding }]}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       {/* Account Status */}
@@ -110,7 +114,7 @@ export const SellerBalanceScreen: React.FC<SellerBalanceScreenProps> = ({ seller
       {/* Current Balance */}
       <View style={styles.balanceCard}>
         <Text style={styles.balanceLabel}>Available Balance</Text>
-        <Text style={styles.balanceAmount}>${(balance.currentBalance / 100).toFixed(2)}</Text>
+        <Text style={[styles.balanceAmount, compact && styles.balanceAmountCompact]}>${(balance.currentBalance / 100).toFixed(2)}</Text>
         <Text style={styles.balanceNote}>Ready to withdraw to your bank</Text>
 
         {balance.currentBalance > 0 && (
@@ -123,7 +127,7 @@ export const SellerBalanceScreen: React.FC<SellerBalanceScreenProps> = ({ seller
       {/* Pending Transactions */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Pending Transactions</Text>
-        <View style={styles.pendingRow}>
+        <View style={[styles.pendingRow, compact && styles.pendingRowCompact]}>
           <View>
             <Text style={styles.pendingLabel}>Processing Amount</Text>
             <Text style={styles.pendingAmount}>${(balance.pendingAmount / 100).toFixed(2)}</Text>
@@ -285,6 +289,9 @@ const styles = StyleSheet.create({
     color: "#fff",
     marginBottom: 4,
   },
+  balanceAmountCompact: {
+    fontSize: 30,
+  },
   balanceNote: {
     fontSize: 12,
     color: "rgba(255, 255, 255, 0.7)",
@@ -327,6 +334,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
     marginBottom: 12,
+  },
+  pendingRowCompact: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 8,
   },
   pendingLabel: {
     fontSize: 12,

@@ -9,7 +9,8 @@ import {
   Image,
   Alert,
   ActivityIndicator,
-  Switch
+  Switch,
+  useWindowDimensions,
 } from 'react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -70,6 +71,9 @@ const createFormData = (data: any, files: any[] = []) => {
 
 function ProductForm() {
   const { theme } = useTheme();
+  const { width } = useWindowDimensions();
+  const compact = width < 360;
+  const horizontalPadding = compact ? 12 : 16;
   const { user } = useAuth();
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -344,7 +348,7 @@ function ProductForm() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <View style={[styles.header, { borderBottomColor: theme.colors.border }]}>
+      <View style={[styles.header, { borderBottomColor: theme.colors.border, paddingHorizontal: horizontalPadding }]}> 
           <HeaderBackButton onPress={() => router.back()} size={24} style={styles.backButton} />
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
           Create Product
@@ -354,6 +358,7 @@ function ProductForm() {
           disabled={saving}
           style={[
             styles.saveButton,
+            compact && styles.saveButtonCompact,
             {
               backgroundColor: theme.colors.primary,
               opacity: saving ? 0.6 : 1,
@@ -373,7 +378,7 @@ function ProductForm() {
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingHorizontal: horizontalPadding }]}
       >
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
@@ -381,7 +386,7 @@ function ProductForm() {
           </Text>
           <View style={styles.imageGrid}>
             {images.map((image, index) => (
-              <View key={index} style={styles.imagePreviewContainer}>
+              <View key={index} style={[styles.imagePreviewContainer, compact && styles.imagePreviewContainerCompact]}>
                 <Image
                   source={{ uri: image.uri }}
                   style={styles.imagePreview}
@@ -398,7 +403,7 @@ function ProductForm() {
             ))}
             {images.length < 10 && (
               <TouchableOpacity
-                style={[styles.addImageButton, { borderColor: theme.colors.primary }]}
+                style={[styles.addImageButton, compact && styles.addImageButtonCompact, { borderColor: theme.colors.primary }]}
                 onPress={handlePickImages}
                 disabled={saving}
               >
@@ -532,8 +537,8 @@ function ProductForm() {
             Pricing
           </Text>
 
-          <View style={styles.row}>
-            <View style={[styles.inputContainer, { flex: 1, marginRight: 12 }]}>
+          <View style={[styles.row, compact && styles.rowCompact]}>
+            <View style={[styles.inputContainer, { flex: 1, marginRight: compact ? 0 : 12, marginBottom: compact ? 12 : 0 }]}> 
               <Text style={[styles.label, { color: theme.colors.text }]}>Price (Rs.) *</Text>
               <View style={[styles.inputWithIcon, {
                 backgroundColor: theme.colors.surface,
@@ -557,7 +562,7 @@ function ProductForm() {
               )}
             </View>
 
-            <View style={[styles.inputContainer, { flex: 1 }]}>
+            <View style={[styles.inputContainer, { flex: 1 }]}> 
               <Text style={[styles.label, { color: theme.colors.text }]}>Compare at Price (Rs.)</Text>
               <View style={[styles.inputWithIcon, {
                 backgroundColor: theme.colors.surface,
@@ -582,8 +587,8 @@ function ProductForm() {
             </View>
           </View>
 
-          <View style={styles.row}>
-            <View style={[styles.inputContainer, { flex: 1, marginRight: 12 }]}>
+          <View style={[styles.row, compact && styles.rowCompact]}>
+            <View style={[styles.inputContainer, { flex: 1, marginRight: compact ? 0 : 12, marginBottom: compact ? 12 : 0 }]}> 
               <Text style={[styles.label, { color: theme.colors.text }]}>Cost per item (Rs.)</Text>
               <View style={[styles.inputWithIcon, {
                 backgroundColor: theme.colors.surface,
@@ -924,6 +929,11 @@ const styles = StyleSheet.create({
     marginTop:44,
     marginBottom:4,
   },
+  saveButtonCompact: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
   backButton: {
     padding: 8,
     marginRight: 16,
@@ -961,7 +971,7 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   section: {
-    padding: 16,
+    paddingVertical: 16,
   },
   sectionTitle: {
     fontSize: 18,
@@ -979,6 +989,9 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     padding: 4,
     position: 'relative',
+  },
+  imagePreviewContainerCompact: {
+    width: '48%',
   },
   imagePreview: {
     width: '100%',
@@ -1006,6 +1019,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     margin: 4,
+  },
+  addImageButtonCompact: {
+    width: '48%',
   },
   addImageText: {
     marginTop: 8,
@@ -1106,6 +1122,9 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: 'row',
+  },
+  rowCompact: {
+    flexDirection: 'column',
   },
   chipsContainer: {
     flexDirection: 'row',

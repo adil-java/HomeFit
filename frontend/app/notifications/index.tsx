@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   SectionList,
   RefreshControl,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -69,8 +70,11 @@ const notificationIcon = (item: NotificationItem, color: string) => {
 
 export default function NotificationsScreen() {
   const { theme } = useTheme();
+  const { width: screenWidth } = useWindowDimensions();
   const dispatch = useAppDispatch();
   const [refreshing, setRefreshing] = useState(false);
+  const compact = screenWidth < 360;
+  const horizontalPadding = compact ? 12 : 16;
 
   const { items, unreadCount, loading } = useSelector((state: RootState) => state.notifications);
 
@@ -133,11 +137,11 @@ export default function NotificationsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}> 
-      <View style={[styles.header, { borderBottomColor: theme.colors.border }]}> 
+      <View style={[styles.header, { borderBottomColor: theme.colors.border, paddingHorizontal: horizontalPadding }]}> 
         <HeaderBackButton onPress={() => router.back()} />
 
         <View style={styles.headerTitleWrap}>
-          <Text style={[styles.title, { color: theme.colors.text }]}>Notifications</Text>
+          <Text style={[styles.title, compact && styles.titleCompact, { color: theme.colors.text }]}>Notifications</Text>
           <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
             {unreadCount > 0 ? `${unreadCount} unread` : 'You are all caught up'}
           </Text>
@@ -153,7 +157,7 @@ export default function NotificationsScreen() {
 
       {items.length > 0 && (
         <TouchableOpacity
-          style={[styles.markAllButton, { borderColor: theme.colors.border }]}
+          style={[styles.markAllButton, { borderColor: theme.colors.border, marginHorizontal: horizontalPadding }]}
           onPress={handleMarkAllRead}
         >
           <Text style={[styles.markAllText, { color: theme.colors.primary }]}>Mark all as read</Text>
@@ -174,7 +178,7 @@ export default function NotificationsScreen() {
         <SectionList
           sections={sections}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { paddingHorizontal: horizontalPadding }]}
           stickySectionHeadersEnabled={false}
           refreshControl={
             <RefreshControl
@@ -194,6 +198,7 @@ export default function NotificationsScreen() {
               activeOpacity={0.85}
               style={[
                 styles.card,
+                compact && styles.cardCompact,
                 {
                   backgroundColor: theme.colors.surface,
                   borderColor: item.isRead ? theme.colors.border : theme.colors.primary,
@@ -201,7 +206,7 @@ export default function NotificationsScreen() {
               ]}
               onPress={() => handleNotificationPress(item)}
             >
-              <View style={[styles.iconWrap, { backgroundColor: theme.colors.background }]}> 
+              <View style={[styles.iconWrap, compact && styles.iconWrapCompact, { backgroundColor: theme.colors.background }]}> 
                 {notificationIcon(item, theme.colors.primary)}
               </View>
 
@@ -254,6 +259,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: 'Inter_700Bold',
   },
+  titleCompact: {
+    fontSize: 18,
+  },
   subtitle: {
     marginTop: 2,
     fontSize: 12,
@@ -281,7 +289,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_600SemiBold',
   },
   listContent: {
-    padding: 16,
+    paddingTop: 8,
     paddingTop: 8,
     paddingBottom: 28,
   },
@@ -301,6 +309,9 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 10,
   },
+  cardCompact: {
+    padding: 10,
+  },
   iconWrap: {
     width: 36,
     height: 36,
@@ -308,6 +319,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
+  },
+  iconWrapCompact: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: 8,
   },
   content: { flex: 1 },
   rowTop: {

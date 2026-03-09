@@ -8,6 +8,7 @@ import {
   TextInput,
   Modal,
   Alert,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Plus, MapPin, CreditCard as Edit3, Trash2, Chrome as Home, Building, X, Check } from 'lucide-react-native';
@@ -54,6 +55,9 @@ const mockAddresses: Address[] = [
 
 export default function AddressesScreen() {
   const { theme } = useTheme();
+  const { width } = useWindowDimensions();
+  const compact = width < 360;
+  const horizontalPadding = compact ? 14 : 20;
   const [addresses, setAddresses] = useState<Address[]>(mockAddresses);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
@@ -183,13 +187,13 @@ export default function AddressesScreen() {
           <View style={styles.addressActions}>
             <TouchableOpacity
               onPress={() => handleEditAddress(address)}
-              style={[styles.actionButton, { backgroundColor: theme.colors.primary + '20' }]}
+              style={[styles.actionButton, compact && styles.actionButtonCompact, { backgroundColor: theme.colors.primary + '20' }]}
             >
               <Edit3 size={16} color={theme.colors.primary} />
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => handleDeleteAddress(address.id)}
-              style={[styles.actionButton, { backgroundColor: theme.colors.error + '20' }]}
+              style={[styles.actionButton, compact && styles.actionButtonCompact, { backgroundColor: theme.colors.error + '20' }]}
             >
               <Trash2 size={16} color={theme.colors.error} />
             </TouchableOpacity>
@@ -226,7 +230,7 @@ export default function AddressesScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingHorizontal: horizontalPadding }]}> 
         <HeaderBackButton onPress={() => router.back()} size={24} />
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Addresses</Text>
         <TouchableOpacity onPress={() => setShowAddModal(true)}>
@@ -234,7 +238,7 @@ export default function AddressesScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} style={styles.content}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: horizontalPadding }}>
         {addresses.map((address) => (
           <AddressCard key={address.id} address={address} />
         ))}
@@ -265,7 +269,7 @@ export default function AddressesScreen() {
         presentationStyle="pageSheet"
       >
         <SafeAreaView style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
-          <View style={styles.modalHeader}>
+          <View style={[styles.modalHeader, { paddingHorizontal: horizontalPadding }]}>
             <TouchableOpacity onPress={() => {
               setShowAddModal(false);
               setEditingAddress(null);
@@ -283,11 +287,11 @@ export default function AddressesScreen() {
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.modalContent}>
+          <ScrollView style={[styles.modalContent, { paddingHorizontal: horizontalPadding }]}> 
             {/* Address Type */}
             <View style={styles.inputGroup}>
               <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Address Type</Text>
-              <View style={styles.typeButtons}>
+              <View style={[styles.typeButtons, compact && styles.typeButtonsCompact]}>
                 {['home', 'work', 'other'].map((type) => (
                   <TouchableOpacity
                     key={type}
@@ -411,7 +415,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
   },
   addressCard: {
     borderWidth: 1,
@@ -456,6 +459,11 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  actionButtonCompact: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
   },
   addressName: {
     fontSize: 16,
@@ -549,6 +557,9 @@ const styles = StyleSheet.create({
   typeButtons: {
     flexDirection: 'row',
     gap: 8,
+  },
+  typeButtonsCompact: {
+    flexWrap: 'wrap',
   },
   typeButton: {
     paddingHorizontal: 16,
