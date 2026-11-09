@@ -15,6 +15,7 @@ import { ArrowLeft, Plus, CreditCard, CreditCard as Edit3, Trash2, X, Check, Sma
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import HeaderBackButton from '@/components/Shared/HeaderBackButton';
+import KeyboardAwareView from '@/components/Shared/KeyboardAwareView';
 
 interface PaymentMethod {
   id: string;
@@ -507,7 +508,8 @@ export default function PaymentMethodsScreen() {
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={[styles.modalContent, { paddingHorizontal: horizontalPadding }]}> 
+          <KeyboardAwareView>
+          <ScrollView keyboardShouldPersistTaps="handled" style={[styles.modalContent, { paddingHorizontal: horizontalPadding }]}> 
             {/* Payment Type Selection */}
             <View style={styles.inputGroup}>
               <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Payment Type</Text>
@@ -547,6 +549,7 @@ export default function PaymentMethodsScreen() {
             {/* Dynamic Form Fields */}
             {renderFormFields()}
           </ScrollView>
+          </KeyboardAwareView>
         </SafeAreaView>
       </Modal>
     </SafeAreaView>

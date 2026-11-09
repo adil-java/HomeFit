@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import { Provider } from 'react-redux';
 import { PaperProvider, MD3LightTheme, configureFonts } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
@@ -15,6 +14,7 @@ import { apiService } from '@/services/api';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import AnimatedSplashScreen from '@/components/AnimatedSplashScreen';
 import { stackScreenOptions, fadeScreenOptions } from '@/constants/navigation';
+import NavigationThemeBridge from '@/components/NavigationThemeBridge';
 
 // Prevent the native splash from auto-hiding so we can transition smoothly
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -153,6 +153,7 @@ export default function RootLayout() {
       {appCanRender && (
         <Provider store={store}>
           <ThemeProvider>
+            <NavigationThemeBridge>
             <AuthProvider>
               <PaperProvider theme={paperTheme}>
                 <StripeProvider publishableKey={publishableKey || ''}>
@@ -166,11 +167,11 @@ export default function RootLayout() {
                     <Stack.Screen name="notifications/index" options={{ headerShown: false }} />
                     <Stack.Screen name="+not-found" />
                   </Stack>
-                  <StatusBar style="auto" />
                   <Toast />
                 </StripeProvider>
               </PaperProvider>
             </AuthProvider>
+            </NavigationThemeBridge>
           </ThemeProvider>
         </Provider>
       )}

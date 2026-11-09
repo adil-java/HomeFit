@@ -41,12 +41,18 @@ const rootReducer = (state: AppState | undefined, action: UnknownAction): AppSta
 export const store = configureStore({
   reducer: rootReducer,
   middleware: (getDefaultMiddleware) =>
+    // These two checks run in development only (they're stripped from release
+    // builds). They walk the whole state on every action, which made taps feel
+    // slow in Expo Go once products and cached screens were in the store, so
+    // they skip the large, plain-JSON API data.
     getDefaultMiddleware({
       serializableCheck: {
         warnAfter: 128,
+        ignoredPaths: ['products', 'screenCache'],
       },
       immutableCheck: {
         warnAfter: 128,
+        ignoredPaths: ['products', 'screenCache'],
       },
     }),
 });

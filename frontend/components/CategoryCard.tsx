@@ -131,12 +131,12 @@ const createStyles = (theme: any) => StyleSheet.create({
     position: 'relative',
   },
   image: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, // (StyleSheet.absoluteFillObject was removed in this RN version)
     width: '100%',
     height: '100%',
   },
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, // (StyleSheet.absoluteFillObject was removed in this RN version)
   },
   content: {
     flex: 1,

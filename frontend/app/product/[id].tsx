@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
+  useWindowDimensions,
   FlatList,
   TextInput,
   ActivityIndicator,
@@ -32,11 +33,12 @@ import { addComment, deleteComment, makeSelectCommentsByProductId } from '@/stor
 import { ARPreviewButton } from '@/components/ARPreviewButton';
 import Toast from 'react-native-toast-message';
 import HeaderBackButton from '@/components/Shared/HeaderBackButton';
-const { width } = Dimensions.get('window');
-const responsiveProductImageHeight = Math.min(Math.max(width * 0.9, 300), 420);
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams();
+  // Live screen size (updates on rotation / foldables; was read once at file load)
+  const { width } = useWindowDimensions();
+  const responsiveProductImageHeight = Math.min(Math.max(width * 0.9, 300), 420);
   const { theme } = useTheme();
   const dispatch = useDispatch<AppDispatch>();
   const product = useSelector((state: RootState) => 
@@ -224,7 +226,7 @@ export default function ProductDetailScreen() {
 
 
   const renderImageItem = ({ item, index }: { item: string; index: number }) => (
-    <Image source={{ uri: item }} style={[styles.productImage, { height: responsiveProductImageHeight }]} />
+    <Image source={{ uri: item }} style={[styles.productImage, { width, height: responsiveProductImageHeight }]} />
   );
 
   const handleAddComment = () => {
@@ -875,7 +877,6 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   productImage: {
-    width: width,
     resizeMode: 'cover',
   },
   imageIndicators: {

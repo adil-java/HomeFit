@@ -31,6 +31,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Platform } from 'react-native';
 import { apiService } from '@/services/api';
 import HeaderBackButton from '@/components/Shared/HeaderBackButton';
+import KeyboardAwareView from '@/components/Shared/KeyboardAwareView';
 
 interface Category {
   id: string;
@@ -376,7 +377,8 @@ function ProductForm() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
+      <KeyboardAwareView>
+      <ScrollView keyboardShouldPersistTaps="handled"
         style={styles.scrollView}
         contentContainerStyle={[styles.scrollContent, { paddingHorizontal: horizontalPadding }]}
       >
@@ -911,6 +913,7 @@ function ProductForm() {
           </View>
         </View>
       </ScrollView>
+      </KeyboardAwareView>
     </View>
   );
 }

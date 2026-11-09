@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import { tabsAnimation } from '@/constants/navigation';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, Search, ShoppingCart, Heart, User, LayoutDashboard, Bell } from 'lucide-react-native';
 import { BarChart2, Package, ShoppingBag, Users, BarChart, PackagePlus, Tag, LayoutTemplate, Settings, Shield, LogOut, CreditCard } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -37,6 +38,8 @@ export default function TabLayout() {
   const notificationUnreadCount = useSelector((state: RootState) => state.notifications.unreadCount);
   const router = useRouter();
   const [showSellerMenu, setShowSellerMenu] = useState(false);
+  // Bottom inset = gesture bar / home indicator height (0 on phones with buttons)
+  const insets = useSafeAreaInsets();
 
   useFocusEffect(
     useCallback(() => {
@@ -47,23 +50,25 @@ export default function TabLayout() {
     }, [dispatch, user])
   );
 
-  // Add header right component for seller
-  const headerRight = () => {
-    if (user?.role === 'seller') {
+  // Add header right component for seller.
+  // useCallback keeps it stable so tab headers don't re-render on every update.
+  const isSeller = user?.role === 'seller';
+  const primaryColor = theme.colors.primary;
+  const headerRight = useCallback(() => {
+    if (isSeller) {
       return (
         <View style={styles.headerRightContainer}>
           <TouchableOpacity 
-            onPress={() => setShowSellerMenu(!showSellerMenu)}
+            onPress={() => setShowSellerMenu(open => !open)}
             style={styles.dashboardButton}
           >
-            <LayoutDashboard size={24} color={theme.colors.primary} />
+            <LayoutDashboard size={24} color={primaryColor} />
           </TouchableOpacity>
-
         </View>
       );
     }
     return null;
-  };
+  }, [isSeller, primaryColor]);
 
   // Seller menu: rendered ONCE here. It used to live inside `headerRight`, and
   // every tab has its own header, so each visited tab opened its own copy at the
@@ -260,6 +265,9 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         animation: tabsAnimation,
+        // Hidden tabs stop re-rendering while off-screen (e.g. on every cart or
+        // wishlist update); they catch up instantly when you switch back.
+        freezeOnBlur: true,
         headerShown: true,
         headerStyle: {
           backgroundColor: theme.colors.background,
@@ -278,8 +286,9 @@ export default function TabLayout() {
           backgroundColor: theme.colors.surface,
           borderTopWidth: 1,
           borderTopColor: theme.colors.border,
-          height: 60,
-          paddingBottom: 8,
+          // Grow by the bottom inset so labels aren't hidden under the gesture bar
+          height: 60 + insets.bottom,
+          paddingBottom: 8 + insets.bottom,
         },
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.textSecondary,
@@ -463,6 +472,7 @@ const styles = StyleSheet.create({
   },
   sellerMenu: {
     width: 300,
+    maxWidth: '90%', // fits narrow phones (300 + margins was wider than 320px screens)
     maxHeight: '55%',
     borderRadius: 12,
     marginRight: 12,

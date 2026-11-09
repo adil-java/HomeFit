@@ -171,7 +171,7 @@ export default function AnimatedSplashScreen({ readyToHide, onFinish }: Animated
 
 const styles = StyleSheet.create({
   container: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, // (StyleSheet.absoluteFillObject was removed in this RN version)
     // Matches the LOGO.png background color exactly
     backgroundColor: '#2f3b4b',
     justifyContent: 'center',

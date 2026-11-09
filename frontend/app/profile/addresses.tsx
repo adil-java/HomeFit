@@ -15,6 +15,7 @@ import { ArrowLeft, Plus, MapPin, CreditCard as Edit3, Trash2, Chrome as Home, B
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import HeaderBackButton from '@/components/Shared/HeaderBackButton';
+import KeyboardAwareView from '@/components/Shared/KeyboardAwareView';
 
 interface Address {
   id: string;
@@ -287,7 +288,8 @@ export default function AddressesScreen() {
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={[styles.modalContent, { paddingHorizontal: horizontalPadding }]}> 
+          <KeyboardAwareView>
+          <ScrollView keyboardShouldPersistTaps="handled" style={[styles.modalContent, { paddingHorizontal: horizontalPadding }]}> 
             {/* Address Type */}
             <View style={styles.inputGroup}>
               <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Address Type</Text>
@@ -391,6 +393,7 @@ export default function AddressesScreen() {
               </View>
             </View>
           </ScrollView>
+          </KeyboardAwareView>
         </SafeAreaView>
       </Modal>
     </SafeAreaView>

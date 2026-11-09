@@ -24,22 +24,31 @@ interface ProductCardProps {
   productId?: string;
   showAddToCart?: boolean;
   style?: any;
+  /** Exact card width (used by grids). Without it the card sizes itself for horizontal lists. */
+  width?: number;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ 
+const ProductCardComponent: React.FC<ProductCardProps> = ({ 
   product: initialProduct,
   productId,
   showAddToCart = false,
-  style
+  style,
+  width: fixedWidth,
 }) => {
   const { theme } = useTheme();
   const { width: screenWidth } = useWindowDimensions();
   const dispatch = useDispatch<AppDispatch>();
-  const [product, setProduct] = useState<Product | null>(initialProduct || null);
+  // Only used when the card is given a productId instead of product data.
+  // When the parent passes `product`, always use the latest prop (previously it
+  // was copied into state once, so refreshed price/stock never reached the card).
+  const [fetchedProduct, setFetchedProduct] = useState<Product | null>(null);
+  const product = initialProduct ?? fetchedProduct;
   const [loading, setLoading] = useState(!initialProduct);
   const [error, setError] = useState<string | null>(null);
 
-  const responsiveCardWidth = Math.max(158, Math.min(210, (screenWidth - 52) / 2));
+  // Grids pass an exact width; horizontal lists (e.g. Featured) use a size that
+  // shows ~2 cards on phones and stays reasonable on tablets.
+  const responsiveCardWidth = fixedWidth ?? Math.max(150, Math.min(220, (screenWidth - 52) / 2));
   const responsiveImageHeight = Math.round(responsiveCardWidth * 1.02);
 
   useEffect(() => {
@@ -83,7 +92,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               inStock: (foundProduct as any)?.inStock ?? (((foundProduct as any)?.stock ?? (foundProduct as any)?.quantity ?? 0) > 0),
               modelUrl: foundProduct?.ARModelUrl || foundProduct?.modelUrl || null,
             } as Product;
-            setProduct(normalized);
+            setFetchedProduct(normalized);
           } else {
             setError('Product not found');
           }
@@ -98,7 +107,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 modelUrl: (first as any)?.modelUrl || (first as any)?.ARModelUrl, 
               } as Product)
             : null;
-          setProduct(normalized);
+          setFetchedProduct(normalized);
         }
       } else {
         setError(response.error || 'Failed to load product');
@@ -110,6 +119,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       setLoading(false);
     }
   };
+
+  // Hooks must run before any early return (it was after them, which crashes
+  // React when `loading` flips from true to false).
+  const productIdForWishlist = product?.id;
+  const isInWishlist = useSelector((state: RootState) =>
+    productIdForWishlist ? state.wishlist.items.some(item => item.id === productIdForWishlist) : false
+  );
 
   if (loading) {
     return (
@@ -126,11 +142,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       </View>
     );
   }
-
-  const isInWishlist = useSelector((state: RootState) => {
-    if (!product?.id) return false;
-    return state.wishlist.items.some(item => item.id === product.id);
-  });
 
   const handleProductPress = () => {
     if (!product) return;
@@ -307,6 +318,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     </View>
   );
 };
+
+// Memoized: a card re-renders only when its own props change (or its wishlist
+// state / theme / screen size), not every time the parent list re-renders.
+export const ProductCard = React.memo(ProductCardComponent);
 
 const styles = StyleSheet.create({
   loadingContainer: {

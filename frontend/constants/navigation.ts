@@ -14,6 +14,8 @@ export const stackScreenOptions = {
   // iOS: swipe back from anywhere on the screen, not just the left edge
   fullScreenGestureEnabled: true,
   animationMatchesGesture: true,
+  // Screens underneath the current one stop re-rendering until you go back
+  freezeOnBlur: true,
 } as const;
 
 // Switching whole sections (logged-out ↔ logged-in) and immersive viewers

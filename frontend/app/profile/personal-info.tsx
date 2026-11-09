@@ -16,6 +16,7 @@ import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import HeaderBackButton from '@/components/Shared/HeaderBackButton';
+import KeyboardAwareView from '@/components/Shared/KeyboardAwareView';
 
 export default function PersonalInfoScreen() {
   const { theme } = useTheme();
@@ -106,7 +107,8 @@ export default function PersonalInfoScreen() {
         )}
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} style={styles.content}>
+      <KeyboardAwareView>
+      <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} style={styles.content}>
         {/* Profile Picture Section */}
         <View style={[styles.profileSection, { paddingHorizontal: horizontalPadding }]}> 
           <View style={[styles.avatarContainer, { backgroundColor: theme.colors.surface }]}>
@@ -218,6 +220,7 @@ export default function PersonalInfoScreen() {
           </View>
         )}
       </ScrollView>
+      </KeyboardAwareView>
     </SafeAreaView>
   );
 }

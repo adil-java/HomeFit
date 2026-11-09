@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { typography, FONT_FAMILIES, FONT_WEIGHTS } from '@/utils/typography';
 
@@ -121,8 +121,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const theme = isDark ? darkTheme : lightTheme;
 
+  // Stable value: consumers re-render only when the theme actually changes.
+  // (toggleTheme reads `isDark`, so it's refreshed whenever isDark changes.)
+  const value = useMemo(() => ({ theme, isDark, toggleTheme }), [theme, isDark]);
+
   return (
-    <ThemeContext.Provider value={{ theme, isDark, toggleTheme }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );

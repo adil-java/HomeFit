@@ -16,6 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/services/api';
 import Toast from 'react-native-toast-message';
 import HeaderBackButton from '@/components/Shared/HeaderBackButton';
+import KeyboardAwareView from '@/components/Shared/KeyboardAwareView';
 
 export default function SellerApplicationScreen() {
   const { theme } = useTheme();
@@ -257,7 +258,8 @@ export default function SellerApplicationScreen() {
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Become a Seller</Text>
         <View style={{ width: 40 }} />
       </View>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareView>
+      <ScrollView keyboardShouldPersistTaps="handled" style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
           <View style={styles.form}>
             <View style={styles.inputGroup}>
@@ -400,6 +402,7 @@ export default function SellerApplicationScreen() {
           </View>
         </View>
       </ScrollView>
+      </KeyboardAwareView>
     </SafeAreaView>
   );
 }

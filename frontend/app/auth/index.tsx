@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Image, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, ScrollView, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,10 +7,13 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ArrowRight, UserPlus, LogIn } from 'lucide-react-native';
 
-const { width, height } = Dimensions.get('window');
-
 export default function AuthIndex() {
   const { theme, isDark } = useTheme();
+  // Live screen size (was read once at file load and never updated)
+  const { width, height } = useWindowDimensions();
+  // Logo: 40% of width, but never so tall that it pushes the buttons off short
+  // phones, and not oversized on tablets.
+  const logoSize = Math.round(Math.min(width * 0.4, height * 0.22, 220));
   const { user, isLoading, loginWithGoogle } = useAuth();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
@@ -36,7 +39,7 @@ export default function AuthIndex() {
   if (isLoading) {
     return (
       <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        <Text style={[styles.loadingText, { color: theme.colors.text }]}>Loading...</Text>
+        <Text style={[styles.loadingText, { color: theme.colors.text, marginTop: height * 0.45 }]}>Loading...</Text>
       </View>
     );
   }
@@ -80,11 +83,17 @@ export default function AuthIndex() {
         end={{ x: 0, y: 1 }}
       >
         <SafeAreaView style={styles.safeArea}>
-          <View style={styles.content}>
+          {/* Scrolls only when the screen is too short (small phones, large font
+              size, split-screen); otherwise fills the screen as before. */}
+          <ScrollView
+            contentContainerStyle={[styles.content, { flexGrow: 1 }]}
+            bounces={false}
+            showsVerticalScrollIndicator={false}
+          >
             {/* Top section — Logo + Text */}
-            <View style={styles.topSection}>
+            <View style={[styles.topSection, { paddingTop: height * 0.05 }]}>
               {/* Logo */}
-              <View style={[styles.logoContainer, { backgroundColor: cardBg }]}>
+              <View style={[styles.logoContainer, { backgroundColor: cardBg, width: logoSize, height: logoSize }]}>
                 <Image 
                   source={require('@/assets/images/LOGO.png')} 
                   style={styles.logo}
@@ -182,7 +191,7 @@ export default function AuthIndex() {
                 </Text>
               </View>
             </View>
-          </View>
+          </ScrollView>
         </SafeAreaView>
 
         {isGoogleLoading && (
@@ -210,17 +219,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    flex: 1,
     justifyContent: 'space-between',
     padding: 24,
+    // Keep buttons a comfortable width on tablets
+    width: '100%',
+    maxWidth: 520,
+    alignSelf: 'center',
   },
   topSection: {
     alignItems: 'center',
-    paddingTop: height * 0.05,
   },
   logoContainer: {
-    width: width * 0.4,
-    height: width * 0.4,
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
@@ -327,10 +336,9 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     textAlign: 'center',
-    marginTop: height * 0.45,
   },
   loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, // (StyleSheet.absoluteFillObject was removed in this RN version)
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 100,

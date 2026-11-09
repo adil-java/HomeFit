@@ -137,6 +137,8 @@ export default function sellerDrawer({ children }: { children: React.ReactNode }
       drawerContent={(props) => <DrawerContent {...props} />}
       screenOptions={{
         headerShown: false,
+        // Drawer screens you're not on stop re-rendering until you return
+        freezeOnBlur: true,
         drawerType: 'front',
         swipeEnabled: true,
         drawerStyle: {

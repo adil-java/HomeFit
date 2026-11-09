@@ -20,6 +20,7 @@ import { useFocusEffect } from 'expo-router';
 import { fetchWishlist } from '@/store/slices/wishlistSlice';
 import { fetchCart } from '@/store/slices/cartSlice';
 import { apiService } from '@/services/api';
+import { useResponsive } from '@/hooks/useResponsive';
 import { setProducts, setCategories, Category } from '@/store/slices/productsSlice';
 import { HeroBanner } from '@/components/HeroBanner';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -27,6 +28,12 @@ import { Search, Bell } from 'lucide-react-native';
 
 export default function HomeScreen() {
   const { theme } = useTheme();
+  // Grid: 2 columns on phones, 3 on large foldables/small tablets, 4 on tablets.
+  // Card width is computed exactly (page padding 20 matches the section titles).
+  const { gridColumns, gridItemWidth } = useResponsive();
+  const GRID_GAP = 12;
+  const GRID_PADDING = 20;
+  const cardWidth = gridItemWidth(gridColumns, GRID_GAP, GRID_PADDING);
   const { user, isLoading } = useAuth();
   const dispatch = useDispatch<AppDispatch>();
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
@@ -292,7 +299,7 @@ export default function HomeScreen() {
 
   const renderProductItem = ({ item }: { item: any }) => (
     <View style={styles.productCardWrapper}>
-      <ProductCard product={item} showAddToCart style={styles.productCard} />
+      <ProductCard product={item} showAddToCart style={styles.productCard} width={cardWidth} />
     </View>
   );
 
@@ -301,9 +308,11 @@ export default function HomeScreen() {
       <FlatList
         data={products}
         keyExtractor={(item: any) => String(item._id || item.id)}
-        numColumns={2}
+        // FlatList can't change numColumns on the fly; a new key remounts it
+        key={`grid-${gridColumns}`}
+        numColumns={gridColumns}
         renderItem={renderProductItem}
-        columnWrapperStyle={styles.productsRow}
+        columnWrapperStyle={[styles.productsRow, { paddingHorizontal: GRID_PADDING, gap: GRID_GAP }]}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={
           <View style={styles.emptyState}>
@@ -385,13 +394,10 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   productCardWrapper: {
-    width: '50%',
-    paddingHorizontal: 6,
     paddingBottom: 12,
   },
   productCard: {
     margin: 0,
-    width: '100%',
   },
   loadingText: {
     fontSize: 16,

@@ -418,8 +418,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Stable value: consumers re-render only when auth state changes. The
+  // functions only use setters, `dispatch` and these values, so refreshing them
+  // together with user/token/isLoading keeps them current.
+  const value = React.useMemo(
+    () => ({ user, token, login, register, loginWithGoogle, logout, isLoading }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [user, token, isLoading]
+  );
+
   return (
-    <AuthContext.Provider value={{ user, token, login, register, loginWithGoogle, logout, isLoading }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

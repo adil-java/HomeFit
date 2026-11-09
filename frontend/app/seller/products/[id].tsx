@@ -30,6 +30,7 @@ import {
 
 import { apiService } from '@/services/api';
 import HeaderBackButton from '@/components/Shared/HeaderBackButton';
+import KeyboardAwareView from '@/components/Shared/KeyboardAwareView';
 
 const getProductById = async (id: string) => {
   try {
@@ -263,7 +264,8 @@ export default function ProductForm() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView 
+      <KeyboardAwareView>
+      <ScrollView keyboardShouldPersistTaps="handled" 
         style={styles.scrollView}
         contentContainerStyle={[styles.scrollContent, { paddingHorizontal: horizontalPadding }]}
       >
@@ -588,6 +590,7 @@ export default function ProductForm() {
           </View>
         </View>
       </ScrollView>
+      </KeyboardAwareView>
     </View>
   );
 }

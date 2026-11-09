@@ -21,10 +21,15 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store/store';
 import { setSearchQuery, setSelectedCategory, setSelectedTags } from '@/store/slices/productsSlice';
 import { ProductCard } from '@/components/ProductCard';
+import { useResponsive } from '@/hooks/useResponsive';
 import { useFocusEffect } from 'expo-router';
 
 export default function SearchScreen() {
   const { theme } = useTheme();
+  // Grid: 2/3/4 columns by screen width, exact card width inside the 16px page padding
+  const { gridColumns, gridItemWidth } = useResponsive();
+  const GRID_GAP = 10;
+  const cardWidth = gridItemWidth(gridColumns, GRID_GAP, 16);
   const dispatch = useDispatch();
   const { products, categories, searchQuery, selectedCategory, selectedTags } = useSelector(
     (state: RootState) => state.products
@@ -270,12 +275,15 @@ export default function SearchScreen() {
                     product={item} 
                     showAddToCart 
                     style={styles.productCard}
+                    width={cardWidth}
                   />
                 </View>
               )}
               keyExtractor={(item) => item.id}
-              numColumns={2}
-              columnWrapperStyle={styles.columnWrapper}
+              // FlatList can't change numColumns on the fly; a new key remounts it
+              key={`grid-${gridColumns}`}
+              numColumns={gridColumns}
+              columnWrapperStyle={[styles.columnWrapper, { gap: GRID_GAP }]}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.productsContainer}
             />
@@ -368,19 +376,14 @@ const styles = StyleSheet.create({
   },
   productsContainer: {
     paddingBottom: 20,
-    paddingHorizontal: 2,
-    marginLeft: -4,
   },
   productCardWrapper: {
-    width: '50%',
-    padding: 2,
+    paddingBottom: 10,
   },
   productCard: {
     margin: 0,
-    width: '100%',
   },
   columnWrapper: {
-    justifyContent: 'space-between',
-    gap: 4,
+    justifyContent: 'flex-start',
   },
 });
