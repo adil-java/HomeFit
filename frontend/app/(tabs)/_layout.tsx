@@ -304,7 +304,7 @@ export default function TabLayout() {
         headerTitleStyle: {
           color: theme.colors.text,
           fontWeight: 'bold',
-          fontFamily: 'Inter_700Bold',
+          fontFamily: 'Manrope_700Bold',
           fontSize: 20,
         },
         tabBarStyle: {
@@ -318,7 +318,7 @@ export default function TabLayout() {
           elevation: 0,
         },
         tabBarLabelStyle: {
-          fontFamily: 'Inter_600SemiBold',
+          fontFamily: 'Manrope_600SemiBold',
           fontSize: 11,
           marginTop: 2,
         },
@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 10,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     textAlign: 'center',
   },
   header: {
@@ -472,8 +472,9 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
+    letterSpacing: -0.3,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
   headerButton: {
     width: 40,
@@ -537,11 +538,12 @@ const styles = StyleSheet.create({
   menuText: {
     fontSize: 15,
     fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
     marginBottom: 2,
   },
   menuSubtext: {
     fontSize: 12,
+    fontFamily: 'Manrope_400Regular',
     opacity: 0.8,
   },
 });

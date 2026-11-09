@@ -21,7 +21,8 @@ import {
   ShoppingCart,
   CreditCard,
   Plus,
-  Minus
+  Minus,
+  ThumbsUp,
 } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -381,7 +382,7 @@ export default function ProductDetailScreen() {
           
 
           <View style={styles.priceContainer}>
-              <Text style={[styles.price, { color: theme.colors.accent, fontSize: 24, fontWeight: '700', fontFamily: 'Inter_700Bold' }]}> 
+              <Text style={[styles.price, { color: theme.colors.accent, fontSize: 24, fontWeight: '700', fontFamily: 'Manrope_700Bold' }]}> 
                 {formatPrice(product.price)}
               </Text>
               {product.comparePrice && product.comparePrice > product.price && (
@@ -518,7 +519,7 @@ export default function ProductDetailScreen() {
                         <Text style={[
                           styles.variantOptionText,
                           isSelected ? styles.variantOptionSelectedText : { color: theme.colors.text },
-                          { fontWeight: isSelected ? '600' : '500', fontFamily: isSelected ? 'Inter_600SemiBold' : 'Inter_500Medium' }
+                          { fontWeight: isSelected ? '600' : '500', fontFamily: isSelected ? 'Manrope_600SemiBold' : 'Manrope_500Medium' }
                         ]}>
                           {option}
                         </Text>
@@ -693,11 +694,12 @@ export default function ProductDetailScreen() {
 
                     <Text style={[styles.commentText, { color: theme.colors.text }]}>{comment.text}</Text>
 
-                    <TouchableOpacity style={styles.helpfulButton}>
+                    <View style={[styles.helpfulButton, { flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
+                      <ThumbsUp size={13} color={theme.colors.textSecondary} />
                       <Text style={[styles.helpfulText, { color: theme.colors.textSecondary }]}>
-                        👍 Helpful ({comment.helpful})
+                        Helpful ({comment.helpful})
                       </Text>
-                    </TouchableOpacity>
+                    </View>
                   </View>
                 ))}
               </View>
@@ -762,6 +764,7 @@ const styles = StyleSheet.create({
   },
   comparePrice: {
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
     textDecorationLine: 'line-through',
     marginLeft: 8,
     opacity: 0.7,
@@ -779,7 +782,7 @@ const styles = StyleSheet.create({
   stockText: {
     fontSize: 14,
     fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
     marginLeft: 4,
   },
   detailsContainer: {
@@ -806,10 +809,11 @@ const styles = StyleSheet.create({
   variantTitle: {
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   variantRequired: {
     fontSize: 12,
+    fontFamily: 'Manrope_400Regular',
     color: '#F44336',
   },
   variantOptions: {
@@ -835,7 +839,7 @@ const styles = StyleSheet.create({
   variantOptionText: {
     fontSize: 14,
     fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
   },
   variantOptionSelected: {
     backgroundColor: '#007AFF',
@@ -871,7 +875,7 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 16,
     fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
   },
   imageContainer: {
     position: 'relative',
@@ -902,7 +906,7 @@ const styles = StyleSheet.create({
   discountText: {
     fontSize: 12,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     color: '#fff',
   },
   productInfo: {
@@ -910,8 +914,9 @@ const styles = StyleSheet.create({
   },
   productName: {
     fontSize: 24,
+    letterSpacing: -0.5,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     marginBottom: 12,
     lineHeight: 30,
   },
@@ -926,6 +931,7 @@ const styles = StyleSheet.create({
   },
   ratingText: {
     fontSize: 14,
+    fontFamily: 'Manrope_400Regular',
     marginLeft: 8,
   },
   priceContainer: {
@@ -936,11 +942,13 @@ const styles = StyleSheet.create({
   },
   price: {
     fontSize: 32,
+    letterSpacing: -0.5,
     fontWeight: '800',
-    fontFamily: 'Inter_800ExtraBold',
+    fontFamily: 'Manrope_800ExtraBold',
   },
   originalPrice: {
     fontSize: 20,
+    fontFamily: 'Manrope_400Regular',
     textDecorationLine: 'line-through',
   },
   optionSection: {
@@ -949,7 +957,7 @@ const styles = StyleSheet.create({
   optionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     marginBottom: 12,
   },
   colorOptions: {
@@ -965,6 +973,7 @@ const styles = StyleSheet.create({
   },
   colorText: {
     fontSize: 14,
+    fontFamily: 'Manrope_400Regular',
   },
   sizeOptions: {
     flexDirection: 'row',
@@ -981,6 +990,7 @@ const styles = StyleSheet.create({
   },
   sizeText: {
     fontSize: 14,
+    fontFamily: 'Manrope_400Regular',
   },
   quantityContainer: {
     flexDirection: 'row',
@@ -998,7 +1008,7 @@ const styles = StyleSheet.create({
   quantityText: {
     fontSize: 18,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     minWidth: 32,
     textAlign: 'center',
   },
@@ -1032,7 +1042,7 @@ const styles = StyleSheet.create({
   sellerAvatarFallback: {
     fontSize: 18,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
   sellerMeta: {
     marginLeft: 10,
@@ -1041,10 +1051,11 @@ const styles = StyleSheet.create({
   sellerBusinessName: {
     fontSize: 16,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
   sellerType: {
     fontSize: 13,
+    fontFamily: 'Manrope_400Regular',
     marginTop: 2,
   },
   sellerDetailsList: {
@@ -1052,22 +1063,24 @@ const styles = StyleSheet.create({
   },
   sellerDetailText: {
     fontSize: 13,
+    fontFamily: 'Manrope_400Regular',
     lineHeight: 18,
   },
   sellerVerified: {
     marginTop: 4,
     fontSize: 13,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     marginBottom: 12,
   },
   description: {
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
     lineHeight: 24,
   },
   featuresSection: {
@@ -1086,7 +1099,7 @@ const styles = StyleSheet.create({
   featureText: {
     fontSize: 14,
     fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
   },
   bottomActions: {
     flexDirection: 'row',
@@ -1114,14 +1127,14 @@ const styles = StyleSheet.create({
   buyNowText: {
     fontSize: 14,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     flexShrink: 1,
     textAlign: 'center',
   },
   buyNowLoadingText: {
     fontSize: 13,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     flexShrink: 1,
     textAlign: 'center',
   },
@@ -1140,7 +1153,7 @@ const styles = StyleSheet.create({
   addToCartText: {
     fontSize: 16,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     color: '#fff',
   },
   commentsSection: {
@@ -1168,7 +1181,7 @@ const styles = StyleSheet.create({
   addCommentText: {
     fontSize: 14,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     color: '#fff',
     textAlign: 'center',
   },
@@ -1192,7 +1205,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     marginBottom: 8,
   },
   commentInput: {
@@ -1201,6 +1214,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
     minHeight: 100,
   },
   commentFormActions: {
@@ -1216,7 +1230,7 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   submitButton: {
     flex: 1,
@@ -1227,7 +1241,7 @@ const styles = StyleSheet.create({
   submitButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     color: '#fff',
   },
   commentsList: {
@@ -1257,10 +1271,11 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   commentDate: {
     fontSize: 12,
+    fontFamily: 'Manrope_400Regular',
     marginTop: 2,
   },
   deleteButton: {
@@ -1270,7 +1285,7 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     fontSize: 12,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   commentRating: {
     flexDirection: 'row',
@@ -1279,6 +1294,7 @@ const styles = StyleSheet.create({
   },
   commentText: {
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
     lineHeight: 24,
     marginBottom: 12,
   },
@@ -1288,7 +1304,7 @@ const styles = StyleSheet.create({
   helpfulText: {
     fontSize: 14,
     fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
   },
   noComments: {
     alignItems: 'center',
@@ -1296,6 +1312,7 @@ const styles = StyleSheet.create({
   },
   noCommentsText: {
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
     textAlign: 'center',
   },
 });

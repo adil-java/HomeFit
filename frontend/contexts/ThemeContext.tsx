@@ -32,22 +32,24 @@ export interface Theme {
   dark: boolean;
 }
 
+// Warm neutrals (furniture / interiors feel) with the brand navy as the
+// action colour. Cards use `surface` on top of `background`.
 const lightTheme: Theme = {
   colors: {
-    primary: '#2F3C7E',    // Deep blue for primary actions
-    secondary: '#4A4A4A',  // Dark grey for secondary elements
-    accent: '#C5A880',    // Warm wood-like accent color
-    background: '#FFFFFF', // Pure white background
-    surface: '#F8F8F8',   // Light grey surface
-    text: '#1A1A1A',      // Almost black for primary text
-    textSecondary: '#666666', // Dark grey for secondary text
-    border: '#E0E0E0',    // Light border color
-    success: '#28A745',   // Success green
-    warning: '#FFC107',   // Warning amber
-    error: '#DC3545',     // Error red
+    primary: '#2F3C7E',       // Brand navy — buttons, links, active states
+    secondary: '#4A4743',
+    accent: '#B8925F',        // Warm oak
+    background: '#F6F5F2',    // Warm off-white page
+    surface: '#FFFFFF',       // Cards, inputs, sheets
+    text: '#1C1B19',
+    textSecondary: '#6B6862',
+    border: '#E6E3DD',
+    success: '#2F855A',
+    warning: '#C98A12',       // Deep amber (readable on white)
+    error: '#C53030',
     gradient: {
-      start: '#2F3C7E',   // Deep blue
-      end: '#1E2A5E',     // Darker blue
+      start: '#2F3C7E',
+      end: '#1E2A5E',
     },
   },
   typography: sharedTypography,
@@ -56,20 +58,20 @@ const lightTheme: Theme = {
 
 const darkTheme: Theme = {
   colors: {
-    primary: '#4A6FA5',    // Muted blue for primary actions
-    secondary: '#A0AEC0',  // Light grey for secondary elements
-    accent: '#D4A76A',    // Warm wood-like accent color
-    background: '#1A202C', // Dark background
-    surface: '#2D3748',   // Slightly lighter dark surface
-    text: '#F7FAFC',      // Off-white for text
-    textSecondary: '#CBD5E0', // Light grey for secondary text
-    border: '#4A5568',    // Dark border color
-    success: '#48BB78',   // Success green
-    warning: '#ECC94B',   // Warning yellow
-    error: '#F56565',     // Error red
+    primary: '#5576B5',       // Navy lifted for dark backgrounds (white text stays readable)
+    secondary: '#B5B2AC',
+    accent: '#D1A872',
+    background: '#141413',    // Neutral near-black
+    surface: '#1E1E1C',
+    text: '#F4F3F0',
+    textSecondary: '#A3A09A',
+    border: '#2E2D2A',
+    success: '#4FB07A',
+    warning: '#E0A93B',
+    error: '#E5675F',
     gradient: {
-      start: '#2D3748',   // Dark surface
-      end: '#1A202C',     // Darker background
+      start: '#1E1E1C',
+      end: '#141413',
     },
   },
   typography: sharedTypography,

@@ -409,7 +409,7 @@ export default function OrdersScreen() {
                       ? '#fff' 
                       : theme.colors.text,
                     fontWeight: selectedFilter === filter.key ? '600' : '400',
-                    fontFamily: selectedFilter === filter.key ? 'Inter_600SemiBold' : 'Inter_400Regular',
+                    fontFamily: selectedFilter === filter.key ? 'Manrope_600SemiBold' : 'Manrope_400Regular',
                   },
                 ]}
               >
@@ -552,8 +552,9 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
+    letterSpacing: -0.3,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
   filterContainer: {
     paddingHorizontal: 16,
@@ -576,7 +577,7 @@ const styles = StyleSheet.create({
   filterText: {
     fontSize: 14,
     fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
   },
   resultsContainer: {
     paddingHorizontal: 20,
@@ -584,6 +585,7 @@ const styles = StyleSheet.create({
   },
   resultsText: {
     fontSize: 14,
+    fontFamily: 'Manrope_400Regular',
   },
   emptyContainer: {
     flex: 1,
@@ -594,6 +596,7 @@ const styles = StyleSheet.create({
   emptyText: {
     marginTop: 16,
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
     textAlign: 'center',
   },
   retryButton: {
@@ -605,7 +608,7 @@ const styles = StyleSheet.create({
   retryText: {
     color: '#fff',
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   orderCard: {
     borderRadius: 12,
@@ -633,18 +636,19 @@ const styles = StyleSheet.create({
   orderId: {
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     marginBottom: 4,
     textTransform: 'uppercase',
   },
   customerName: {
     fontSize: 14,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     marginTop: 4,
   },
   orderDate: {
     fontSize: 12,
+    fontFamily: 'Manrope_400Regular',
     opacity: 0.7,
     marginTop: 2,
   },
@@ -667,7 +671,7 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 11,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     marginLeft: 4,
     textTransform: 'capitalize',
   },
@@ -682,6 +686,7 @@ const styles = StyleSheet.create({
   },
   summaryText: {
     fontSize: 14,
+    fontFamily: 'Manrope_400Regular',
   },
   paidBadge: {
     paddingHorizontal: 8,
@@ -695,7 +700,7 @@ const styles = StyleSheet.create({
   paidText: {
     fontSize: 10,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -717,7 +722,7 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 14,
     fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
     marginLeft: 8,
   },
   ordersList: {
@@ -739,7 +744,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     marginBottom: 20,
     textAlign: 'center',
   },
@@ -757,6 +762,7 @@ const styles = StyleSheet.create({
   },
   statusOptionText: {
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
   },
   statusSelected: {
     width: 20,
@@ -791,11 +797,11 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     color: '#333',
     fontWeight: 'bold',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
   updateButtonText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
 });

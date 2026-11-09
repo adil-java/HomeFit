@@ -110,8 +110,9 @@ const styles = StyleSheet.create({
     marginTop: 12,
     color: '#fff',
     fontSize: 20,
+    letterSpacing: -0.3,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     textAlign: 'center',
   },
   subtitle: {
@@ -119,7 +120,7 @@ const styles = StyleSheet.create({
     color: '#ccc',
     fontSize: 14,
     fontWeight: '400',
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'Manrope_400Regular',
     textAlign: 'center',
   },
 });

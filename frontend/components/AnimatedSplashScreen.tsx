@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 34,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     color: '#FFFFFF',
     letterSpacing: 1.2,
     marginBottom: 8,
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.5)',
     letterSpacing: 0.5,
     fontWeight: '400',
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'Manrope_400Regular',
     textAlign: 'center',
     width: '100%',
     paddingHorizontal: 24,

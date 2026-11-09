@@ -238,13 +238,14 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
+    letterSpacing: -0.3,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
   saveButton: {
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   content: {
     flex: 1,
@@ -284,7 +285,7 @@ const styles = StyleSheet.create({
   changePhotoText: {
     fontSize: 14,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     color: '#fff',
   },
   fieldsSection: {
@@ -311,7 +312,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   fieldInput: {
     borderWidth: 1,
@@ -319,9 +320,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
   },
   fieldValue: {
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
     lineHeight: 22,
   },
   section: {
@@ -331,7 +334,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     marginBottom: 16,
   },
   infoCard: {
@@ -347,11 +350,12 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
   },
   infoValue: {
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   statusContainer: {
     flexDirection: 'row',
@@ -366,7 +370,7 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   actionButtons: {
     flexDirection: 'row',
@@ -387,7 +391,7 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   saveButtonLarge: {
     flex: 1,
@@ -398,7 +402,7 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 16,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     color: '#fff',
   },
 });

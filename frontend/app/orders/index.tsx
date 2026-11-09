@@ -331,6 +331,7 @@ const styles = StyleSheet.create({
   emptyText: {
     marginTop: 16,
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
     textAlign: 'center',
   },
   retryButton: {
@@ -342,7 +343,7 @@ const styles = StyleSheet.create({
   retryText: {
     color: '#fff',
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   header: {
     flexDirection: 'row',
@@ -353,8 +354,9 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
+    letterSpacing: -0.3,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
   filterContainer: {
     paddingHorizontal: 16,
@@ -374,7 +376,7 @@ const styles = StyleSheet.create({
   filterText: {
     fontSize: 14,
     fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
   },
   ordersList: {
     paddingHorizontal: 20,
@@ -395,7 +397,7 @@ const styles = StyleSheet.create({
   orderId: {
     fontSize: 16,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     marginBottom: 2,
   },
   statusBadge: {
@@ -409,7 +411,7 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 10,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   orderItem: {
     flexDirection: 'row',
@@ -433,7 +435,7 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: 14,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     marginBottom: 2,
   },
   productNameCompact: {
@@ -441,9 +443,11 @@ const styles = StyleSheet.create({
   },
   productPrice: {
     fontSize: 12,
+    fontFamily: 'Manrope_400Regular',
   },
   additionalItems: {
     fontSize: 12,
+    fontFamily: 'Manrope_400Regular',
     fontStyle: 'italic',
     marginLeft: 52,
   },
@@ -458,6 +462,7 @@ const styles = StyleSheet.create({
   },
   orderDate: {
     fontSize: 12,
+    fontFamily: 'Manrope_400Regular',
     color: '#6b7280',
     marginBottom: 4,
   },
@@ -467,11 +472,11 @@ const styles = StyleSheet.create({
   orderTotal: {
     fontSize: 16,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
   viewDetails: {
     fontSize: 14,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
 });

@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
 		color: 'white',
 		marginLeft: 8,
 		fontWeight: '600',
-		fontFamily: 'Inter_600SemiBold',
+		fontFamily: 'Manrope_600SemiBold',
 		fontSize: 16,
 	},
 });

@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
   statusTitle: {
     fontSize: 14,
     fontWeight: "600",
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     color: "#000",
   },
   statusBadge: {
@@ -283,11 +283,12 @@ const styles = StyleSheet.create({
   statusBadgeText: {
     fontSize: 12,
     fontWeight: "600",
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     color: "#166534",
   },
   statusDescription: {
     fontSize: 13,
+    fontFamily: 'Manrope_400Regular',
     color: "#666",
     lineHeight: 20,
   },
@@ -299,13 +300,15 @@ const styles = StyleSheet.create({
   },
   balanceLabel: {
     fontSize: 13,
+    fontFamily: 'Manrope_400Regular',
     color: "rgba(255, 255, 255, 0.8)",
     marginBottom: 8,
   },
   balanceAmount: {
     fontSize: 36,
+    letterSpacing: -0.5,
     fontWeight: "700",
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     color: "#fff",
     marginBottom: 4,
   },
@@ -314,6 +317,7 @@ const styles = StyleSheet.create({
   },
   balanceNote: {
     fontSize: 12,
+    fontFamily: 'Manrope_400Regular',
     color: "rgba(255, 255, 255, 0.7)",
     marginBottom: 16,
   },
@@ -329,7 +333,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 14,
     fontWeight: "600",
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   card: {
     backgroundColor: "#f9f9f9",
@@ -342,7 +346,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 14,
     fontWeight: "600",
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     color: "#000",
     marginBottom: 12,
   },
@@ -362,13 +366,14 @@ const styles = StyleSheet.create({
   },
   pendingLabel: {
     fontSize: 12,
+    fontFamily: 'Manrope_400Regular',
     color: "#999",
     marginBottom: 4,
   },
   pendingAmount: {
     fontSize: 18,
     fontWeight: "600",
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     color: "#000",
   },
   processingBadge: {
@@ -380,11 +385,12 @@ const styles = StyleSheet.create({
   processingText: {
     fontSize: 12,
     fontWeight: "500",
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
     color: "#92400e",
   },
   pendingNote: {
     fontSize: 12,
+    fontFamily: 'Manrope_400Regular',
     color: "#999",
   },
   infoRow: {
@@ -404,17 +410,19 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 12,
+    fontFamily: 'Manrope_400Regular',
     color: "#999",
     marginBottom: 2,
   },
   infoValue: {
     fontSize: 13,
     fontWeight: "500",
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
     color: "#000",
   },
   feeDescription: {
     fontSize: 13,
+    fontFamily: 'Manrope_400Regular',
     color: "#666",
     lineHeight: 20,
     marginBottom: 16,
@@ -433,12 +441,13 @@ const styles = StyleSheet.create({
   },
   exampleLabel: {
     fontSize: 12,
+    fontFamily: 'Manrope_400Regular',
     color: "#666",
   },
   exampleValue: {
     fontSize: 12,
     fontWeight: "500",
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
     color: "#000",
   },
   feeValue: {
@@ -452,7 +461,7 @@ const styles = StyleSheet.create({
   earningValue: {
     color: "#22c55e",
     fontWeight: "600",
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   supportLink: {
     paddingVertical: 12,
@@ -463,12 +472,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#007AFF",
     fontWeight: "500",
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
   },
   errorText: {
     fontSize: 16,
     color: "#ef4444",
     fontWeight: "500",
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
   },
 })

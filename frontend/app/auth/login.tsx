@@ -74,7 +74,7 @@ export default function LoginScreen() {
             <HeaderBackButton onPress={() => router.back()} size={24} style={styles.backButton} />
             
             {/* Logo */}
-            <View style={[styles.logoContainer, { backgroundColor: isDark ? theme.colors.surface : '#2D3748', marginTop: logoTopMargin }]}> 
+            <View style={[styles.logoContainer, { backgroundColor: '#2F3B4B' /* matches the logo image background */, marginTop: logoTopMargin }]}> 
               <Image 
                 source={require('@/assets/images/LOGO.png')} 
                 style={styles.logo}
@@ -230,12 +230,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
+    letterSpacing: -0.5,
     fontWeight: '800',
-    fontFamily: 'Inter_800ExtraBold',
+    fontFamily: 'Manrope_800ExtraBold',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
     textAlign: 'center',
     lineHeight: 22,
   },
@@ -249,7 +251,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     marginBottom: 8,
     marginLeft: 4,
   },
@@ -267,6 +269,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
   },
   passwordInput: {
     paddingRight: 40,
@@ -278,6 +281,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 13,
+    fontFamily: 'Manrope_400Regular',
     marginTop: 6,
     marginLeft: 4,
   },
@@ -295,7 +299,7 @@ const styles = StyleSheet.create({
   loginButtonText: {
     fontSize: 16,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     color: '#fff',
     textAlign: 'center',
     width: '100%',
@@ -309,11 +313,12 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 15,
+    fontFamily: 'Manrope_400Regular',
   },
   linkText: {
     fontSize: 15,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   demoContainer: {
     margin: 24,
@@ -324,11 +329,12 @@ const styles = StyleSheet.create({
   demoTitle: {
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     marginBottom: 8,
   },
   demoText: {
     fontSize: 14,
+    fontFamily: 'Manrope_400Regular',
     marginBottom: 4,
   },
 });

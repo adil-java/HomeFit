@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     height: '100%',
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'Manrope_400Regular',
   },
   clearButton: {
     padding: 8,
@@ -344,12 +344,12 @@ const styles = StyleSheet.create({
   categoriesTitle: {
     fontSize: 17,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   clearFiltersText: {
     fontSize: 14,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   categoriesScrollContent: {
     paddingRight: 8,
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
   filterChipText: {
     fontSize: 14,
     fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
   },
   resultsContainer: {
     flex: 1,
@@ -372,6 +372,7 @@ const styles = StyleSheet.create({
   },
   resultsText: {
     fontSize: 14,
+    fontFamily: 'Manrope_400Regular',
     marginBottom: 16,
   },
   productsContainer: {

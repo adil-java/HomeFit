@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   headerSpacer: {
     width: 40,
@@ -507,6 +507,7 @@ const styles = StyleSheet.create({
   bannerText: {
     flex: 1,
     fontSize: 13,
+    fontFamily: 'Manrope_400Regular',
     lineHeight: 18,
   },
   bannerClose: {
@@ -525,14 +526,16 @@ const styles = StyleSheet.create({
   },
   errorTitle: {
     fontSize: 20,
+    letterSpacing: -0.3,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     marginTop: 16,
     marginBottom: 8,
     textAlign: 'center',
   },
   errorText: {
     fontSize: 15,
+    fontFamily: 'Manrope_400Regular',
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 24,
@@ -546,6 +549,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
 });

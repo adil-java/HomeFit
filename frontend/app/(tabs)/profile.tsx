@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,414 +7,216 @@ import {
   TouchableOpacity,
   Image,
   Switch,
+  Alert,
   useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { 
-  User, 
-  Settings, 
-  MapPin, 
-  CreditCard, 
-  ShoppingBag, 
-  LogOut, 
+import {
+  User,
+  Settings,
+  MapPin,
+  ShoppingBag,
+  LogOut,
   ChevronRight,
   Moon,
-  Sun,
-  Wallet,
-  Shield
+  Heart,
+  Package,
 } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useAppSelector } from '@/store/hooks';
-import { useEffect } from 'react';
+import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { fetchCart } from '@/store/slices/cartSlice';
 import { fetchWishlist } from '@/store/slices/wishlistSlice';
-import { useAppDispatch } from '@/store/hooks';
+
+type RowProps = {
+  icon: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
+  title: string;
+  subtitle?: string;
+  onPress?: () => void;
+  right?: React.ReactNode;
+  last?: boolean;
+};
 
 export default function ProfileScreen() {
   const { theme, isDark, toggleTheme } = useTheme();
+  const c = theme.colors;
   const { width } = useWindowDimensions();
-  const compact = width < 360;
-  const horizontalPadding = compact ? 14 : 20;
+  const horizontalPadding = width < 360 ? 14 : 20;
   const { user, logout } = useAuth();
   const dispatch = useAppDispatch();
-  const { items: cartItems } = useAppSelector((state) => state.cart);
-  const { items: wishlistItems } = useAppSelector((state) => state.wishlist);
+  const cartCount = useAppSelector((state) => state.cart.items?.length || 0);
+  const wishlistCount = useAppSelector((state) => state.wishlist.items?.length || 0);
 
-  // Fetch cart and wishlist data when the component mounts
   useEffect(() => {
     dispatch(fetchCart());
     dispatch(fetchWishlist({}));
   }, [dispatch]);
 
-  const cartCount = cartItems?.length || 0;
-  const wishlistCount = wishlistItems?.length || 0;
+  const isSeller = user?.role?.toLowerCase() === 'seller';
+  const displayName = user?.name || 'Your account';
+  const initials =
+    displayName
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((p) => p[0]?.toUpperCase())
+      .join('') || 'U';
 
-  const handleLogout = async () => {
-    await logout();
+  const confirmLogout = () => {
+    Alert.alert('Log out?', 'You can sign back in any time.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Log out', style: 'destructive', onPress: () => logout() },
+    ]);
   };
 
-  const ProfileOption = ({ 
-    icon: Icon, 
-    title, 
-    subtitle, 
-    onPress, 
-    showArrow = true,
-    rightElement 
-  }: {
-    icon: any;
-    title: string;
-    subtitle?: string;
-    onPress?: () => void;
-    showArrow?: boolean;
-    rightElement?: React.ReactNode;
-  }) => (
+  const Row = ({ icon: Icon, title, subtitle, onPress, right, last }: RowProps) => (
     <TouchableOpacity
       onPress={onPress}
-      style={[styles.optionContainer, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+      disabled={!onPress}
+      activeOpacity={0.6}
+      style={styles.row}
+      accessibilityRole={onPress ? 'button' : undefined}
     >
-      <View style={styles.optionLeft}>
-        <View style={[styles.iconContainer, { backgroundColor: theme.colors.background }]}>
-          <Icon size={20} color={theme.colors.primary} />
+      <Icon size={20} color={c.text} strokeWidth={1.8} />
+      <View style={[styles.rowBody, !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border }]}>
+        <View style={styles.rowText}>
+          <Text style={[styles.rowTitle, { color: c.text }]}>{title}</Text>
+          {!!subtitle && <Text style={[styles.rowSubtitle, { color: c.textSecondary }]}>{subtitle}</Text>}
         </View>
-        <View>
-          <Text style={[styles.optionTitle, { color: theme.colors.text }]}>{title}</Text>
-          {subtitle && (
-            <Text style={[styles.optionSubtitle, { color: theme.colors.textSecondary }]}>
-              {subtitle}
-            </Text>
-          )}
-        </View>
+        {right ?? (onPress ? <ChevronRight size={18} color={c.textSecondary} /> : null)}
       </View>
-      {rightElement || (showArrow && (
-        <ChevronRight size={20} color={theme.colors.textSecondary} />
-      ))}
     </TouchableOpacity>
   );
 
+  const Group = ({ label, children }: { label?: string; children: React.ReactNode }) => (
+    <View style={styles.group}>
+      {!!label && <Text style={[styles.groupLabel, { color: c.textSecondary }]}>{label}</Text>}
+      <View style={[styles.groupCard, { backgroundColor: c.surface, borderColor: c.border }]}>{children}</View>
+    </View>
+  );
+
   return (
-    <SafeAreaView 
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-      edges={['bottom']}  
-    >
-      <ScrollView 
+    <SafeAreaView style={[styles.container, { backgroundColor: c.background }]} edges={['bottom']}>
+      <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: 0 }}  
+        contentContainerStyle={[styles.content, { paddingHorizontal: horizontalPadding }]}
       >
-        {/* Header */}
-        <LinearGradient
-          colors={[theme.colors.gradient.start, theme.colors.gradient.end]}
-          style={[styles.header, { paddingTop: 0, paddingHorizontal: horizontalPadding }]}  
+        {/* Identity */}
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => router.push('/profile/personal-info')}
+          style={styles.identity}
         >
-          <View style={styles.profileSection}>
-            <View style={styles.avatarContainer}>
-              <View style={[styles.avatar, { backgroundColor: theme.colors.surface }]}>
-                {user?.photoURL ? (
-                  <Image source={{ uri: user.photoURL }} style={styles.avatarImage} />
-                ) : (
-                  <User size={40} color={theme.colors.primary} />
-                )}
-              </View>
+          {user?.photoURL ? (
+            <Image source={{ uri: user.photoURL }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatar, { backgroundColor: c.primary }]}>
+              <Text style={styles.avatarInitials}>{initials}</Text>
             </View>
-            <Text style={styles.userName}>{user?.name || 'User'}</Text>
-            <Text style={styles.userEmail}>{user?.email || 'user@example.com'}</Text>
-            {user?.role?.toLowerCase() === 'seller' && (
-              <View style={styles.sellerBadge}>
-                <Shield size={12} color="#fff" />
-                <Text style={styles.sellerBadgeText}>Seller</Text>
+          )}
+          <View style={styles.identityText}>
+            <Text style={[styles.name, { color: c.text }]} numberOfLines={1}>{displayName}</Text>
+            <Text style={[styles.email, { color: c.textSecondary }]} numberOfLines={1}>{user?.email}</Text>
+            {isSeller && (
+              <View style={[styles.roleChip, { borderColor: c.border }]}>
+                <Text style={[styles.roleChipText, { color: c.text }]}>Seller account</Text>
               </View>
             )}
           </View>
-        </LinearGradient>
+          <ChevronRight size={18} color={c.textSecondary} />
+        </TouchableOpacity>
 
-        {/* Quick Stats */}
-        <View style={[styles.statsContainer, compact && styles.statsContainerCompact, { paddingHorizontal: horizontalPadding }]}> 
-          <TouchableOpacity
-            style={[styles.statCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
-            onPress={() => router.push('/(tabs)/cart')}
-          >
-            <ShoppingBag size={24} color={theme.colors.primary} />
-            <Text style={[styles.statNumber, { color: theme.colors.text }]}>{cartCount}</Text>
-            <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Cart Items</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[styles.statCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
-            onPress={() => router.push('/(tabs)/wishlist')}
-          >
-            <View style={[styles.statIcon, { backgroundColor: theme.colors.accent + '20' }]}>
-              <Text style={styles.heartIcon}>♥</Text>
+        {/* Counts */}
+        <View style={[styles.stats, { backgroundColor: c.surface, borderColor: c.border }]}>
+          <TouchableOpacity style={styles.stat} onPress={() => router.navigate('/(tabs)/cart')} activeOpacity={0.6}>
+            <Text style={[styles.statNumber, { color: c.text }]}>{cartCount}</Text>
+            <View style={styles.statLabelRow}>
+              <ShoppingBag size={14} color={c.textSecondary} />
+              <Text style={[styles.statLabel, { color: c.textSecondary }]}>In cart</Text>
             </View>
-            <Text style={[styles.statNumber, { color: theme.colors.text }]}>{wishlistCount}</Text>
-            <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Wishlist</Text>
           </TouchableOpacity>
-          
-          {/* <TouchableOpacity
-            style={[styles.statCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
-            onPress={() => router.push('/wallet')}
-          >
-            <Wallet size={24} color={theme.colors.success} />
-            <Text style={[styles.statNumber, { color: theme.colors.text }]}>Rs. 250</Text>
-            <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Wallet</Text>
-          </TouchableOpacity> */}
-        </View>
-
-        {/* Settings Options */}
-        <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}> 
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Account</Text>
-          
-          <ProfileOption
-            icon={User}
-            title="Personal Information"
-            subtitle="Name, email, phone number"
-            onPress={() => router.push('/profile/personal-info')}
-          />
-          
-          <ProfileOption
-            icon={MapPin}
-            title="Addresses"
-            subtitle="Manage shipping addresses"
-            onPress={() => router.push('/profile/addresses')}
-          />
-          
-          {/* <ProfileOption
-            icon={CreditCard}
-            title="Payment Methods"
-            subtitle="Cards and payment options"
-            onPress={() => router.push('/profile/payment-methods')}
-          /> */}
-          
-          {/* <ProfileOption
-            icon={Wallet}
-            title="Wallet"
-            subtitle="Balance: Rs. 250.00"
-            onPress={() => router.push('/wallet')}
-          /> */}
-        </View>
-
-        <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}> 
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Orders & Support</Text>
-          
-          <ProfileOption
-            icon={ShoppingBag}
-            title="My Orders"
-            subtitle="Track and manage orders"
-            onPress={() => router.push('/orders')}
-          />
-          
-          <ProfileOption
-            icon={Settings}
-            title="Settings"
-            subtitle="Notifications, privacy, security"
-            onPress={() => router.push('/profile/settings')}
-          />
-        </View>
-
-        {/* Theme Toggle */}
-        <View style={[styles.section, { marginBottom: 24, paddingHorizontal: horizontalPadding }]}> 
-          <View style={[styles.optionContainer, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-            <View style={styles.optionLeft}>
-              <View style={[styles.iconContainer, { backgroundColor: theme.colors.background }]}>
-                {isDark ? (
-                  <Sun size={20} color={theme.colors.primary} />
-                ) : (
-                  <Moon size={20} color={theme.colors.primary} />
-                )}
-              </View>
-              <View>
-                <Text style={[styles.optionTitle, { color: theme.colors.text }]}>
-                  {isDark ? 'Light Mode' : 'Dark Mode'}
-                </Text>
-                <Text style={[styles.optionSubtitle, { color: theme.colors.textSecondary }]}>
-                  {isDark ? 'Switch to light theme' : 'Switch to dark theme'}
-                </Text>
-              </View>
+          <View style={[styles.statDivider, { backgroundColor: c.border }]} />
+          <TouchableOpacity style={styles.stat} onPress={() => router.navigate('/(tabs)/wishlist')} activeOpacity={0.6}>
+            <Text style={[styles.statNumber, { color: c.text }]}>{wishlistCount}</Text>
+            <View style={styles.statLabelRow}>
+              <Heart size={14} color={c.textSecondary} />
+              <Text style={[styles.statLabel, { color: c.textSecondary }]}>Saved</Text>
             </View>
-            <Switch
-              value={isDark}
-              onValueChange={toggleTheme}
-              thumbColor={theme.colors.primary}
-              trackColor={{ false: theme.colors.border, true: theme.colors.primary + '80' }}
-            />
-          </View>
-        </View>
-
-        {/* Logout */}
-        <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}> 
-          <TouchableOpacity
-            onPress={handleLogout}
-            style={[styles.logoutButton, { backgroundColor: theme.colors.error + '10', borderColor: theme.colors.error + '20' }]}
-          >
-            <LogOut size={20} color={theme.colors.error} />
-            <Text style={[styles.logoutText, { color: theme.colors.error }]}>Log Out</Text>
           </TouchableOpacity>
         </View>
+
+        <Group label="Account">
+          <Row icon={User} title="Personal information" onPress={() => router.push('/profile/personal-info')} />
+          <Row icon={MapPin} title="Addresses" subtitle="Delivery addresses" onPress={() => router.push('/profile/addresses')} last />
+        </Group>
+
+        <Group label="Shopping">
+          <Row icon={Package} title="My orders" onPress={() => router.push('/orders')} last />
+        </Group>
+
+        <Group label="Preferences">
+          <Row
+            icon={Moon}
+            title="Dark mode"
+            right={
+              <Switch
+                value={isDark}
+                onValueChange={toggleTheme}
+                thumbColor="#FFFFFF"
+                trackColor={{ false: c.border, true: c.primary }}
+                ios_backgroundColor={c.border}
+              />
+            }
+          />
+          <Row icon={Settings} title="Settings" subtitle="Notifications, privacy, security" onPress={() => router.push('/profile/settings')} last />
+        </Group>
+
+        <Group>
+          <TouchableOpacity onPress={confirmLogout} activeOpacity={0.6} style={styles.row} accessibilityRole="button">
+            <LogOut size={20} color={c.error} strokeWidth={1.8} />
+            <View style={styles.rowBody}>
+              <Text style={[styles.rowTitle, { color: c.error }]}>Log out</Text>
+            </View>
+          </TouchableOpacity>
+        </Group>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    paddingBottom: 30,
-    paddingHorizontal: 20,
-  },
-  profileSection: {
-    alignItems: 'center',
-  },
-  avatarContainer: {
-    marginBottom: 16,
-    marginTop: 20,
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
-    overflow: 'hidden',
-  },
-  avatarImage: {
-    width: '100%',
-    height: '100%',
-  },
-  userName: {
-    fontSize: 20,
-    fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
-    color: '#fff',
-    marginBottom: 4,
-  },
-  userEmail: {
-    fontSize: 16,
-    color: '#fff',
-    opacity: 0.9,
-  },
-  sellerBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginTop: 8,
-    gap: 4,
-  },
-  sellerBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
-    color: '#fff',
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    marginTop: -15,
-    marginBottom: 20,
-    gap: 12,
-  },
-  statsContainerCompact: {
-    gap: 8,
-  },
-  statCard: {
-    flex: 1,
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  statIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: -4,
-  },
-  heartIcon: {
-    fontSize: 26,
-    color: '#f97316',
-  },
-  statNumber: {
-    fontSize: 18,
-    fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
-  },
-  section: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
-    marginBottom: 12,
-  },
-  optionContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
+  container: { flex: 1 },
+  content: { paddingTop: 20, paddingBottom: 32, width: '100%', maxWidth: 640, alignSelf: 'center' },
+
+  identity: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 20 },
+  avatar: { width: 60, height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  avatarInitials: { color: '#fff', fontSize: 20, letterSpacing: -0.3, fontFamily: 'Manrope_700Bold' },
+  identityText: { flex: 1 },
+  name: { fontSize: 20, fontFamily: 'Manrope_800ExtraBold', letterSpacing: -0.4 },
+  email: { fontSize: 14, marginTop: 2, fontFamily: 'Manrope_500Medium' },
+  roleChip: { alignSelf: 'flex-start', marginTop: 8, borderWidth: 1, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 },
+  roleChipText: { fontSize: 12, fontFamily: 'Manrope_600SemiBold' },
+
+  stats: { flexDirection: 'row', borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, marginBottom: 28 },
+  stat: { flex: 1, paddingVertical: 16, paddingHorizontal: 18 },
+  statNumber: { fontSize: 22, fontFamily: 'Manrope_800ExtraBold', letterSpacing: -0.5 },
+  statLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
+  statLabel: { fontSize: 13, fontFamily: 'Manrope_500Medium' },
+  statDivider: { width: StyleSheet.hairlineWidth, marginVertical: 14 },
+
+  group: { marginBottom: 24 },
+  groupLabel: {
+    fontSize: 12, fontFamily: 'Manrope_700Bold',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
     marginBottom: 8,
+    marginLeft: 4,
   },
-  optionLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  optionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
-    marginBottom: 2,
-  },
-  optionSubtitle: {
-    fontSize: 14,
-  },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    gap: 8,
-  },
-  logoutText: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
-  },
+  groupCard: { borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
+  row: { flexDirection: 'row', alignItems: 'center', paddingLeft: 16, gap: 14 },
+  rowBody: { flex: 1, flexDirection: 'row', alignItems: 'center', minHeight: 54, paddingVertical: 10, paddingRight: 14 },
+  rowText: { flex: 1 },
+  rowTitle: { fontSize: 15, fontFamily: 'Manrope_600SemiBold' },
+  rowSubtitle: { fontSize: 13, fontFamily: 'Manrope_400Regular', marginTop: 1 },
 });

@@ -247,8 +247,9 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
+    letterSpacing: -0.3,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
   section: {
     paddingHorizontal: 20,
@@ -257,7 +258,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     marginBottom: 16,
   },
   settingItem: {
@@ -294,7 +295,7 @@ const styles = StyleSheet.create({
   settingTitle: {
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     marginBottom: 2,
   },
   settingTitleCompact: {
@@ -302,6 +303,7 @@ const styles = StyleSheet.create({
   },
   settingSubtitle: {
     fontSize: 14,
+    fontFamily: 'Manrope_400Regular',
   },
   settingSubtitleCompact: {
     fontSize: 12,
@@ -309,6 +311,6 @@ const styles = StyleSheet.create({
   arrow: {
     fontSize: 20,
     fontWeight: '400',
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'Manrope_400Regular',
   },
 });

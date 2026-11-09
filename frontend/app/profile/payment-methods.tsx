@@ -569,8 +569,9 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
+    letterSpacing: -0.3,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
   content: {
     flex: 1,
@@ -599,11 +600,12 @@ const styles = StyleSheet.create({
   methodName: {
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     marginBottom: 4,
   },
   methodSubtext: {
     fontSize: 14,
+    fontFamily: 'Manrope_400Regular',
     marginBottom: 2,
   },
   methodActions: {
@@ -633,7 +635,7 @@ const styles = StyleSheet.create({
   defaultText: {
     fontSize: 12,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     color: '#fff',
   },
   setDefaultButton: {
@@ -645,7 +647,7 @@ const styles = StyleSheet.create({
   setDefaultText: {
     fontSize: 14,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   emptyContainer: {
     flex: 1,
@@ -655,13 +657,15 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 24,
+    letterSpacing: -0.5,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     marginTop: 20,
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
     textAlign: 'center',
     marginBottom: 32,
   },
@@ -673,7 +677,7 @@ const styles = StyleSheet.create({
   addButtonText: {
     fontSize: 16,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     color: '#fff',
   },
   modalContainer: {
@@ -691,7 +695,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
   modalContent: {
     flex: 1,
@@ -703,13 +707,13 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     marginBottom: 8,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     marginTop: 16,
     marginBottom: 16,
   },
@@ -719,6 +723,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
   },
   row: {
     flexDirection: 'row',
@@ -744,7 +749,7 @@ const styles = StyleSheet.create({
   typeLabel: {
     fontSize: 12,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     textAlign: 'center',
   },
   walletInfo: {
@@ -754,12 +759,13 @@ const styles = StyleSheet.create({
   walletText: {
     fontSize: 18,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     marginTop: 16,
     marginBottom: 8,
   },
   walletSubtext: {
     fontSize: 14,
+    fontFamily: 'Manrope_400Regular',
     textAlign: 'center',
     lineHeight: 20,
   },

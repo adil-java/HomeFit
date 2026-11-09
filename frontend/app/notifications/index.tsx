@@ -256,8 +256,9 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
+    letterSpacing: -0.3,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
   titleCompact: {
     fontSize: 18,
@@ -265,6 +266,7 @@ const styles = StyleSheet.create({
   subtitle: {
     marginTop: 2,
     fontSize: 12,
+    fontFamily: 'Manrope_400Regular',
   },
   refreshButton: {
     width: 38,
@@ -286,7 +288,7 @@ const styles = StyleSheet.create({
   markAllText: {
     fontSize: 13,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   listContent: {
     paddingTop: 8,
@@ -296,7 +298,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 12,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     textTransform: 'uppercase',
     marginTop: 14,
     marginBottom: 10,
@@ -337,7 +339,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   unreadDot: {
     width: 8,
@@ -347,11 +349,13 @@ const styles = StyleSheet.create({
   message: {
     marginTop: 4,
     fontSize: 13,
+    fontFamily: 'Manrope_400Regular',
     lineHeight: 18,
   },
   time: {
     marginTop: 8,
     fontSize: 11,
+    fontFamily: 'Manrope_400Regular',
   },
   emptyState: {
     flex: 1,
@@ -370,12 +374,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     marginBottom: 6,
   },
   emptyText: {
     textAlign: 'center',
     fontSize: 13,
+    fontFamily: 'Manrope_400Regular',
     lineHeight: 19,
   },
 });

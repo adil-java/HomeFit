@@ -425,8 +425,9 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
+    letterSpacing: -0.3,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
   centered: {
     flex: 1,
@@ -435,6 +436,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
     marginTop: 10,
   },
   content: {
@@ -442,13 +444,15 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
+    letterSpacing: -0.5,
     fontWeight: 'bold',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     textAlign: 'center',
     marginBottom: 10,
   },
   subtitle: {
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
     textAlign: 'center',
     marginBottom: 30,
   },
@@ -461,7 +465,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     marginBottom: 8,
   },
   input: {
@@ -469,6 +473,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 15,
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
   },
   textArea: {
     height: 100,
@@ -483,7 +488,7 @@ const styles = StyleSheet.create({
   submitButtonText: {
     fontSize: 18,
     fontWeight: 'bold',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
   statusCard: {
     borderWidth: 2,
@@ -493,18 +498,21 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 20,
+    letterSpacing: -0.3,
     fontWeight: 'bold',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     textAlign: 'center',
     marginBottom: 10,
   },
   statusMessage: {
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
     textAlign: 'center',
     marginBottom: 15,
   },
   applicationDate: {
     fontSize: 14,
+    fontFamily: 'Manrope_400Regular',
     textAlign: 'center',
   },
   backToHomeButton: {
@@ -516,6 +524,6 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: 18,
     fontWeight: 'bold',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
 });

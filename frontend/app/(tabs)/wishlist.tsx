@@ -141,13 +141,15 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 24,
+    letterSpacing: -0.5,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     marginTop: 20,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
     textAlign: 'center',
     marginBottom: 32,
   },
@@ -159,7 +161,7 @@ const styles = StyleSheet.create({
   continueShoppingText: {
     fontSize: 16,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     color: '#fff',
   },
   listContent: {

@@ -789,7 +789,7 @@ function ProductForm() {
                     })}
                     {formData.colors.length > 2 && (
                       <View style={[styles.moreColorsBadge, { backgroundColor: theme.colors.primary }]}>
-                        <Text style={{ color: 'white', fontSize: 12, fontWeight: '600', fontFamily: 'Inter_600SemiBold' }}>
+                        <Text style={{ color: 'white', fontSize: 12, fontWeight: '600', fontFamily: 'Manrope_600SemiBold' }}>
 +{formData.colors.length - 2}
                         </Text>
                       </View>
@@ -946,7 +946,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     flex: 1,
   },
   saveButton: {
@@ -966,7 +966,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 16,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     color: '#fff',
   },
   scrollView: {
@@ -981,7 +981,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     marginBottom: 16,
   },
   imageGrid: {
@@ -1032,11 +1032,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 13,
     fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
     textAlign: 'center',
   },
   imageLimitText: {
     fontSize: 11,
+    fontFamily: 'Manrope_400Regular',
     marginTop: 4,
     opacity: 0.6,
   },
@@ -1047,7 +1048,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 8,
     fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
   },
   input: {
     height: 48,
@@ -1055,6 +1056,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 16,
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
   },
   inputWithIcon: {
     flexDirection: 'row',
@@ -1071,6 +1073,7 @@ const styles = StyleSheet.create({
   inputInside: {
     flex: 1,
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
     height: '100%',
   },
   textArea: {
@@ -1079,6 +1082,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
     textAlignVertical: 'top',
   },
   selectInput: {
@@ -1093,6 +1097,7 @@ const styles = StyleSheet.create({
   },
   selectText: {
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
   },
   dropdown: {
     position: 'absolute',
@@ -1123,6 +1128,7 @@ const styles = StyleSheet.create({
   },
   dropdownItemText: {
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
     flex: 1,
   },
   row: {
@@ -1145,7 +1151,7 @@ const styles = StyleSheet.create({
   chipText: {
     fontSize: 14,
     fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
   },
   colorPreview: {
     flex: 1,
@@ -1222,7 +1228,7 @@ const styles = StyleSheet.create({
   colorName: {
     fontSize: 14,
     fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
     flex: 1,
     color: '#333',
     marginLeft: 4,
@@ -1259,15 +1265,17 @@ const styles = StyleSheet.create({
   settingTitle: {
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     marginBottom: 4,
   },
   settingDescription: {
     fontSize: 14,
+    fontFamily: 'Manrope_400Regular',
     opacity: 0.7,
   },
   errorText: {
     fontSize: 12,
+    fontFamily: 'Manrope_400Regular',
     marginTop: 4,
   },
 });

@@ -7,6 +7,7 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -35,7 +36,7 @@ export default function HomeScreen() {
   const GRID_GAP = 12;
   const GRID_PADDING = 20;
   const cardWidth = gridItemWidth(gridColumns, GRID_GAP, GRID_PADDING);
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, authBusy } = useAuth();
   const dispatch = useDispatch<AppDispatch>();
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
@@ -69,16 +70,20 @@ export default function HomeScreen() {
 
   // Fetch initial data
   useEffect(() => {
-    if (!isLoading && !user) {
+    // Signed out (not while signing in/out — those flows navigate themselves)
+    if (!isLoading && !user && !authBusy) {
       router.replace('/auth');
     } else if (user) {
       fetchProducts();
       fetchCategories();
       // Initial wishlist & cart fetch (force a fresh sync on app open)
-      dispatch(fetchWishlist({ forceRefresh: true }) as any).catch(console.error);
-      dispatch(fetchCart() as any).catch(console.error);
+      dispatch(fetchWishlist({ forceRefresh: true }) as any).catch(() => {});
+      dispatch(fetchCart() as any).catch(() => {});
     }
-  }, [user, isLoading]);
+    // Keyed on the account id: the profile object is refreshed after a reload
+    // (cached → fresh) and that must not reload everything twice.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, isLoading, authBusy]);
 
   // Refresh wishlist when returning to Home. Skips the first focus: the effect
   // above already loads it on open, and running both sent the request twice.
@@ -87,7 +92,7 @@ export default function HomeScreen() {
     React.useCallback(() => {
       if (user && hasFocusedOnce.current) {
         // Refresh lightweightly when returning to Home (uses the cache if loaded)
-        dispatch(fetchWishlist({ forceRefresh: false }) as any).catch(console.error);
+        dispatch(fetchWishlist({ forceRefresh: false }) as any).catch(() => {});
       }
       hasFocusedOnce.current = true;
     }, [user])
@@ -185,9 +190,7 @@ export default function HomeScreen() {
   if (isLoading || (isLoadingProducts && !hasProducts)) {
     return (
       <View style={[styles.centered, { backgroundColor: theme.colors.background }]}>
-        <Text style={[styles.loadingText, { color: theme.colors.text }]}>
-          Loading...
-        </Text>
+        <ActivityIndicator color={theme.colors.primary} />
       </View>
     );
   }
@@ -355,7 +358,7 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 16,
     fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
     textAlign: 'center',
     marginBottom: 12,
   },
@@ -368,7 +371,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   emptyState: {
     padding: 20,
@@ -378,7 +381,7 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 14,
     fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
     textAlign: 'center',
   },
   productsGrid: {
@@ -403,7 +406,7 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
   },
   section: {
     paddingHorizontal: 20,
@@ -417,13 +420,14 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
+    letterSpacing: -0.3,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
   seeAllText: {
     fontSize: 14,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   horizontalScroll: {
     marginHorizontal: -20,
@@ -454,14 +458,16 @@ const styles = StyleSheet.create({
   },
   dealsBannerTitle: {
     fontSize: 28,
+    letterSpacing: -0.5,
     fontWeight: '800',
-    fontFamily: 'Inter_800ExtraBold',
+    fontFamily: 'Manrope_800ExtraBold',
     color: '#fff',
     textAlign: 'center',
     marginBottom: 8,
   },
   dealsBannerSubtitle: {
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
     color: '#fff',
     textAlign: 'center',
     opacity: 0.9,
@@ -482,7 +488,7 @@ const styles = StyleSheet.create({
   dealsButtonText: {
     fontSize: 16,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     color: '#000',
   },
 });

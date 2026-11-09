@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
   discountText: {
     fontSize: 10,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     color: '#fff',
   },
   content: {
@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 13,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     marginBottom: 8,
     lineHeight: 18,
     minHeight: 36,
@@ -430,6 +430,7 @@ const styles = StyleSheet.create({
   },
   rating: {
     fontSize: 12,
+    fontFamily: 'Manrope_400Regular',
     marginLeft: 4,
   },
   stockContainer: {
@@ -446,7 +447,7 @@ const styles = StyleSheet.create({
   stockText: {
     fontSize: 11,
     fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
   },
   priceContainer: {
     flexDirection: 'row',
@@ -461,11 +462,12 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 16,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     letterSpacing: -0.2,
   },
   originalPrice: {
     fontSize: 12,
+    fontFamily: 'Manrope_400Regular',
     textDecorationLine: 'line-through',
     marginTop: 2,
   },

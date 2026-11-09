@@ -72,14 +72,16 @@ const styles = StyleSheet.create({
   },
   errorTitle: {
     fontSize: 20,
+    letterSpacing: -0.3,
     fontWeight: 'bold',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     marginBottom: 12,
     textAlign: 'center',
     color: '#333',
   },
   errorText: {
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 20,
@@ -95,7 +97,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
 });
 

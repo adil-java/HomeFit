@@ -487,8 +487,9 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
+    letterSpacing: -0.3,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
   emptyContainer: {
     flex: 1,
@@ -498,7 +499,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     marginBottom: 24,
   },
   shopButton: {
@@ -509,7 +510,7 @@ const styles = StyleSheet.create({
   shopButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     color: '#fff',
   },
   section: {
@@ -524,7 +525,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     marginBottom: 12,
   },
   addAddressCard: {
@@ -553,7 +554,7 @@ const styles = StyleSheet.create({
   addressName: {
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   defaultBadge: {
     paddingHorizontal: 8,
@@ -563,11 +564,12 @@ const styles = StyleSheet.create({
   defaultText: {
     fontSize: 10,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     color: '#fff',
   },
   addressText: {
     fontSize: 14,
+    fontFamily: 'Manrope_400Regular',
     marginBottom: 2,
   },
   selectedIcon: {
@@ -595,10 +597,11 @@ const styles = StyleSheet.create({
   paymentName: {
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   walletBalance: {
     fontSize: 14,
+    fontFamily: 'Manrope_400Regular',
     marginLeft: 'auto',
   },
   appliedCoupon: {
@@ -612,15 +615,16 @@ const styles = StyleSheet.create({
   couponCode: {
     fontSize: 16,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
   couponDiscount: {
     fontSize: 14,
+    fontFamily: 'Manrope_400Regular',
   },
   removeButton: {
     fontSize: 14,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   couponInput: {
     flexDirection: 'row',
@@ -637,6 +641,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
   },
   couponFieldCompact: {
     fontSize: 15,
@@ -656,7 +661,7 @@ const styles = StyleSheet.create({
   applyButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     color: '#fff',
   },
   summaryCard: {
@@ -672,11 +677,12 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
   },
   summaryValue: {
     fontSize: 16,
     fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
   },
   totalRow: {
     borderTopWidth: 1,
@@ -688,12 +694,12 @@ const styles = StyleSheet.create({
   totalLabel: {
     fontSize: 18,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
   totalValue: {
     fontSize: 18,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
   bottomSection: {
     paddingTop: 14,
@@ -717,12 +723,12 @@ const styles = StyleSheet.create({
   },
   secureNoteText: {
     fontSize: 12,
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'Manrope_400Regular',
   },
   placeOrderText: {
     fontSize: 16,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     color: '#fff',
   },
 });

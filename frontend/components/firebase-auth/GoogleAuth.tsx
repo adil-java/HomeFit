@@ -137,6 +137,6 @@ const styles = StyleSheet.create({
   googleText: {
     fontSize: 16,
     color: '#000',
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
   },
 });

@@ -688,11 +688,12 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     marginBottom: 12,
   },
   modalMessage: {
     fontSize: 15,
+    fontFamily: 'Manrope_400Regular',
     lineHeight: 22,
     marginBottom: 24,
   },
@@ -719,13 +720,13 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 15,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   deleteButtonText: {
     color: '#fff',
     fontSize: 15,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   container: {
     flex: 1,
@@ -749,8 +750,9 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 24,
+    letterSpacing: -0.5,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
   headerActions: {
     flexDirection: 'row',
@@ -776,7 +778,7 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     fontSize: 14,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     color: '#fff',
   },
   addButtonTextCompact: {
@@ -808,6 +810,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: '100%',
     fontSize: 14,
+    fontFamily: 'Manrope_400Regular',
   },
   filterButton: {
     width: 40,
@@ -827,7 +830,7 @@ const styles = StyleSheet.create({
   filterLabel: {
     fontSize: 14,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     marginBottom: 8,
   },
   filterOptions: {
@@ -845,7 +848,7 @@ const styles = StyleSheet.create({
   filterOptionText: {
     fontSize: 12,
     fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
   },
   priceRangeContainer: {
     flexDirection: 'row',
@@ -863,16 +866,18 @@ const styles = StyleSheet.create({
   currencySymbol: {
     marginRight: 4,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   priceInput: {
     flex: 1,
     height: '100%',
     fontSize: 14,
+    fontFamily: 'Manrope_400Regular',
   },
   priceRangeSeparator: {
     marginHorizontal: 8,
     fontSize: 14,
+    fontFamily: 'Manrope_400Regular',
   },
   stockFilter: {
     flexDirection: 'row',
@@ -889,6 +894,7 @@ const styles = StyleSheet.create({
   },
   stockFilterText: {
     fontSize: 14,
+    fontFamily: 'Manrope_400Regular',
   },
   filterActions: {
     flexDirection: 'row',
@@ -907,7 +913,7 @@ const styles = StyleSheet.create({
   filterButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
   },
   productsList: {
     padding: 16,
@@ -940,11 +946,12 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: 14,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     marginBottom: 2,
   },
   productSku: {
     fontSize: 12,
+    fontFamily: 'Manrope_400Regular',
     opacity: 0.7,
     marginBottom: 6,
   },
@@ -969,13 +976,13 @@ const styles = StyleSheet.create({
   ratingText: {
     fontSize: 12,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     marginLeft: 2,
   },
   productCategory: {
     fontSize: 11,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 4,
@@ -990,7 +997,7 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 10,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   productFooter: {
     flexDirection: 'row',
@@ -1000,12 +1007,12 @@ const styles = StyleSheet.create({
   productPrice: {
     fontSize: 16,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
   productStock: {
     fontSize: 12,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   productActions: {
     justifyContent: 'space-between',
@@ -1031,12 +1038,13 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     marginTop: 16,
     marginBottom: 4,
   },
   emptyStateText: {
     fontSize: 14,
+    fontFamily: 'Manrope_400Regular',
     textAlign: 'center',
     paddingHorizontal: 32,
   },
@@ -1056,7 +1064,7 @@ const styles = StyleSheet.create({
   paginationText: {
     fontSize: 14,
     fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
     marginHorizontal: 4,
   },
   pageNumbers: {
@@ -1073,6 +1081,6 @@ const styles = StyleSheet.create({
   pageNumberText: {
     fontSize: 14,
     fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
   },
 });

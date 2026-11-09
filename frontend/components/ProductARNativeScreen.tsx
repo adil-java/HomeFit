@@ -251,8 +251,9 @@ const styles = StyleSheet.create({
   },
   errorTitle: {
     fontSize: 20,
+    letterSpacing: -0.3,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     color: '#fff',
     textAlign: 'center',
     marginBottom: 10,
@@ -260,7 +261,7 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 14,
     fontWeight: '400',
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'Manrope_400Regular',
     color: '#ccc',
     textAlign: 'center',
     marginBottom: 16,
@@ -275,7 +276,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   compactControlsWrapper: {
     position: 'absolute',

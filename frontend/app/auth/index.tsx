@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ArrowRight, UserPlus, LogIn } from 'lucide-react-native';
+import GoogleLogo from '@/components/Shared/GoogleLogo';
 
 export default function AuthIndex() {
   const { theme, isDark } = useTheme();
@@ -14,32 +15,34 @@ export default function AuthIndex() {
   // Logo: 40% of width, but never so tall that it pushes the buttons off short
   // phones, and not oversized on tablets.
   const logoSize = Math.round(Math.min(width * 0.4, height * 0.22, 220));
-  const { user, isLoading, loginWithGoogle } = useAuth();
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const { user, isLoading, loginWithGoogle, authBusy } = useAuth();
+  // True from the tap until the account picker closes; after that the app-wide
+  // "Signing you in…" loader takes over (see AuthBusyOverlay).
+  const [isGooglePickerOpen, setIsGooglePickerOpen] = useState(false);
+  const googleBusy = isGooglePickerOpen || !!authBusy;
 
   const handleGoogleLogin = async () => {
-    if (isGoogleLoading) return;
-
+    if (googleBusy) return;
     try {
-      setIsGoogleLoading(true);
+      setIsGooglePickerOpen(true);
       await loginWithGoogle();
-    } catch {
-      // Errors are already handled in AuthContext alerts/toasts.
     } finally {
-      setIsGoogleLoading(false);
+      setIsGooglePickerOpen(false);
     }
   };
 
+  // Already signed in (e.g. app opened on this screen) → go Home.
+  // Not while a sign-in is running: that flow navigates once it's done.
   useEffect(() => {
-    if (!isLoading && user) {
+    if (!isLoading && user && !authBusy) {
       router.replace('/(tabs)');
     }
-  }, [user, isLoading]);
+  }, [user, isLoading, authBusy]);
 
   if (isLoading) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        <Text style={[styles.loadingText, { color: theme.colors.text, marginTop: height * 0.45 }]}>Loading...</Text>
+      <View style={[styles.container, styles.centered, { backgroundColor: theme.colors.background }]}>
+        <ActivityIndicator color={theme.colors.primary} />
       </View>
     );
   }
@@ -108,8 +111,7 @@ export default function AuthIndex() {
                   <Text style={{ color: theme.colors.primary }}>HomeFit</Text>
                 </Text>
                 <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
-                  Experience your dream furniture in AR before you buy. 
-                  Modern design, premium style, seamless shopping.
+                  Furniture you can place in your own room with AR, before you buy.
                 </Text>
               </View>
             </View>
@@ -166,20 +168,22 @@ export default function AuthIndex() {
                     borderWidth: 1,
                     borderColor: googleBtnBorder,
                   },
-                  isGoogleLoading && styles.googleButtonDisabled,
+                  googleBusy && styles.googleButtonDisabled,
                   !isDark && styles.buttonShadow,
                 ]}
                 onPress={handleGoogleLogin}
                 activeOpacity={0.85}
-                disabled={isGoogleLoading}
+                disabled={googleBusy}
               >
-                <Image
-                  source={{ uri: 'https://res.cloudinary.com/dmpinsiam/image/upload/v1762603041/google-icon_vqmcjy.png' }}
-                  style={styles.googleIcon}
-                  resizeMode="contain"
-                />
+                {isGooglePickerOpen ? (
+                  <ActivityIndicator size="small" color={googleBtnText} style={styles.googleIconSlot} />
+                ) : (
+                  <View style={styles.googleIconSlot}>
+                    <GoogleLogo size={20} />
+                  </View>
+                )}
                 <Text style={[styles.googleButtonText, { color: googleBtnText }]}>
-                  {isGoogleLoading ? 'Signing in with Google...' : 'Continue with Google'}
+                  Continue with Google
                 </Text>
                 <ArrowRight size={18} color={googleBtnText} style={styles.buttonIcon} />
               </TouchableOpacity>
@@ -194,15 +198,6 @@ export default function AuthIndex() {
           </ScrollView>
         </SafeAreaView>
 
-        {isGoogleLoading && (
-          <View style={[styles.loadingOverlay, { backgroundColor: isDark ? 'rgba(0, 0, 0, 0.45)' : 'rgba(255, 255, 255, 0.55)' }]}> 
-            <View style={[styles.loadingCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}> 
-              <ActivityIndicator size="small" color={theme.colors.primary} />
-              <Text style={[styles.loadingTitle, { color: theme.colors.text }]}>Signing you in</Text>
-              <Text style={[styles.loadingSubtitle, { color: theme.colors.textSecondary }]}>Please wait a moment...</Text>
-            </View>
-          </View>
-        )}
       </LinearGradient>
     </View>
   );
@@ -246,13 +241,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 30,
     fontWeight: '800',
-    fontFamily: 'Inter_800ExtraBold',
+    fontFamily: 'Manrope_800ExtraBold',
     textAlign: 'center',
     marginBottom: 14,
-    letterSpacing: 0.3,
+    letterSpacing: -0.6,
   },
   subtitle: {
     fontSize: 15,
+    fontFamily: 'Manrope_400Regular',
     textAlign: 'center',
     lineHeight: 23,
     maxWidth: 320,
@@ -286,14 +282,14 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     fontSize: 16,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     color: '#fff',
     textAlign: 'center',
   },
   secondaryButtonText: {
     fontSize: 16,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     textAlign: 'center',
   },
   dividerContainer: {
@@ -309,7 +305,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginHorizontal: 16,
     fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
   },
   googleIcon: {
     width: 20,      
@@ -319,7 +315,7 @@ const styles = StyleSheet.create({
   googleButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   googleButtonDisabled: {
     opacity: 0.75,
@@ -330,13 +326,17 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 11,
+    fontFamily: 'Manrope_400Regular',
     textAlign: 'center',
     lineHeight: 16,
   },
   loadingText: {
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
     textAlign: 'center',
   },
+  centered: { alignItems: 'center', justifyContent: 'center' },
+  googleIconSlot: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
   loadingOverlay: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, // (StyleSheet.absoluteFillObject was removed in this RN version)
     alignItems: 'center',
@@ -355,11 +355,12 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 15,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   loadingSubtitle: {
     marginTop: 4,
     fontSize: 13,
+    fontFamily: 'Manrope_400Regular',
     textAlign: 'center',
   },
 });

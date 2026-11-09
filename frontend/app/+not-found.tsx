@@ -25,7 +25,7 @@ const styles = StyleSheet.create({
   text: {
     fontSize: 20,
     fontWeight: 600,
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   link: {
     marginTop: 15,

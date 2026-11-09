@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     marginBottom: 4,
     lineHeight: 20,
   },
@@ -107,12 +107,13 @@ const styles = StyleSheet.create({
   },
   rating: {
     fontSize: 14,
+    fontFamily: 'Manrope_400Regular',
     marginLeft: 4,
   },
   price: {
     fontSize: 18,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     marginBottom: 12,
   },
   priceCompact: {
@@ -136,7 +137,7 @@ const styles = StyleSheet.create({
   addToCartText: {
     fontSize: 14,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     color: '#fff',
   },
   addToCartTextCompact: {

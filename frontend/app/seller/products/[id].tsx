@@ -619,7 +619,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     flex: 1,
   },
   saveButton: {
@@ -636,7 +636,7 @@ const styles = StyleSheet.create({
   saveButtonText: {
     marginLeft: 8,
     fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
   },
   scrollView: {
     flex: 1,
@@ -674,7 +674,7 @@ const styles = StyleSheet.create({
   uploadButtonText: {
     color: 'white',
     fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
   },
   section: {
     paddingVertical: 16,
@@ -682,7 +682,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     marginBottom: 16,
   },
   inputGroup: {
@@ -699,19 +699,21 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
   },
   input: {
     borderWidth: 1,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
   },
   textArea: {
     borderWidth: 1,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
     minHeight: 100,
     textAlignVertical: 'top',
   },
@@ -726,6 +728,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 12,
     fontSize: 16,
+    fontFamily: 'Manrope_400Regular',
   },
   selectInputCompact: {
     paddingHorizontal: 8,
@@ -750,7 +753,7 @@ const styles = StyleSheet.create({
   optionText: {
     fontSize: 14,
     fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
   },
   chipsWrap: {
     flexDirection: 'row',
@@ -768,7 +771,7 @@ const styles = StyleSheet.create({
   chipText: {
     fontSize: 12,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   colorsWrap: {
     flexDirection: 'row',
@@ -796,7 +799,7 @@ const styles = StyleSheet.create({
   colorName: {
     fontSize: 12,
     fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'Manrope_500Medium',
   },
   colorDot: {
     width: 14,
@@ -814,6 +817,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 12,
+    fontFamily: 'Manrope_400Regular',
     marginLeft: 4,
   },
 });

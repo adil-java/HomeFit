@@ -551,7 +551,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     flex: 1,
     marginLeft:10,
   },
@@ -600,17 +600,19 @@ const styles = StyleSheet.create({
   statChangeText: {
     fontSize: 11,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     marginLeft: 2,
   },
   statValue: {
     fontSize: 22,
+    letterSpacing: -0.3,
     fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     marginBottom: 2,
   },
   statTitle: {
     fontSize: 12,
+    fontFamily: 'Manrope_400Regular',
     opacity: 0.8,
   },
   
@@ -627,7 +629,7 @@ const styles = StyleSheet.create({
   chartTitle: {
     marginBottom: 16,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   chart: {
     marginVertical: 8,
@@ -661,7 +663,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
   productsList: {
     marginTop: 8,
@@ -689,7 +691,7 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: 15,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
     marginBottom: 8,
   },
   productStats: {
@@ -701,11 +703,12 @@ const styles = StyleSheet.create({
   },
   productStatLabel: {
     fontSize: 11,
+    fontFamily: 'Manrope_400Regular',
     marginBottom: 2,
   },
   productStatValue: {
     fontSize: 13,
     fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Manrope_600SemiBold',
   },
 });

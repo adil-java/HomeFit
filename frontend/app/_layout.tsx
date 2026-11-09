@@ -4,7 +4,7 @@ import { Provider } from 'react-redux';
 import { PaperProvider, MD3LightTheme, configureFonts } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
 import * as SplashScreen from 'expo-splash-screen';
-import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold } from '@expo-google-fonts/inter';
+import { useFonts, Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold, Manrope_700Bold, Manrope_800ExtraBold } from '@expo-google-fonts/manrope';
 import { Text, TextInput, View } from 'react-native';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { store } from '@/store/store';
@@ -15,85 +15,33 @@ import { StripeProvider } from '@stripe/stripe-react-native';
 import AnimatedSplashScreen from '@/components/AnimatedSplashScreen';
 import { stackScreenOptions, fadeScreenOptions } from '@/constants/navigation';
 import NavigationThemeBridge from '@/components/NavigationThemeBridge';
+import AuthBusyOverlay from '@/components/AuthBusyOverlay';
+import { toastConfig } from '@/components/AppToast';
 import { logger } from '@/utils/logger';
 
 // Prevent the native splash from auto-hiding so we can transition smoothly
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-// Map fontWeight values to their corresponding Inter font family names
-const INTER_WEIGHT_MAP: Record<string, string> = {
-  '100': 'Inter_400Regular',
-  '200': 'Inter_400Regular',
-  '300': 'Inter_400Regular',
-  '400': 'Inter_400Regular',
-  normal: 'Inter_400Regular',
-  '500': 'Inter_500Medium',
-  '600': 'Inter_600SemiBold',
-  '700': 'Inter_700Bold',
-  bold: 'Inter_700Bold',
-  '800': 'Inter_800ExtraBold',
-  '900': 'Inter_800ExtraBold',
-};
+// Fonts: Manrope everywhere. Styles name the family explicitly
+// (fontFamily: 'Manrope_600SemiBold'); React Native has no global default font.
 
-// Helper: extract the last fontWeight from a style prop (style can be nested arrays / objects)
-function extractFontWeight(style: any): string | undefined {
-  if (!style) return undefined;
-  if (Array.isArray(style)) {
-    let weight: string | undefined;
-    for (const s of style) {
-      const w = extractFontWeight(s);
-      if (w !== undefined) weight = w;
-    }
-    return weight;
-  }
-  if (typeof style === 'object' && style.fontWeight !== undefined) {
-    return String(style.fontWeight);
-  }
-  return undefined;
-}
-
-// Set Inter as the default font for ALL Text components app-wide,
-// automatically mapping fontWeight → correct Inter variant.
-const applyInterFontRenderPatch = (Component: any) => {
-  if (!Component || !Component.render || Component.__interFontPatched) return;
-
-  const originalRender = Component.render;
-  Component.render = function (...args: any[]) {
-    const origin = originalRender.call(this, ...args);
-    const weight = extractFontWeight(origin?.props?.style);
-    const interFamily = INTER_WEIGHT_MAP[weight ?? '400'] ?? 'Inter_400Regular';
-
-    return {
-      ...origin,
-      props: {
-        ...origin.props,
-        style: [{ fontFamily: interFamily }, origin.props.style, { fontFamily: interFamily }],
-      },
-    };
-  };
-
-  Component.__interFontPatched = true;
-};
-
-applyInterFontRenderPatch(Text as any);
-applyInterFontRenderPatch(TextInput as any);
 
 const paperFontConfig = {
-  displayLarge: { fontFamily: 'Inter_700Bold', fontWeight: '700' as const },
-  displayMedium: { fontFamily: 'Inter_700Bold', fontWeight: '700' as const },
-  displaySmall: { fontFamily: 'Inter_600SemiBold', fontWeight: '600' as const },
-  headlineLarge: { fontFamily: 'Inter_700Bold', fontWeight: '700' as const },
-  headlineMedium: { fontFamily: 'Inter_700Bold', fontWeight: '700' as const },
-  headlineSmall: { fontFamily: 'Inter_600SemiBold', fontWeight: '600' as const },
-  titleLarge: { fontFamily: 'Inter_600SemiBold', fontWeight: '600' as const },
-  titleMedium: { fontFamily: 'Inter_600SemiBold', fontWeight: '600' as const },
-  titleSmall: { fontFamily: 'Inter_600SemiBold', fontWeight: '600' as const },
-  bodyLarge: { fontFamily: 'Inter_400Regular', fontWeight: '400' as const },
-  bodyMedium: { fontFamily: 'Inter_400Regular', fontWeight: '400' as const },
-  bodySmall: { fontFamily: 'Inter_400Regular', fontWeight: '400' as const },
-  labelLarge: { fontFamily: 'Inter_500Medium', fontWeight: '500' as const },
-  labelMedium: { fontFamily: 'Inter_500Medium', fontWeight: '500' as const },
-  labelSmall: { fontFamily: 'Inter_500Medium', fontWeight: '500' as const },
+  displayLarge: { fontFamily: 'Manrope_700Bold', fontWeight: '700' as const },
+  displayMedium: { fontFamily: 'Manrope_700Bold', fontWeight: '700' as const },
+  displaySmall: { fontFamily: 'Manrope_600SemiBold', fontWeight: '600' as const },
+  headlineLarge: { fontFamily: 'Manrope_700Bold', fontWeight: '700' as const },
+  headlineMedium: { fontFamily: 'Manrope_700Bold', fontWeight: '700' as const },
+  headlineSmall: { fontFamily: 'Manrope_600SemiBold', fontWeight: '600' as const },
+  titleLarge: { fontFamily: 'Manrope_600SemiBold', fontWeight: '600' as const },
+  titleMedium: { fontFamily: 'Manrope_600SemiBold', fontWeight: '600' as const },
+  titleSmall: { fontFamily: 'Manrope_600SemiBold', fontWeight: '600' as const },
+  bodyLarge: { fontFamily: 'Manrope_400Regular', fontWeight: '400' as const },
+  bodyMedium: { fontFamily: 'Manrope_400Regular', fontWeight: '400' as const },
+  bodySmall: { fontFamily: 'Manrope_400Regular', fontWeight: '400' as const },
+  labelLarge: { fontFamily: 'Manrope_500Medium', fontWeight: '500' as const },
+  labelMedium: { fontFamily: 'Manrope_500Medium', fontWeight: '500' as const },
+  labelSmall: { fontFamily: 'Manrope_500Medium', fontWeight: '500' as const },
 };
 
 const paperTheme = {
@@ -109,11 +57,11 @@ export default function RootLayout() {
 
   // Load Inter font weights
   const [fontsLoaded] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
-    Inter_800ExtraBold,
+    Manrope_400Regular,
+    Manrope_500Medium,
+    Manrope_600SemiBold,
+    Manrope_700Bold,
+    Manrope_800ExtraBold,
   });
 
   useEffect(() => {
@@ -168,7 +116,8 @@ export default function RootLayout() {
                     <Stack.Screen name="notifications/index" options={{ headerShown: false }} />
                     <Stack.Screen name="+not-found" />
                   </Stack>
-                  <Toast />
+                  <AuthBusyOverlay />
+                  <Toast config={toastConfig} topOffset={56} />
                 </StripeProvider>
               </PaperProvider>
             </AuthProvider>

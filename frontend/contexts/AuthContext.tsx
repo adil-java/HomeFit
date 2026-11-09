@@ -1,24 +1,17 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
 import { Alert } from 'react-native';
 import Toast from 'react-native-toast-message';
-// Lazy-loaded to prevent crash in Expo Go (native module not available)
-let GoogleSignin: any = null;
-try {
-  GoogleSignin = require('@react-native-google-signin/google-signin').GoogleSignin;
-} catch (e) {
-  logger.warn('[Auth] Google Sign-In native module not available (expected in Expo Go)');
-}
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signOut, 
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
   onAuthStateChanged,
   User as FirebaseUser,
   updateProfile,
   GoogleAuthProvider,
-  signInWithCredential
+  signInWithCredential,
 } from 'firebase/auth';
 import { auth } from '../firebaseConfig';
 import { apiService } from '../services/api';
@@ -29,12 +22,20 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { logger } from '@/utils/logger';
 import { friendlyError, FriendlyError } from '@/utils/errorMessages';
 
-interface User {
-  id: string;
+// Lazy-loaded to prevent a crash in Expo Go (native module not available)
+let GoogleSignin: any = null;
+try {
+  GoogleSignin = require('@react-native-google-signin/google-signin').GoogleSignin;
+} catch {
+  logger.warn('[Auth] Google Sign-In native module not available (expected in Expo Go)');
+}
+
+export interface User {
+  id: string;     // Firebase UID
+  uid: string;    // Backend (database) user id
   email: string;
   name: string;
   role: string;
-  uid: string;
   photoURL?: string | null;
 }
 
@@ -45,7 +46,14 @@ interface AuthContextType {
   register: (email: string, password: string, name: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
+  /** True only while restoring the session at app start. */
   isLoading: boolean;
+  /**
+   * Set while signing in / out (e.g. "Signing you in…"). A full-screen loader
+   * is shown for it at the app root, so it stays up across navigation and
+   * blocks double taps.
+   */
+  authBusy: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -58,13 +66,109 @@ export const useAuth = () => {
   return context;
 };
 
+const USER_KEY = 'user';
+const TOKEN_KEY = 'token';
+
+async function readCachedUser(): Promise<User | null> {
+  try {
+    const raw = await SecureStore.getItemAsync(USER_KEY);
+    return raw ? (JSON.parse(raw) as User) : null;
+  } catch {
+    return null;
+  }
+}
+
+type SyncMode = 'verify' | 'login' | 'register' | 'google';
+
+/**
+ * Build the app user for a Firebase account. The role comes from the backend;
+ * if the backend is slow/unreachable we keep the last known profile for this
+ * same account (so a seller isn't shown as a customer after a reload), and
+ * only fall back to a basic customer profile for a brand-new device.
+ */
+async function loadProfile(fbUser: FirebaseUser, mode: SyncMode, nameOverride?: string): Promise<User> {
+  const base = {
+    id: fbUser.uid,
+    email: fbUser.email || '',
+    name: nameOverride || fbUser.displayName || fbUser.email?.split('@')[0] || '',
+  };
+
+  try {
+    let response: any;
+    if (mode === 'verify') response = await apiService.verifyToken();
+    else if (mode === 'login') response = await apiService.login();
+    else if (mode === 'register') response = await apiService.register();
+    else {
+      // Google: existing account → login, otherwise create it
+      try {
+        response = await apiService.login();
+      } catch {
+        response = await apiService.register();
+      }
+    }
+    const data = response?.user || response || {};
+    return {
+      ...base,
+      uid: data.id || fbUser.uid,
+      role: String(data.role || 'customer').toLowerCase(),
+      photoURL: fbUser.photoURL || data.photoURL || data.avatar || data.profileImage || null,
+    };
+  } catch (error) {
+    logger.warn('[Auth] Profile sync failed, using cached profile:', error);
+    const cached = await readCachedUser();
+    if (cached && cached.id === fbUser.uid) return { ...cached, ...base, name: cached.name || base.name };
+    return { ...base, uid: fbUser.uid, role: 'customer', photoURL: fbUser.photoURL || null };
+  }
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [authBusy, setAuthBusy] = useState<string | null>(null);
   const dispatch = useAppDispatch();
 
-  // Configure Google Sign-In for native popup (skipped if module unavailable)
+  // Incremented on every auth change and on logout. Async work started for an
+  // older generation must not touch state (fixes "logged out, then put back
+  // into the app" when a slow profile request finished after logout).
+  const generation = useRef(0);
+  // True while login/register/Google is running; that flow sets the user itself.
+  const signInFlow = useRef(false);
+  // Latest user, readable from async code
+  const userRef = useRef<User | null>(null);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+
+  const isCurrent = (gen: number, fbUid: string) =>
+    gen === generation.current && auth.currentUser?.uid === fbUid;
+
+  const commitUser = useCallback(async (next: User, fbUser: FirebaseUser) => {
+    // Unchanged profile (usual case after a reload) → keep the same object so
+    // screens that depend on `user` don't re-render or refetch.
+    if (JSON.stringify(next) !== JSON.stringify(userRef.current)) setUser(next);
+    try {
+      const idToken = await fbUser.getIdToken();
+      setToken(idToken);
+      await SecureStore.setItemAsync(TOKEN_KEY, idToken);
+    } catch {
+      // Offline: token refreshes on the next API call
+    }
+    await SecureStore.setItemAsync(USER_KEY, JSON.stringify(next)).catch(() => {});
+  }, []);
+
+  const clearSession = useCallback(async () => {
+    setUser(null);
+    setToken(null);
+    // Drop this user's data (cart, wishlist, orders, addresses, …) so the next
+    // account on this device never sees it.
+    dispatch(resetUserData());
+    AsyncStorage.removeItem(NOTIFICATIONS_STORAGE_KEY).catch(() => {});
+    await SecureStore.deleteItemAsync(TOKEN_KEY).catch(() => {});
+    await SecureStore.deleteItemAsync(USER_KEY).catch(() => {});
+  }, [dispatch]);
+
+  // Configure Google Sign-In for the native popup (skipped if module unavailable)
   useEffect(() => {
     if (GoogleSignin) {
       try {
@@ -81,350 +185,173 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Handle Firebase auth state changes
+  // Session restore and external auth changes (token revoked, etc.)
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        try {
-          // Get the ID token for API calls
-          const token = await firebaseUser.getIdToken();
+    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+      const gen = ++generation.current;
 
-          // Try to verify token with backend but don't block if it fails
-          try {
-            const backendResponse = await apiService.verifyToken();
-            // logger.log('Backend response:', backendResponse); // Debug log
-
-            // Check if the response has the expected structure
-            const userData = backendResponse.user || backendResponse; // Handle different response formats
-            
-            // Convert role to lowercase for consistency
-            const role = userData.role?.toLowerCase() || 'customer';
-            
-            const user: User = {
-              id: firebaseUser.uid, // Use firebaseUser.uid as the source of truth
-              uid: userData.id,
-              email: firebaseUser.email || "",
-              name: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "",
-              role: role,
-              photoURL: firebaseUser.photoURL || userData?.photoURL || userData?.avatar || userData?.profileImage || null,
-            };
-
-            setUser(user);
-            setToken(token);
-
-            // Store for offline access
-            await SecureStore.setItemAsync("token", token);
-            await SecureStore.setItemAsync("user", JSON.stringify(user));
-          } catch (backendError) {
-            // Backend verification failed, use fallback logic
-            logger.warn('Backend verification failed, using Firebase data:', backendError);
-            const user: User = {
-              id: firebaseUser.uid,
-              uid: firebaseUser.uid,
-              email: firebaseUser.email || "",
-              name: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "",
-              role: 'customer',
-              photoURL: firebaseUser.photoURL || null,
-            };
-
-            setUser(user);
-            setToken(token);
-
-            await SecureStore.setItemAsync("token", token);
-            await SecureStore.setItemAsync("user", JSON.stringify(user));
-          }
-        } catch (error) {
-          logger.error('Firebase authentication error:', error);
-          setUser(null);
-          setToken(null);
-        }
-      } else {
-        setUser(null);
-        setToken(null);
-        // Drop this user's data (cart, wishlist, orders, notifications, screen
-        // cache) so the next account on this device never sees it.
-        dispatch(resetUserData());
-        AsyncStorage.removeItem(NOTIFICATIONS_STORAGE_KEY).catch(() => {});
-        await SecureStore.deleteItemAsync("token");
-        await SecureStore.deleteItemAsync("user");
+      if (!fbUser) {
+        await clearSession();
+        if (gen === generation.current) setIsLoading(false);
+        return;
       }
+
+      // login/register/Google set the user themselves when they finish
+      if (signInFlow.current) return;
+
+      // Fast path on app reload: show the saved profile right away (no logout
+      // flash, no waiting on a cold backend), then refresh it in the background.
+      const cached = await readCachedUser();
+      if (!isCurrent(gen, fbUser.uid)) return;
+      if (cached && cached.id === fbUser.uid) {
+        setUser(cached);
+        setIsLoading(false);
+      }
+
+      const fresh = await loadProfile(fbUser, 'verify');
+      if (!isCurrent(gen, fbUser.uid)) return; // signed out / switched meanwhile
+      await commitUser(fresh, fbUser);
       setIsLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [clearSession, commitUser]);
+
+  /**
+   * Shared tail of every sign-in: load the profile, then go Home. The busy
+   * loader stays up until Home is on screen.
+   */
+  const finishSignIn = async (fbUser: FirebaseUser, mode: SyncMode, toast: { title: string }, nameOverride?: string) => {
+    const gen = generation.current;
+    const profile = await loadProfile(fbUser, mode, nameOverride);
+    if (!isCurrent(gen, fbUser.uid)) return;
+    await commitUser(profile, fbUser);
+    setIsLoading(false);
+    router.replace('/(tabs)');
+    Toast.show({
+      type: 'welcome',
+      text1: toast.title,
+      text2: profile.name || profile.email,
+      props: { photoURL: profile.photoURL, email: profile.email },
+      position: 'top',
+      visibilityTime: 2600,
+    });
+  };
+
+  const runSignIn = async (message: string, work: () => Promise<void>) => {
+    if (signInFlow.current) return; // already signing in — ignore double taps
+    signInFlow.current = true;
+    setAuthBusy(message);
+    const gen = generation.current;
+    try {
+      await work();
+    } catch (error) {
+      // Failed half-way (e.g. Firebase signed in but the profile step threw):
+      // sign out so the app and Firebase agree that nobody is signed in.
+      if (gen === generation.current && auth.currentUser && !userRef.current) {
+        await signOut(auth).catch(() => {});
+      }
+      throw error;
+    } finally {
+      signInFlow.current = false;
+      // Let Home mount behind the loader before removing it
+      setTimeout(() => setAuthBusy(null), 350);
+    }
+  };
 
   const login = async (email: string, password: string) => {
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const token = await userCredential.user.getIdToken();
-      setToken(token);
-
-      // First try to get the user role from the backend
+    await runSignIn('Signing you in…', async () => {
       try {
-        const backendResponse = await apiService.login();
-        // logger.log('Login backend response:', backendResponse);
-        
-        const userData = backendResponse.user || backendResponse; // Handle different response formats
-        const role = userData.role?.toLowerCase() || 
-                    'customer';
-        
-        const user: User = {
-          id: userCredential.user.uid,
-          uid: userData.id,
-          email: userCredential.user.email || '',
-          name: userCredential.user.displayName || (userCredential.user.email?.split('@')[0] || ''),
-          role: role,
-          photoURL: userCredential.user.photoURL || userData?.photoURL || userData?.avatar || userData?.profileImage || null,
-        };
-        
-        setUser(user);
-        await SecureStore.setItemAsync('token', token);
-        await SecureStore.setItemAsync('user', JSON.stringify(user));
-      } catch (backendError) {
-        logger.warn('Backend login verification failed, using fallback:', backendError);
-        // Fallback to optimistic user if backend fails
-        const optimisticUser: User = {
-          id: userCredential.user.uid,
-          uid: userCredential.user.uid,
-          email: userCredential.user.email || '',
-          name: userCredential.user.displayName || (userCredential.user.email?.split('@')[0] || ''),
-          role: 'customer',
-          photoURL: userCredential.user.photoURL || null,
-        };
-        setUser(optimisticUser);
-        await SecureStore.setItemAsync('token', token);
-        await SecureStore.setItemAsync('user', JSON.stringify(optimisticUser));
+        const credential = await signInWithEmailAndPassword(auth, email.trim(), password);
+        await finishSignIn(credential.user, 'login', { title: 'Welcome back' });
+      } catch (error: any) {
+        logger.error('Login error:', error);
+        throw new FriendlyError(error, 'Could not sign in. Please try again.');
       }
-
-      Toast.show({
-        type: 'success',
-        text1: 'Welcome Back!',
-        text2: `Signed in as ${userCredential.user.email}`,
-        position: 'top',
-      });
-
-      router.replace('/(tabs)');
-    } catch (error: any) {
-      logger.error('Login error:', error);
-      throw new FriendlyError(error, 'Could not sign in. Please try again.');
-    }
+    });
   };
 
   const register = async (email: string, password: string, name: string) => {
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      await updateProfile(userCredential.user, {
-        displayName: name,
-      });
-
-      const token = await userCredential.user.getIdToken();
-      setToken(token);
-
-      // First try to register with the backend to get the user role
+    await runSignIn('Creating your account…', async () => {
       try {
-        const backendResponse = await apiService.register();
-        // logger.log('Registration backend response:', backendResponse);
-        
-        const userData = backendResponse.user || backendResponse; // Handle different response formats
-        const user: User = {
-          id: userCredential.user.uid,
-          uid: userData.id,
-          email: userCredential.user.email || '',
-          name: name || userCredential.user.displayName || (userCredential.user.email?.split('@')[0] || ''),
-          role: userData.role || 'customer',
-          photoURL: userCredential.user.photoURL || userData?.photoURL || userData?.avatar || userData?.profileImage || null,
-        };
-        
-        setUser(user);
-        await SecureStore.setItemAsync('token', token);
-        await SecureStore.setItemAsync('user', JSON.stringify(user));
-      } catch (backendError) {
-        logger.warn('Backend registration failed, using fallback:', backendError);
-        // Fallback to optimistic user if backend fails
-        const optimisticUser: User = {
-          id: userCredential.user.uid,
-          uid: userCredential.user.uid,
-          email: userCredential.user.email || '',
-          name: name || userCredential.user.displayName || (userCredential.user.email?.split('@')[0] || ''),
-          role: 'customer',
-          photoURL: userCredential.user.photoURL || null,
-        };
-        setUser(optimisticUser);
-        await SecureStore.setItemAsync('token', token);
-        await SecureStore.setItemAsync('user', JSON.stringify(optimisticUser));
+        const credential = await createUserWithEmailAndPassword(auth, email.trim(), password);
+        await updateProfile(credential.user, { displayName: name });
+        await finishSignIn(credential.user, 'register', { title: 'Welcome to HomeFit' }, name);
+      } catch (error: any) {
+        logger.error('Registration error:', error);
+        throw new FriendlyError(error, 'Could not create your account. Please try again.');
       }
-
-      Toast.show({
-        type: 'success',
-        text1: 'Account Created!',
-        text2: `Welcome ${name || userCredential.user.email}!`,
-        position: 'top',
-      });
-
-      router.replace('/(tabs)');
-    } catch (error: any) {
-      logger.error('Registration error:', error);
-      throw new FriendlyError(error, 'Could not create your account. Please try again.');
-    }
+    });
   };
 
   const loginWithGoogle = async () => {
-    try {
-      // Check if Google Sign-In is available (not available in Expo Go)
-      if (!GoogleSignin) {
-        Alert.alert(
-          'Not Available',
-          'Google Sign-In requires a development or production build. It is not supported in Expo Go.',
-          [{ text: 'OK' }]
-        );
-        return;
-      }
+    if (!GoogleSignin) {
+      Alert.alert(
+        'Not available',
+        'Google sign-in needs the installed app. Please sign in with your email and password.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    if (signInFlow.current) return;
 
-      // Check Google Play Services
+    try {
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
 
-      // Show native Google Sign-In popup
-      const userInfo = await GoogleSignin.signIn();
+      // Account picker. The loader starts once an account is chosen.
+      const result = await GoogleSignin.signIn();
+      if (result?.type === 'cancelled') return; // closed the picker
 
-      // Get tokens using getTokens() method - more reliable for ID token
-      const tokens = await GoogleSignin.getTokens();
-
-      const idToken = tokens.idToken;
-
-      if (!idToken) {
-        // Shown once by the catch below
-        throw Object.assign(new Error('No ID token received from Google'), { code: '-5' });
-      }
-
-      // Sign in to Firebase
-      const credential = GoogleAuthProvider.credential(idToken);
-      const result = await signInWithCredential(auth, credential);
-      
-      // Get Firebase token for backend API calls
-      const firebaseToken = await result.user.getIdToken();
-      setToken(firebaseToken);
-      
-      // Sync with backend database (same flow as manual login)
-      try {
-        // First try login (existing user)
-        const backendResponse = await apiService.login();
-        // logger.log('Google login backend response:', backendResponse);
-        
-        const userData = backendResponse.user || backendResponse;
-        const role = userData.role?.toLowerCase() || 
-                    'customer';
-        
-        const user: User = {
-          id: result.user.uid,
-          uid: userData.id,
-          email: result.user.email || '',
-          name: result.user.displayName || (result.user.email?.split('@')[0] || ''),
-          role: role,
-          photoURL: result.user.photoURL || userData?.photoURL || userData?.avatar || userData?.profileImage || null,
-        };
-        
-        setUser(user);
-        await SecureStore.setItemAsync('token', firebaseToken);
-        await SecureStore.setItemAsync('user', JSON.stringify(user));
-        
-        Toast.show({
-          type: 'success',
-          text1: 'Welcome Back!',
-          text2: `Signed in as ${result.user.email}`,
-          position: 'top',
-        });
-      } catch (loginError: any) {
-        // If user doesn't exist, register them
-        try {
-          const backendResponse = await apiService.register();
-          // logger.log('Google register backend response:', backendResponse);
-          
-          const userData = backendResponse.user || backendResponse;
-          const user: User = {
-            id: result.user.uid,
-            uid: userData.id,
-            email: result.user.email || '',
-            name: result.user.displayName || (result.user.email?.split('@')[0] || ''),
-            role: userData.role?.toLowerCase() || 'customer',
-            photoURL: result.user.photoURL || userData?.photoURL || userData?.avatar || userData?.profileImage || null,
-          };
-          
-          setUser(user);
-          await SecureStore.setItemAsync('token', firebaseToken);
-          await SecureStore.setItemAsync('user', JSON.stringify(user));
-          
-          Toast.show({
-            type: 'success',
-            text1: 'Account Created!',
-            text2: `Welcome ${result.user.displayName || result.user.email}!`,
-            position: 'top',
-          });
-        } catch (registerError: any) {
-          // Fallback to Firebase-only user if backend fails
-          logger.warn('Backend registration failed for Google user, using fallback:', registerError);
-          const fallbackUser: User = {
-            id: result.user.uid,
-            uid: result.user.uid,
-            email: result.user.email || '',
-            name: result.user.displayName || (result.user.email?.split('@')[0] || ''),
-            role: 'customer',
-            photoURL: result.user.photoURL || null,
-          };
-          
-          setUser(fallbackUser);
-          await SecureStore.setItemAsync('token', firebaseToken);
-          await SecureStore.setItemAsync('user', JSON.stringify(fallbackUser));
-          
-          Toast.show({
-            type: 'info',
-            text1: 'Signed in successfully',
-            text2: 'Profile sync will happen later.',
-            position: 'top',
-          });
+      await runSignIn('Signing you in…', async () => {
+        const tokens = await GoogleSignin.getTokens();
+        if (!tokens?.idToken) {
+          throw Object.assign(new Error('No ID token received from Google'), { code: '-5' });
         }
-      }
-      
-      router.replace('/(tabs)');
-      
+        const credential = await signInWithCredential(auth, GoogleAuthProvider.credential(tokens.idToken));
+        await finishSignIn(credential.user, 'google', { title: 'Welcome' });
+      });
     } catch (error: any) {
-      if (error.code === '12501' || error.code === 'SIGN_IN_CANCELLED') {
+      if (error?.code === '12501' || error?.code === 'SIGN_IN_CANCELLED') {
         return;
       }
-      
       logger.error('Google sign-in error:', error);
       // Setup problems (SHA-1 / client ID) are for developers, not users
       const isConfigError = error?.code === '-5' || String(error?.message || '').includes('DEVELOPER_ERROR');
-      const errorMessage = isConfigError
-        ? 'Google sign-in is not available right now. Please sign in with your email and password.'
-        : friendlyError(error, 'Google sign-in failed. Please try again.');
-
-      Alert.alert('Sign-in failed', errorMessage, [{ text: 'OK' }]);
-      throw error;
+      Alert.alert(
+        'Sign-in failed',
+        isConfigError
+          ? 'Google sign-in is not available right now. Please sign in with your email and password.'
+          : friendlyError(error, 'Google sign-in failed. Please try again.'),
+        [{ text: 'OK' }]
+      );
     }
   };
 
   const logout = async () => {
+    // Invalidate any profile request still in flight, and leave immediately
+    generation.current++;
+    signInFlow.current = false;
+    setAuthBusy('Signing out…');
     try {
+      await clearSession();
       await signOut(auth);
-      router.replace('/auth');
+      // Next "Continue with Google" shows the account picker again
+      if (GoogleSignin) await GoogleSignin.signOut().catch(() => {});
     } catch (error) {
       logger.error('Logout error:', error);
+    } finally {
+      router.replace('/auth');
+      setTimeout(() => setAuthBusy(null), 300);
     }
   };
 
   // Stable value: consumers re-render only when auth state changes. The
-  // functions only use setters, `dispatch` and these values, so refreshing them
-  // together with user/token/isLoading keeps them current.
+  // functions only use refs, setters and stable callbacks.
   const value = React.useMemo(
-    () => ({ user, token, login, register, loginWithGoogle, logout, isLoading }),
+    () => ({ user, token, login, register, loginWithGoogle, logout, isLoading, authBusy }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [user, token, isLoading]
+    [user, token, isLoading, authBusy]
   );
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
