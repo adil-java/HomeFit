@@ -190,13 +190,19 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   title: {
+    // Full-width box: the text is measured before the custom font finishes
+    // loading, so a content-sized box clipped the last letter ("HomeFi").
+    width: '100%',
+    textAlign: 'center',
+    paddingHorizontal: 24,
     fontSize: 34,
-    fontWeight: '700',
-    fontFamily: 'Manrope_700Bold',
+    fontFamily: 'Manrope_800ExtraBold',
     color: '#FFFFFF',
-    letterSpacing: 1.2,
+    letterSpacing: -0.5,
     marginBottom: 8,
+    includeFontPadding: false,
   },
+
   tagline: {
     fontSize: 15,
     color: 'rgba(255, 255, 255, 0.5)',

@@ -5,96 +5,77 @@ import { logger } from '@/utils/logger';
 let cachedResult: boolean | null = null;
 
 interface ARSupportOptions {
+  /** Kept for compatibility; detection is always strict now. */
   strict?: boolean;
 }
 
+const TIMEOUT_MS = 4000;
+
 /**
- * Check if the device supports ARCore (Android) or ARKit (iOS).
- * 
- * - iOS: ARKit is built-in on iPhone 6s+, so we assume true.
- * - Android: We attempt to detect ARCore availability.
- * - Web: Always returns false.
- * 
- * Results are cached after the first check to avoid repeated lookups.
- * If detection fails for any reason, defaults to false (safer fallback to 3D viewer).
+ * Does this phone support camera AR?
+ *  - Android: asks ARCore (Google Play Services for AR) through ViroReact.
+ *    Only phones on Google's ARCore supported-devices list return true.
+ *  - iOS: asks ARKit.
+ *    ARCore often says "still checking" at first, so we re-ask until it
+ *    gives a final answer.
+ *  - Expo Go / web / any error / no answer in 4s: false → the in-screen 3D
+ *    viewer is used instead, which works on every phone.
+ *
+ * The result is cached for the session.
  */
-export async function checkARSupport(options: ARSupportOptions = {}): Promise<boolean> {
-  // Return cached result if available
-  if (cachedResult !== null) {
-    return cachedResult;
-  }
+export async function checkARSupport(_options: ARSupportOptions = {}): Promise<boolean> {
+  if (cachedResult !== null) return cachedResult;
 
   try {
-    if (Platform.OS === 'web') {
+    if (Platform.OS === 'web' || Constants.appOwnership === 'expo') {
       cachedResult = false;
       return false;
     }
 
-    if (Constants.appOwnership === 'expo') {
+    const viro = require('@reactvision/react-viro');
+    const query: (() => Promise<{ isARSupported?: boolean }>) | undefined = viro?.isARSupportedOnDevice;
+    if (typeof query !== 'function') {
       cachedResult = false;
       return false;
     }
 
-    if (Platform.OS === 'ios') {
-      // ARKit is available on iPhone 6s+ (A9 chip and later).
-      // Virtually all iOS devices running modern Expo are supported.
-      cachedResult = true;
-      return true;
+    // ARCore's check is asynchronous: the first call on a fresh launch usually
+    // answers "TRANSIENT" (still checking). Google's guidance is to ask again
+    // shortly, so poll until a final answer or the time limit.
+    const ask = (): Promise<'yes' | 'no' | 'retry'> =>
+      query()
+        .then((res) => (res?.isARSupported === true ? 'yes' : 'no'))
+        // Viro rejects with the ARCore status: UNSUPPORTED / UNKNOWN / TRANSIENT
+        .catch((e: unknown) => {
+          const status = String((e as any)?.message ?? e ?? '').toUpperCase();
+          return status.includes('TRANSIENT') ? 'retry' : status.includes('UNSUPPORTED') ? 'no' : 'retry';
+        }) as Promise<'yes' | 'no' | 'retry'>;
+
+    const deadline = Date.now() + TIMEOUT_MS;
+    let answer: 'yes' | 'no' | 'retry' = 'retry';
+    while (Date.now() < deadline) {
+      answer = await Promise.race([
+        ask(),
+        new Promise<'retry'>((resolve) => setTimeout(() => resolve('retry'), Math.max(0, deadline - Date.now()))),
+      ]);
+      if (answer !== 'retry') break;
+      await new Promise((resolve) => setTimeout(resolve, 300));
     }
 
-    if (Platform.OS === 'android') {
-      // On Android, if Viro native module is available in this build,
-      // we should treat AR as supported by default.
-      // Some versions do not expose a runtime support API even on ARCore devices.
-      try {
-        const viro = await import('@reactvision/react-viro');
-        
-        if (!viro || !viro.ViroARSceneNavigator) {
-          cachedResult = false;
-          return false;
-        }
-
-        // Prefer explicit runtime capability check if provided by Viro.
-        const runtimeSupportCheck = (viro.ViroARSceneNavigator as any).isARSupportedOnDevice;
-        if (typeof runtimeSupportCheck === 'function') {
-          const isSupported = await runtimeSupportCheck();
-          cachedResult = Boolean(isSupported);
-          return cachedResult;
-        }
-
-        // Runtime capability API missing: in strict mode fail closed
-        // to avoid ARCore install prompts/crashes on unsupported devices.
-        if (options.strict) {
-          cachedResult = false;
-          return false;
-        }
-
-        // Non-strict mode: assume support when native module exists.
-        cachedResult = true;
-        return true;
-      } catch {
-        // ViroReact native module not available → ARCore not supported
-        logger.log('[AR Support] ViroReact not available on this device, falling back to 3D viewer');
-        cachedResult = false;
-        return false;
-      }
-    }
-
-    // Unknown platform
-    cachedResult = false;
-    return false;
+    // No final answer in time (still checking / unknown): don't cache, so the
+    // next tap asks ARCore again instead of locking the phone out of AR.
+    if (answer === 'retry') return false;
+    cachedResult = answer === 'yes';
+    return cachedResult;
   } catch (error) {
-    // If anything unexpected happens, default to the safer fallback (3D viewer)
-    logger.warn('[AR Support] Detection failed, defaulting to 3D viewer:', error);
+    // Native module missing or anything unexpected → safe fallback (3D viewer)
+    logger.warn('[AR Support] Detection failed, using 3D viewer:', error);
     cachedResult = false;
     return false;
   }
 }
 
-/**
- * Reset the cached AR support result.
- * Useful for testing or if user installs ARCore after first check.
- */
+/** Reset the cached result (e.g. after the user installs ARCore). */
 export function resetARSupportCache(): void {
   cachedResult = null;
 }

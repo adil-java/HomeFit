@@ -333,8 +333,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   headerTitle: {
-    fontSize: 20,
-    letterSpacing: -0.3,
+    fontSize: 18,
     fontWeight: '700',
     fontFamily: 'Manrope_700Bold',
   },
@@ -484,7 +483,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e5e5',
+    borderBottomColor: 'rgba(128,128,128,0.22)',
   },
   modalTitle: {
     fontSize: 18,

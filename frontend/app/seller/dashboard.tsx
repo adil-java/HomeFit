@@ -1,30 +1,30 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, ScrollView, StyleSheet, TouchableOpacity, Image, useWindowDimensions } from 'react-native';
-import { useTheme } from '@/contexts/ThemeContext';
-import { Text, Card, ActivityIndicator, Button } from 'react-native-paper';
-import { LineChart, BarChart, PieChart } from 'react-native-chart-kit';
-import HeaderBackButton from '@/components/Shared/HeaderBackButton';
-import { 
-  Users, 
-  ShoppingBag, 
-  DollarSign, 
-  TrendingUp,
-  ArrowUpRight,
-  ArrowDownRight,
-  ArrowLeft,
-  CreditCard,
-  Package,
-  Clock,
-  CheckCircle,
-  Truck,
-  RefreshCw
-} from 'lucide-react-native';
-import { useAuth } from '@/contexts/AuthContext';
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  ActivityIndicator,
+  RefreshControl,
+  useWindowDimensions,
+  BackHandler,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LineChart, PieChart } from 'react-native-chart-kit';
+import { Users, ShoppingBag, Wallet, Package, ArrowUpRight, ArrowDownRight, UserCheck } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
-import { BackHandler } from 'react-native';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useAuth } from '@/contexts/AuthContext';
+import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 import { apiService } from '@/services/api';
 import { useScreenCache } from '@/hooks/useScreenCache';
+import { formatPrice } from '@/constants/pricing';
 import { logger } from '@/utils/logger';
+
+// Calm, related colours for chart slices (brand navy, oak, sage, clay, slate)
+const CATEGORY_COLORS = ['#2F3C7E', '#B8925F', '#5B8C85', '#C08A7E', '#7D8597'];
 
 // Types for our dashboard data
 type DashboardStats = {
@@ -77,65 +77,12 @@ const defaultMonthlyRevenue: MonthlyRevenue = {
   labels: [],
   datasets: [{
     data: [],
-    color: (opacity = 1) => `rgba(134, 65, 244, ${opacity})`,
+    color: (opacity = 1) => `rgba(47, 60, 126, ${opacity})`,
     strokeWidth: 2
   }]
 };
 
 const defaultTopProducts: TopProduct[] = [];
-
-interface StatCardProps {
-  title: string;
-  value: number;
-  icon: React.ComponentType<{ size: number; color: string }>;
-  change: number;
-  isCurrency?: boolean;
-}
-
-const StatCard: React.FC<StatCardProps> = ({ 
-  title, 
-  value, 
-  icon: Icon, 
-  change, 
-  isCurrency = false 
-}) => {
-  const isPositive = change >= 0;
-  const { theme } = useTheme();
-  const { width } = useWindowDimensions();
-  const isNarrow = width < 360;
-  
-  return (
-    <Card style={[styles.statCard, { width: isNarrow ? '100%' : '48%', backgroundColor: theme.colors.surface }]}> 
-      <Card.Content style={styles.statCardContent}>
-        <View style={styles.statHeader}>
-          <View style={[styles.statIcon, { backgroundColor: `${theme.colors.primary}20` }]}>
-            <Icon size={20} color={theme.colors.primary} />
-          </View>
-          <View
-            style={[
-              styles.statChangeBadge,
-              {
-                backgroundColor: isPositive ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
-                borderColor: isPositive ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)'
-              }
-            ]}
-          >
-            {isPositive ? <ArrowUpRight size={12} color="#10B981" /> : <ArrowDownRight size={12} color="#EF4444" />}
-            <Text style={[styles.statChangeText, { color: isPositive ? '#10B981' : '#EF4444' }]}>
-              {Math.abs(change).toFixed(1)}%
-            </Text>
-          </View>
-        </View>
-        <Text variant="titleLarge" style={[styles.statValue, { color: theme.colors.text }]}>
-          {isCurrency ? `${value.toLocaleString()}` : value.toLocaleString()}
-        </Text>
-        <Text variant="bodySmall" style={[styles.statTitle, { color: theme.colors.secondary }]}>
-          {title}
-        </Text>
-      </Card.Content>
-    </Card>
-  );
-};
 
 // Raw responses from the four dashboard endpoints (plain JSON → safe to cache).
 interface DashboardRaw {
@@ -163,13 +110,7 @@ function buildDashboardState(raw: DashboardRaw, isDark: boolean) {
     ? revenueData.map((item: any, index: number) => ({
         ...item,
         population: item.revenue,
-        color: [
-          '#FF6B6B',
-          '#4ECDC4',
-          '#45B7D1',
-          '#96CEB4',
-          '#FFEEAD'
-        ][index % 5] || `#${Math.floor(Math.random()*16777215).toString(16)}`,
+        color: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
         legendFontColor: isDark ? '#E5E7EB' : '#7F7F7F',
         legendFontSize: 12
       }))
@@ -182,7 +123,7 @@ function buildDashboardState(raw: DashboardRaw, isDark: boolean) {
           labels: monthlyData.labels,
           datasets: [{
             data: monthlyData.datasets[0]?.data || [],
-            color: (opacity = 1) => `rgba(134, 65, 244, ${opacity})`,
+            color: (opacity = 1) => `rgba(47, 60, 126, ${opacity})`,
             strokeWidth: 2
           }]
         }
@@ -195,7 +136,8 @@ function buildDashboardState(raw: DashboardRaw, isDark: boolean) {
 
 export default function DashboardScreen() {
   const { theme, isDark } = useTheme();
-  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const c = theme.colors;
+  const { width: screenWidth } = useWindowDimensions();
   const { user } = useAuth();
   // Raw API responses from the last successful load (kept in Redux while the app is open).
   // Chart objects contain functions, so we cache the raw data and rebuild them.
@@ -204,6 +146,7 @@ export default function DashboardScreen() {
   );
   const initial = cachedRaw ? buildDashboardState(cachedRaw, isDark) : null;
   const [loading, setLoading] = useState(!initial);
+  const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState<DashboardStats>(() => initial?.stats ?? defaultStats);
   const [revenueByCategory, setRevenueByCategory] = useState<RevenueByCategory>(
     () => initial?.revenueByCategory ?? defaultRevenueByCategory
@@ -220,13 +163,12 @@ export default function DashboardScreen() {
     try {
       if (!background) setLoading(true);
       setError(null);
-      
-      // Fetch all data in parallel
+
       const [statsData, revenueData, monthlyData, productsData] = await Promise.all([
         apiService.getSellerDashboardStats(),
         apiService.getRevenueByCategory(),
         apiService.getMonthlyRevenue(),
-        apiService.getTopProducts()
+        apiService.getTopProducts(),
       ]);
 
       const raw: DashboardRaw = { statsData, revenueData, monthlyData, productsData };
@@ -236,12 +178,9 @@ export default function DashboardScreen() {
       if (next.monthlyRevenue) setMonthlyRevenue(next.monthlyRevenue);
       if (next.topProducts) setTopProducts(next.topProducts);
       saveCachedRaw(raw);
-
     } catch (err) {
       logger.error('Error fetching dashboard data:', err);
-      if (!background) {
-        setError('Failed to load dashboard data. Please try again.');
-      }
+      if (!background) setError('Could not load your dashboard. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -250,14 +189,19 @@ export default function DashboardScreen() {
   useEffect(() => {
     // Cached data is already on screen → refresh behind it.
     fetchDashboardData(!!cachedRaw);
-
     // Refresh every 5 minutes, quietly in the background
     const interval = setInterval(() => fetchDashboardData(true), 5 * 60 * 1000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Handle hardware back button press — only while this screen is focused,
-  // so it doesn't hijack "back" on screens pushed on top of it.
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchDashboardData(true);
+    setRefreshing(false);
+  };
+
+  // Hardware back goes home — only while this screen is focused
   useFocusEffect(
     useCallback(() => {
       const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -268,447 +212,223 @@ export default function DashboardScreen() {
     }, [])
   );
 
-  // Show loading indicator
+  const pad = screenWidth < 360 ? 14 : 20;
+  const contentWidth = Math.min(screenWidth, 720) - pad * 2;
+  const chartWidth = contentWidth - 32; // card padding
+  const tileWidth = screenWidth < 360 ? contentWidth : (contentWidth - 12) / 2;
+
+  const header = (
+    <View style={[styles.header, { paddingHorizontal: pad, borderBottomColor: c.border }]}>
+      <HeaderBackButton onPress={() => router.dismissTo('/(tabs)')} />
+      <Text style={[styles.headerTitle, { color: c.text }]}>Dashboard</Text>
+      <View style={{ width: 40 }} />
+    </View>
+  );
+
   if (loading) {
     return (
-      <View style={[styles.container, styles.centered, { backgroundColor: theme.colors.background }]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
+      <SafeAreaView style={[styles.container, { backgroundColor: c.background }]} edges={['top']}>
+        {header}
+        <View style={styles.centered}>
+          <ActivityIndicator color={c.primary} />
+        </View>
+      </SafeAreaView>
     );
   }
 
-  // Show error message if any
   if (error) {
     return (
-      <View style={[styles.container, styles.centered, { backgroundColor: theme.colors.background }]}>
-        <Text style={{ color: theme.colors.error, marginBottom: 16, textAlign: 'center', paddingHorizontal: 20 }}>
-          {error}
-        </Text>
-        <Button mode="contained" onPress={() => fetchDashboardData()}>
-          Retry
-        </Button>
-      </View>
+      <SafeAreaView style={[styles.container, { backgroundColor: c.background }]} edges={['top']}>
+        {header}
+        <View style={styles.centered}>
+          <Text style={[styles.errorText, { color: c.textSecondary }]}>{error}</Text>
+          <TouchableOpacity style={[styles.retryButton, { backgroundColor: c.primary }]} onPress={() => fetchDashboardData()}>
+            <Text style={styles.retryText}>Try again</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
     );
   }
 
+  const ink = (opacity = 1) => (isDark ? `rgba(244, 243, 240, ${opacity})` : `rgba(28, 27, 25, ${opacity})`);
   const chartConfig = {
-    backgroundColor: theme.colors.surface,
-    backgroundGradientFrom: theme.colors.surface,
-    backgroundGradientTo: theme.colors.surface,
+    backgroundColor: c.surface,
+    backgroundGradientFrom: c.surface,
+    backgroundGradientTo: c.surface,
     decimalPlaces: 0,
-    color: (opacity = 1) => isDark ? `rgba(255, 255, 255, ${opacity})` : `rgba(0, 0, 0, ${opacity})`,
-    labelColor: (opacity = 1) => isDark ? `rgba(255, 255, 255, ${opacity})` : `rgba(0, 0, 0, ${opacity})`,
-    style: {
-      borderRadius: 16,
-    },
-    propsForDots: {
-      r: '6',
-      strokeWidth: '2',
-      stroke: theme.colors.primary,
-    },
+    color: (opacity = 1) => ink(opacity * 0.9),
+    labelColor: (opacity = 1) => ink(opacity * 0.55),
+    propsForBackgroundLines: { stroke: c.border, strokeDasharray: '' },
+    propsForDots: { r: '3.5', strokeWidth: '2', stroke: c.primary, fill: c.surface },
+    propsForLabels: { fontFamily: 'Manrope_500Medium' },
   };
-
-  const chartWidth = Math.max(280, screenWidth - 56);
-  const contentTopMargin = screenHeight < 700 ? 18 : 32;
-  const contentHorizontalPadding = screenWidth < 360 ? 12 : 16;
-
-  // Format revenue by category for the pie chart
-  const revenueByCategoryData = revenueByCategory.map((item, index) => ({
+  const lineData = {
+    ...monthlyRevenue,
+    datasets: monthlyRevenue.datasets.map((d) => ({ ...d, color: () => c.primary, strokeWidth: 2.5 })),
+  };
+  const pieData = revenueByCategory.map((item, index) => ({
     ...item,
     population: item.revenue,
-    color: [
-      '#FF6B6B',
-      '#4ECDC4',
-      '#45B7D1',
-      '#96CEB4',
-      '#FFEEAD'
-    ][index % 5] || `#${Math.floor(Math.random()*16777215).toString(16)}`,
-    legendFontColor: isDark ? '#E5E7EB' : '#7F7F7F',
-    legendFontSize: 12
+    color: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
+    legendFontColor: c.textSecondary,
+    legendFontSize: 12,
   }));
 
-  return (
-    <ScrollView 
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-      contentContainerStyle={[styles.contentContainer, { marginTop: contentTopMargin, paddingHorizontal: contentHorizontalPadding }]}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Header */}
-      <View style={styles.headerRow}>
-          <HeaderBackButton onPress={() => router.dismissTo('/(tabs)')} />
-        <Text variant="headlineMedium" style={[styles.title, { color: theme.colors.text }]}>
-          Dashboard
-        </Text>
-      </View>
-      
-      {/* Stats Grid */}
-      <View style={styles.statsContainer}>
-        <StatCard 
-          title="Total Users" 
-          value={stats.totalUsers} 
-          icon={Users} 
-          change={stats.monthlyGrowth} 
-        />
-        <StatCard 
-          title="Active Users" 
-          value={stats.activeUsers} 
-          icon={Users} 
-          change={stats.monthlyGrowth * 0.8} 
-        />
-        <StatCard 
-          title="Total Revenue" 
-          value={stats.totalRevenue} 
-          icon={DollarSign} 
-          isCurrency 
-          change={stats.monthlyGrowth} 
-        />
-        <StatCard 
-          title="Total Orders" 
-          value={stats.totalOrders} 
-          icon={ShoppingBag} 
-          change={stats.monthlyGrowth * 0.6} 
-        />
-      </View>
+  const growth = stats.monthlyGrowth;
+  const tiles: { label: string; value: string; icon: any; growth?: number }[] = [
+    { label: 'Revenue', value: formatPrice(stats.totalRevenue), icon: Wallet, growth },
+    { label: 'Orders', value: stats.totalOrders.toLocaleString(), icon: ShoppingBag },
+    { label: 'Customers', value: stats.totalUsers.toLocaleString(), icon: Users },
+    { label: 'Active customers', value: stats.activeUsers.toLocaleString(), icon: UserCheck },
+  ];
 
-      {/* Monthly Revenue Chart */}
-      <Card style={[styles.chartCard, { backgroundColor: theme.colors.surface }]}>
-        <Card.Content>
-          <Text variant="titleMedium" style={[styles.chartTitle, { color: theme.colors.text }]}>
-            Monthly Revenue
-          </Text>
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: c.background }]} edges={['top']}>
+      {header}
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingHorizontal: pad }]}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} colors={[c.primary]} />}
+      >
+        <Text style={[styles.greeting, { color: c.textSecondary }]}>
+          {user?.name ? `Hi ${user.name.split(' ')[0]}, here's how your store is doing.` : "Here's how your store is doing."}
+        </Text>
+
+        {/* Key numbers */}
+        <View style={styles.tiles}>
+          {tiles.map(({ label, value, icon: Icon, growth: g }) => (
+            <View key={label} style={[styles.tile, { width: tileWidth, backgroundColor: c.surface, borderColor: c.border }]}>
+              <View style={styles.tileTop}>
+                <Icon size={18} color={c.textSecondary} strokeWidth={1.8} />
+                {typeof g === 'number' && g !== 0 && (
+                  <View style={styles.growth}>
+                    {g > 0 ? <ArrowUpRight size={13} color={c.success} /> : <ArrowDownRight size={13} color={c.error} />}
+                    <Text style={[styles.growthText, { color: g > 0 ? c.success : c.error }]}>{Math.abs(g).toFixed(1)}%</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={[styles.tileValue, { color: c.text }]} numberOfLines={1} adjustsFontSizeToFit>
+                {value}
+              </Text>
+              <Text style={[styles.tileLabel, { color: c.textSecondary }]}>{label}</Text>
+            </View>
+          ))}
+        </View>
+
+        {/* Monthly revenue */}
+        <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}>
+          <Text style={[styles.cardTitle, { color: c.text }]}>Monthly revenue</Text>
           {monthlyRevenue.labels.length > 0 ? (
             <LineChart
-              data={monthlyRevenue}
+              data={lineData}
               width={chartWidth}
-              height={220}
+              height={200}
               chartConfig={chartConfig}
               bezier
+              withVerticalLines={false}
+              withOuterLines={false}
               style={styles.chart}
             />
           ) : (
-            <View style={styles.noDataContainer}>
-              <Text style={{ color: theme.colors.textSecondary }}>No revenue data available</Text>
-            </View>
+            <Text style={[styles.empty, { color: c.textSecondary }]}>No sales yet. Revenue will show here once orders come in.</Text>
           )}
-        </Card.Content>
-      </Card>
+        </View>
 
-      {/* Revenue by Category Chart */}
-      <Card style={[styles.chartCard, { backgroundColor: theme.colors.surface }]}>
-        <Card.Content>
-          <Text variant="titleMedium" style={[styles.chartTitle, { color: theme.colors.text }]}>
-            Revenue by Category
-          </Text>
-          {revenueByCategoryData.length > 0 ? (
-            <View style={styles.pieChartWrapper}>
-              <PieChart
-                data={revenueByCategoryData}
-                width={chartWidth}
-                height={200}
-                chartConfig={chartConfig}
-                accessor="population"
-                backgroundColor="transparent"
-                paddingLeft="15"
-                absolute
-                hasLegend={true}
-              />
-            </View>
+        {/* Revenue by category */}
+        <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}>
+          <Text style={[styles.cardTitle, { color: c.text }]}>Revenue by category</Text>
+          {pieData.length > 0 ? (
+            <PieChart
+              data={pieData}
+              width={chartWidth}
+              height={180}
+              chartConfig={chartConfig}
+              accessor="population"
+              backgroundColor="transparent"
+              paddingLeft="8"
+              absolute
+              hasLegend
+            />
           ) : (
-            <View style={styles.noDataContainer}>
-              <Text style={{ color: theme.colors.textSecondary }}>No category data available</Text>
-            </View>
+            <Text style={[styles.empty, { color: c.textSecondary }]}>No category data yet.</Text>
           )}
-        </Card.Content>
-      </Card>
+        </View>
 
-      {/* Top Products */}
-      <Card style={[styles.productsCard, { backgroundColor: theme.colors.surface }]}>
-        <Card.Content>
-          <View style={styles.sectionHeader}>
-            <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.colors.text }]}>
-              Top Products
-            </Text>
-          </View>
-          
+        {/* Top products */}
+        <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border, paddingBottom: 4 }]}>
+          <Text style={[styles.cardTitle, { color: c.text }]}>Top products</Text>
           {topProducts.length > 0 ? (
-            <View style={styles.productsList}>
-              {topProducts.map((product, index) => (
-                <TouchableOpacity 
-                  key={product.id}
-                  style={[
-                    styles.productItem,
-                    index !== topProducts.length - 1 && styles.productItemBorder,
-                    { borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)' }
-                  ]}
-                  onPress={() => router.push(`/seller/products/${product.id}`)}
-                  activeOpacity={0.7}
-                >
-                  <View style={[
-                    styles.productImage,
-                    { 
-                      backgroundColor: isDark ? `${theme.colors.primary}26` : 'rgba(79, 70, 229, 0.1)',
-                      overflow: 'hidden',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }
-                  ]}>
-                    {product.image ? (
-                      <Image 
-                        source={{ uri: product.image }} 
-                        style={{ width: '100%', height: '100%' }}
-                        resizeMode="cover"
-                      />
-                    ) : (
-                      <Package size={20} color={theme.colors.primary} />
-                    )}
-                  </View>
-                  
-                  <View style={styles.productContent}>
-                    <Text 
-                      style={[styles.productName, { color: theme.colors.text }]}
-                      numberOfLines={1}
-                    >
-                      {product.name}
-                    </Text>
-                    
-                    <View style={styles.productStats}>
-                      <View style={styles.productStatItem}>
-                        <Text style={[styles.productStatLabel, { color: theme.colors.textSecondary }]}>
-                          Revenue
-                        </Text>
-                        <Text style={[styles.productStatValue, { color: theme.colors.primary }]}>
-                          PKR {product.revenue?.toLocaleString() || '0'}
-                        </Text>
-                      </View>
-                      
-                      <View style={styles.productStatItem}>
-                        <Text style={[styles.productStatLabel, { color: theme.colors.textSecondary }]}>
-                          Orders
-                        </Text>
-                        <Text style={[styles.productStatValue, { color: theme.colors.primary }]}>
-                          {product.orders?.toLocaleString() || '0'}
-                        </Text>
-                      </View>
-                      
-                      <View style={styles.productStatItem}>
-                        <Text style={[styles.productStatLabel, { color: theme.colors.textSecondary }]}>
-                          Stock
-                        </Text>
-                        <Text style={[styles.productStatValue, { color: theme.colors.primary }]}>
-                          {product.stock?.toLocaleString() || '0'}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
+            topProducts.map((product, index) => (
+              <TouchableOpacity
+                key={product.id}
+                style={[
+                  styles.productRow,
+                  index !== topProducts.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
+                ]}
+                onPress={() => router.push(`/seller/products/${product.id}`)}
+                activeOpacity={0.6}
+              >
+                <View style={[styles.productImage, { backgroundColor: c.background }]}>
+                  {product.image ? (
+                    <Image source={{ uri: product.image }} style={styles.productImageFill} resizeMode="cover" />
+                  ) : (
+                    <Package size={18} color={c.textSecondary} />
+                  )}
+                </View>
+                <View style={styles.productBody}>
+                  <Text style={[styles.productName, { color: c.text }]} numberOfLines={1}>{product.name}</Text>
+                  <Text style={[styles.productMeta, { color: c.textSecondary }]}>
+                    {(product.orders || 0).toLocaleString()} orders · {(product.stock || 0).toLocaleString()} in stock
+                  </Text>
+                </View>
+                <Text style={[styles.productRevenue, { color: c.text }]}>{formatPrice(product.revenue || 0)}</Text>
+              </TouchableOpacity>
+            ))
           ) : (
-            <View style={styles.noDataContainer}>
-              <Text style={{ color: theme.colors.textSecondary }}>No products data available</Text>
-            </View>
+            <Text style={[styles.empty, { color: c.textSecondary, marginBottom: 12 }]}>Your best sellers will appear here.</Text>
           )}
-        </Card.Content>
-      </Card>
-    </ScrollView>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  centered: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  contentContainer: {
-    marginTop: 32,
-    paddingHorizontal: 16,
-    paddingTop: 0,
-    paddingBottom: 32,
-  },
-  
-  // Header
-  headerRow: {
+  container: { flex: 1 },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  title: {
-    fontWeight: '700',
-    fontFamily: 'Manrope_700Bold',
-    flex: 1,
-    marginLeft:10,
-  },
-  
-  // Stats Cards
-  statsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  statCard: {
-    marginBottom: 12,
-    borderRadius: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  statCardContent: {
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-  },
-  statHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  statIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  statChangeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  statChangeText: {
-    fontSize: 11,
-    fontWeight: '600',
-    fontFamily: 'Manrope_600SemiBold',
-    marginLeft: 2,
-  },
-  statValue: {
-    fontSize: 22,
-    letterSpacing: -0.3,
-    fontWeight: '700',
-    fontFamily: 'Manrope_700Bold',
-    marginBottom: 2,
-  },
-  statTitle: {
-    fontSize: 12,
-    fontFamily: 'Manrope_400Regular',
-    opacity: 0.8,
-  },
-  
-  // Charts
-  chartCard: {
-    marginBottom: 20,
-    borderRadius: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  chartTitle: {
-    marginBottom: 16,
-    fontWeight: '600',
-    fontFamily: 'Manrope_600SemiBold',
-  },
-  chart: {
-    marginVertical: 8,
-    borderRadius: 16,
-  },
-  pieChartWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  noDataContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  
-  // Products Section
-  productsCard: {
-    marginBottom: 20,
-    borderRadius: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontWeight: '600',
-    fontFamily: 'Manrope_600SemiBold',
-  },
-  productsList: {
-    marginTop: 8,
-  },
-  productItem: {
-    flexDirection: 'row',
-    paddingVertical: 16,
-    paddingHorizontal: 4,
-  },
-  productItemBorder: {
-    borderBottomWidth: 1,
-  },
-  productImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  productContent: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  productName: {
-    fontSize: 15,
-    fontWeight: '600',
-    fontFamily: 'Manrope_600SemiBold',
-    marginBottom: 8,
-  },
-  productStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  productStatItem: {
-    flex: 1,
-  },
-  productStatLabel: {
-    fontSize: 11,
-    fontFamily: 'Manrope_400Regular',
-    marginBottom: 2,
-  },
-  productStatValue: {
-    fontSize: 13,
-    fontWeight: '600',
-    fontFamily: 'Manrope_600SemiBold',
-  },
+  headerTitle: { fontSize: 18, fontFamily: 'Manrope_700Bold' },
+  content: { paddingTop: 16, paddingBottom: 32, width: '100%', maxWidth: 720, alignSelf: 'center' },
+  greeting: { fontSize: 14, fontFamily: 'Manrope_500Medium', marginBottom: 16 },
+
+  tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 16 },
+  tile: { borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, padding: 14 },
+  tileTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
+  growth: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  growthText: { fontSize: 12, fontFamily: 'Manrope_700Bold' },
+  tileValue: { fontSize: 22, fontFamily: 'Manrope_800ExtraBold', letterSpacing: -0.5 },
+  tileLabel: { fontSize: 13, fontFamily: 'Manrope_500Medium', marginTop: 2 },
+
+  card: { borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, padding: 16, marginBottom: 16, overflow: 'hidden' },
+  cardTitle: { fontSize: 15, fontFamily: 'Manrope_700Bold', marginBottom: 12 },
+  chart: { marginLeft: -12, borderRadius: 8 },
+  empty: { fontSize: 14, lineHeight: 20, fontFamily: 'Manrope_400Regular', paddingVertical: 8 },
+
+  productRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
+  productImage: { width: 44, height: 44, borderRadius: 10, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  productImageFill: { width: '100%', height: '100%' },
+  productBody: { flex: 1 },
+  productName: { fontSize: 14, fontFamily: 'Manrope_600SemiBold' },
+  productMeta: { fontSize: 12, fontFamily: 'Manrope_400Regular', marginTop: 2 },
+  productRevenue: { fontSize: 14, fontFamily: 'Manrope_700Bold' },
+
+  errorText: { fontSize: 15, textAlign: 'center', marginBottom: 16, fontFamily: 'Manrope_500Medium' },
+  retryButton: { paddingHorizontal: 22, paddingVertical: 12, borderRadius: 12 },
+  retryText: { color: '#fff', fontSize: 15, fontFamily: 'Manrope_700Bold' },
 });

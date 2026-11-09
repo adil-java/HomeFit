@@ -445,7 +445,7 @@ function ProductForm() {
                 }
               ]}
               placeholder="Enter product name"
-              placeholderTextColor={theme.dark ? '#666' : '#999'}
+              placeholderTextColor={theme.colors.textSecondary}
               value={formData.name}
               onChangeText={(text) => handleChange('name', text)}
               editable={!saving}
@@ -469,7 +469,7 @@ function ProductForm() {
                 }
               ]}
               placeholder="Enter product description"
-              placeholderTextColor={theme.dark ? '#666' : '#999'}
+              placeholderTextColor={theme.colors.textSecondary}
               value={formData.description}
               onChangeText={(text) => handleChange('description', text)}
               multiline
@@ -493,7 +493,7 @@ function ProductForm() {
               disabled={saving}
             >
               <Text style={[styles.selectText, {
-                color: selectedCategory ? theme.colors.text : (theme.dark ? '#666' : '#999')
+                color: selectedCategory ? theme.colors.text : (theme.colors.textSecondary)
               }]}>
                 {selectedCategory ? selectedCategory.name : 'Select a category'}
               </Text>
@@ -552,7 +552,7 @@ function ProductForm() {
                 <TextInput
                   style={[styles.inputInside, { color: theme.colors.text }]}
                   placeholder="0.00"
-                  placeholderTextColor={theme.dark ? '#666' : '#999'}
+                  placeholderTextColor={theme.colors.textSecondary}
                   value={formData.price}
                   onChangeText={(text) => handleChange('price', text.replace(/[^0-9.]/g, ''))}
                   keyboardType="decimal-pad"
@@ -576,7 +576,7 @@ function ProductForm() {
                 <TextInput
                   style={[styles.inputInside, { color: theme.colors.text }]}
                   placeholder="0.00"
-                  placeholderTextColor={theme.dark ? '#666' : '#999'}
+                  placeholderTextColor={theme.colors.textSecondary}
                   value={formData.comparePrice}
                   onChangeText={(text) => handleChange('comparePrice', text.replace(/[^0-9.]/g, ''))}
                   keyboardType="decimal-pad"
@@ -602,7 +602,7 @@ function ProductForm() {
                 <TextInput
                   style={[styles.inputInside, { color: theme.colors.text }]}
                   placeholder="0.00"
-                  placeholderTextColor={theme.dark ? '#666' : '#999'}
+                  placeholderTextColor={theme.colors.textSecondary}
                   value={formData.cost}
                   onChangeText={(text) => handleChange('cost', text.replace(/[^0-9.]/g, ''))}
                   keyboardType="decimal-pad"
@@ -626,7 +626,7 @@ function ProductForm() {
                 <TextInput
                   style={[styles.inputInside, { color: theme.colors.text }]}
                   placeholder="0"
-                  placeholderTextColor={theme.dark ? '#666' : '#999'}
+                  placeholderTextColor={theme.colors.textSecondary}
                   value={formData.quantity}
                   onChangeText={(text) => handleChange('quantity', text.replace(/[^0-9]/g, ''))}
                   keyboardType="number-pad"
@@ -658,7 +658,7 @@ function ProductForm() {
                 <TextInput
                   style={[styles.inputInside, { color: theme.colors.text }]}
                   placeholder="SKU-001"
-                  placeholderTextColor={theme.dark ? '#666' : '#999'}
+                  placeholderTextColor={theme.colors.textSecondary}
                   value={formData.sku}
                   onChangeText={(text) => handleChange('sku', text)}
                   editable={!saving}
@@ -681,7 +681,7 @@ function ProductForm() {
                 <TextInput
                   style={[styles.inputInside, { color: theme.colors.text }]}
                   placeholder="123456789012"
-                  placeholderTextColor={theme.dark ? '#666' : '#999'}
+                  placeholderTextColor={theme.colors.textSecondary}
                   value={formData.barcode}
                   onChangeText={(text) => handleChange('barcode', text)}
                   editable={!saving}
@@ -707,7 +707,7 @@ function ProductForm() {
               disabled={saving}
             >
               <Text style={[styles.selectText, {
-                color: formData.sizes.length ? theme.colors.text : (theme.dark ? '#666' : '#999')
+                color: formData.sizes.length ? theme.colors.text : (theme.colors.textSecondary)
               }]}>
                 {formData.sizes.length ? formData.sizes.join(', ') : 'Select sizes'}
               </Text>
@@ -797,7 +797,7 @@ function ProductForm() {
                   </View>
                 ) : (
                   <Text style={[styles.selectText, {
-                    color: theme.dark ? '#666' : '#999'
+                    color: theme.colors.textSecondary
                   }]}>
                     Select colors
                   </Text>
@@ -829,7 +829,7 @@ function ProductForm() {
                           styles.colorSwatch,
                           { backgroundColor: color.hex }
                         ]} />
-                        <Text style={styles.colorName}>
+                        <Text style={[styles.colorName, { color: theme.colors.text }]}>
                           {color.name}
                         </Text>
                         {isSelected && (
@@ -944,9 +944,9 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
-    fontFamily: 'Manrope_600SemiBold',
+    fontFamily: 'Manrope_700Bold',
     flex: 1,
   },
   saveButton: {
@@ -1002,7 +1002,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     borderRadius: 8,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: 'rgba(128,128,128,0.14)',
   },
   removeImageButton: {
     position: 'absolute',
@@ -1234,7 +1234,7 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   selectedColor: {
-    borderColor: '#3B82F6',
+    borderColor: '#5576B5',
     backgroundColor: '#EFF6FF',
     borderWidth: 2,
   },
@@ -1242,7 +1242,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 8,
     top: 8,
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#5576B5',
     borderRadius: 10,
     width: 16,
     height: 16,

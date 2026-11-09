@@ -269,7 +269,7 @@ export default function ProductsScreen() {
     }]}>
       <View style={[
         styles.productImageContainer,
-        { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#f5f5f5' }
+        { backgroundColor: theme.colors.background }
       ]}>
         {item.images && item.images.length > 0 && (
           <Image 
@@ -299,7 +299,7 @@ export default function ProductsScreen() {
             )}
             
             <View style={styles.ratingContainer}>
-              <Text style={[styles.ratingText, { color: isDark ? '#FBBF24' : '#F59E0B' }]}>
+              <Text style={[styles.ratingText, { color: isDark ? '#C98A12' : '#C98A12' }]}>
                 ★ {item.averageRating?.toFixed(1) || 'N/A'}
               </Text>
             </View>
@@ -311,7 +311,7 @@ export default function ProductsScreen() {
             Rs. {item.price.toLocaleString('en-IN')}
           </Text>
           <Text style={[styles.productStock, { 
-            color: item.quantity > 10 ? '#10B981' : item.quantity > 0 ? '#F59E0B' : '#EF4444' 
+            color: item.quantity > 10 ? '#3E9A6A' : item.quantity > 0 ? '#C98A12' : '#D2504A' 
           }]}>
             {item.quantity} in stock
           </Text>
@@ -331,10 +331,10 @@ export default function ProductsScreen() {
           <Edit size={18} color={theme.colors.primary} />
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.iconButton, compact && styles.iconButtonCompact, { backgroundColor: isDark ? '#EF444420' : '#EF444410' }]}
+          style={[styles.iconButton, compact && styles.iconButtonCompact, { backgroundColor: isDark ? '#D2504A20' : '#D2504A10' }]}
           onPress={() => handleDelete(item.id)}
         >
-          <Trash2 size={18} color="#EF4444" />
+          <Trash2 size={18} color="#D2504A" />
         </TouchableOpacity>
       </View>
     </View>
@@ -633,19 +633,19 @@ export default function ProductsScreen() {
             backgroundColor: isDark ? theme.colors.surface : '#fff',
             shadowColor: isDark ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.2)'
           }]}>
-            <Text style={[styles.modalTitle, { color: isDark ? '#fff' : '#1a1a1a' }]}>
+            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>
               Delete Product
             </Text>
-            <Text style={[styles.modalMessage, { color: isDark ? 'rgba(255, 255, 255, 0.7)' : '#666' }]}>
+            <Text style={[styles.modalMessage, { color: theme.colors.textSecondary }]}>
               Are you sure you want to delete this product? This action cannot be undone.
             </Text>
             <View style={styles.modalButtons}>
               <Pressable 
-                style={[styles.modalButton, styles.cancelButton, { borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : '#e0e0e0' }]}
+                style={[styles.modalButton, styles.cancelButton, { borderColor: theme.colors.border }]}
                 onPress={cancelDelete}
                 disabled={isDeleting}
               >
-                <Text style={[styles.buttonText, { color: isDark ? '#fff' : '#1a1a1a' }]}>Cancel</Text>
+                <Text style={[styles.buttonText, { color: theme.colors.text }]}>Cancel</Text>
               </Pressable>
               <Pressable 
                 style={[styles.modalButton, styles.deleteButton, { opacity: isDeleting ? 0.7 : 1 }]}
@@ -715,7 +715,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   deleteButton: {
-    backgroundColor: '#ff3b30',
+    backgroundColor: '#D2504A',
   },
   buttonText: {
     fontSize: 15,
@@ -749,8 +749,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 24,
-    letterSpacing: -0.5,
+    fontSize: 18,
     fontWeight: '700',
     fontFamily: 'Manrope_700Bold',
   },

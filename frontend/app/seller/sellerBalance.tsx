@@ -14,6 +14,17 @@ import {
 import { useAuth } from "@/contexts/AuthContext"
 import { apiService } from "@/services/api"
 import { useScreenCache } from "@/hooks/useScreenCache"
+import { useTheme } from "@/contexts/ThemeContext"
+import { SafeAreaView } from "react-native-safe-area-context"
+import { router } from "expo-router"
+import HeaderBackButton from "@/components/Shared/HeaderBackButton"
+import { formatPKR, formatPrice } from "@/constants/pricing"
+
+// Stripe reports the account currency; PKR uses the app's "Rs." format.
+const formatMoney = (amount: number, currency?: string) =>
+  !currency || currency.toLowerCase() === "pkr"
+    ? formatPKR(amount)
+    : `${currency.toUpperCase()} ${amount.toFixed(2)}`
 
 interface SellerBalanceScreenProps {
   sellerId: string
@@ -28,12 +39,15 @@ interface BalanceData {
   nextPayoutDate: string
   chargesEnabled: boolean
   isVerified: boolean
+  currency?: string
 }
 
 export const SellerBalanceScreen: React.FC<SellerBalanceScreenProps> = ({ sellerId, onRequestPayout }) => {
   const { width } = useWindowDimensions()
+  const { theme } = useTheme()
+  const c = theme.colors
   const compact = width < 360
-  const horizontalPadding = compact ? 12 : 16
+  const pad = compact ? 14 : 20
   // Last loaded balance (kept in Redux while the app is open) → instant on revisit
   const [cachedBalance, saveCachedBalance] = useScreenCache<BalanceData>(sellerId ? `sellerBalance:${sellerId}` : null)
   const [balance, setBalance] = useState<BalanceData | null>(() => cachedBalance ?? null)
@@ -75,12 +89,13 @@ export const SellerBalanceScreen: React.FC<SellerBalanceScreenProps> = ({ seller
         nextPayoutDate: "N/A",
         chargesEnabled: !!status?.chargesEnabled,
         isVerified: !!(status?.detailsSubmitted ?? status?.isOnboarded),
+        currency: amounts.currency,
       }
       setBalance(next)
       saveCachedBalance(next)
     } catch (error: any) {
       // Keep showing cached data if we have it
-      if (!balance) Alert.alert("Error", "Failed to fetch balance")
+      // Keeps cached data; the screen shows a retry hint when there is none
     } finally {
       setLoading(false)
     }
@@ -92,136 +107,125 @@ export const SellerBalanceScreen: React.FC<SellerBalanceScreenProps> = ({ seller
     setRefreshing(false)
   }
 
-  if (loading) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-      </View>
-    )
-  }
+  const header = (
+    <View style={[styles.header, { paddingHorizontal: pad, borderBottomColor: c.border }]}>
+      <HeaderBackButton onPress={() => (router.canGoBack() ? router.back() : router.dismissTo("/(tabs)"))} />
+      <Text style={[styles.headerTitle, { color: c.text }]}>Balance</Text>
+      <View style={{ width: 40 }} />
+    </View>
+  )
 
-  if (!balance) {
+  if (loading || !balance) {
     return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>Failed to load balance</Text>
-      </View>
+      <SafeAreaView style={[styles.container, { backgroundColor: c.background }]} edges={["top"]}>
+        {header}
+        <View style={styles.centered}>
+          {loading ? (
+            <ActivityIndicator color={c.primary} />
+          ) : (
+            <Text style={[styles.muted, { color: c.textSecondary }]}>Could not load your balance. Pull down to try again.</Text>
+          )}
+        </View>
+      </SafeAreaView>
     )
   }
 
   const isPayoutReady = balance.chargesEnabled && balance.isVerified
+  const money = (minor: number) => formatMoney(minor / 100, balance.currency)
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={[styles.contentContainer, { paddingHorizontal: horizontalPadding }]}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
-      {/* Account Status */}
-      <View style={styles.statusCard}>
-        <View style={styles.statusHeader}>
-          <Text style={styles.statusTitle}>Account Status</Text>
-          <View style={[styles.statusBadge, isPayoutReady ? styles.statusBadgeActive : styles.statusBadgePending]}>
-            <Text style={styles.statusBadgeText}>{isPayoutReady ? "Active" : "Pending"}</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: c.background }]} edges={["top"]}>
+      {header}
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingHorizontal: pad }]}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} colors={[c.primary]} />}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Available balance */}
+        <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}>
+          <Text style={[styles.label, { color: c.textSecondary }]}>Available to withdraw</Text>
+          <Text style={[styles.amount, compact && styles.amountCompact, { color: c.text }]} numberOfLines={1} adjustsFontSizeToFit>
+            {money(balance.currentBalance)}
+          </Text>
+          <View style={styles.statusRow}>
+            <View style={[styles.dot, { backgroundColor: isPayoutReady ? c.success : c.warning }]} />
+            <Text style={[styles.statusText, { color: c.textSecondary }]}>
+              {isPayoutReady ? "Payouts are active" : "Finish payment setup to receive payouts"}
+            </Text>
           </View>
-        </View>
-        <Text style={styles.statusDescription}>
-          {isPayoutReady
-            ? "Your account is fully verified and ready to receive payments."
-            : "Complete Stripe verification to start receiving payments."}
-        </Text>
-      </View>
-
-      {/* Current Balance */}
-      <View style={styles.balanceCard}>
-        <Text style={styles.balanceLabel}>Available Balance</Text>
-        <Text style={[styles.balanceAmount, compact && styles.balanceAmountCompact]}>${(balance.currentBalance / 100).toFixed(2)}</Text>
-        <Text style={styles.balanceNote}>Ready to withdraw to your bank</Text>
-
-        {balance.currentBalance > 0 && (
-          <TouchableOpacity style={styles.withdrawButton} onPress={onRequestPayout}>
-            <Text style={styles.withdrawButtonText}>Request Payout</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Pending Transactions */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Pending Transactions</Text>
-        <View style={[styles.pendingRow, compact && styles.pendingRowCompact]}>
-          <View>
-            <Text style={styles.pendingLabel}>Processing Amount</Text>
-            <Text style={styles.pendingAmount}>${(balance.pendingAmount / 100).toFixed(2)}</Text>
-          </View>
-          <View style={styles.processingBadge}>
-            <Text style={styles.processingText}>Processing</Text>
-          </View>
-        </View>
-        <Text style={styles.pendingNote}>These funds will be available in 1-2 business days</Text>
-      </View>
-
-      {/* Payout Information */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Payout Schedule</Text>
-
-        <View style={styles.infoRow}>
-          <View style={styles.infoDot} />
-          <View>
-            <Text style={styles.infoLabel}>Last Payout</Text>
-            <Text style={styles.infoValue}>{balance.lastPayoutDate}</Text>
-          </View>
+          {isPayoutReady ? (
+            balance.currentBalance > 0 && (
+              <TouchableOpacity style={[styles.primaryButton, { backgroundColor: c.primary }]} onPress={onRequestPayout} activeOpacity={0.85}>
+                <Text style={styles.primaryButtonText}>Request payout</Text>
+              </TouchableOpacity>
+            )
+          ) : (
+            <TouchableOpacity
+              style={[styles.primaryButton, { backgroundColor: c.primary }]}
+              onPress={() => router.navigate("/seller/onboarding")}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.primaryButtonText}>Go to payment setup</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
-        <View style={styles.infoRow}>
-          <View style={styles.infoDot} />
-          <View>
-            <Text style={styles.infoLabel}>Next Payout</Text>
-            <Text style={styles.infoValue}>{balance.nextPayoutDate}</Text>
+        {/* Pending */}
+        <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}>
+          <View style={styles.rowBetween}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.label, { color: c.textSecondary }]}>On the way</Text>
+              <Text style={[styles.amountSmall, { color: c.text }]}>{money(balance.pendingAmount)}</Text>
+            </View>
+            <View style={[styles.pill, { backgroundColor: c.warning + "22" }]}>
+              <Text style={[styles.pillText, { color: c.warning }]}>Processing</Text>
+            </View>
           </View>
+          <Text style={[styles.note, { color: c.textSecondary }]}>Recent sales become available in 1–2 business days.</Text>
         </View>
 
-        <View style={styles.infoRow}>
-          <View style={styles.infoDot} />
-          <View>
-            <Text style={styles.infoLabel}>Payout Method</Text>
-            <Text style={styles.infoValue}>Direct Bank Transfer</Text>
-          </View>
+        {/* Payouts */}
+        <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>PAYOUTS</Text>
+        <View style={[styles.card, styles.listCard, { backgroundColor: c.surface, borderColor: c.border }]}>
+          {[
+            { label: "Last payout", value: balance.lastPayoutDate },
+            { label: "Next payout", value: balance.nextPayoutDate },
+            { label: "Method", value: "Bank transfer" },
+          ].map((row, i, arr) => (
+            <View
+              key={row.label}
+              style={[styles.listRow, i < arr.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border }]}
+            >
+              <Text style={[styles.listLabel, { color: c.textSecondary }]}>{row.label}</Text>
+              <Text style={[styles.listValue, { color: c.text }]}>{row.value}</Text>
+            </View>
+          ))}
         </View>
-      </View>
 
-      {/* Fee Information */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Fees & Earnings</Text>
-        <Text style={styles.feeDescription}>
-          For each sale, you earn 92% of the sale price. We keep 8% as our platform fee.
-        </Text>
-
-        <View style={styles.exampleContainer}>
-          <View style={styles.exampleRow}>
-            <Text style={styles.exampleLabel}>Customer Pays</Text>
-            <Text style={styles.exampleValue}>$100.00</Text>
-          </View>
-          <View style={styles.exampleRow}>
-            <Text style={styles.exampleLabel}>Platform Fee (8%)</Text>
-            <Text style={[styles.exampleValue, styles.feeValue]}>-$8.00</Text>
-          </View>
-          <View style={[styles.exampleRow, styles.exampleTotal]}>
-            <Text style={styles.exampleLabel}>You Earn</Text>
-            <Text style={[styles.exampleValue, styles.earningValue]}>$92.00</Text>
-          </View>
+        {/* Fees */}
+        <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>FEES</Text>
+        <View style={[styles.card, styles.listCard, { backgroundColor: c.surface, borderColor: c.border }]}>
+          <Text style={[styles.note, { color: c.textSecondary, paddingHorizontal: 16, paddingTop: 14, marginTop: 0 }]}>
+            You keep 92% of every sale. HomeFit keeps 8% as a platform fee.
+          </Text>
+          {[
+            { label: "Customer pays", value: formatPKR(10000) },
+            { label: "Platform fee (8%)", value: `−${formatPKR(800)}`, tone: c.error },
+            { label: "You earn", value: formatPKR(9200), tone: c.success, bold: true },
+          ].map((row, i, arr) => (
+            <View
+              key={row.label}
+              style={[styles.listRow, i < arr.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border }]}
+            >
+              <Text style={[styles.listLabel, { color: row.bold ? c.text : c.textSecondary }]}>{row.label}</Text>
+              <Text style={[styles.listValue, { color: row.tone || c.text }, row.bold && { fontFamily: "Manrope_800ExtraBold" }]}>
+                {row.value}
+              </Text>
+            </View>
+          ))}
         </View>
-      </View>
-
-      {/* Help & Support */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Need Help?</Text>
-        <TouchableOpacity style={styles.supportLink}>
-          <Text style={styles.supportLinkText}>View Payout History →</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.supportLink}>
-          <Text style={styles.supportLinkText}>Contact Support →</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   )
 }
 
@@ -231,253 +235,42 @@ export default function SellerBalanceRoute() {
   return (
     <SellerBalanceScreen
       sellerId={user?.uid || user?.id || ""}
-      onRequestPayout={() => Alert.alert("Coming Soon", "Payout requests will be available soon.")}
+      onRequestPayout={() => Alert.alert("Coming soon", "Payout requests will be available soon.")}
     />
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  contentContainer: {
-    padding: 16,
-    paddingBottom: 32,
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#fff",
-  },
-  statusCard: {
-    backgroundColor: "#f5f5f5",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  statusHeader: {
+  container: { flex: 1 },
+  centered: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
+  header: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
-  },
-  statusTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    fontFamily: 'Manrope_600SemiBold',
-    color: "#000",
-  },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  statusBadgeActive: {
-    backgroundColor: "#dcfce7",
-  },
-  statusBadgePending: {
-    backgroundColor: "#fef08a",
-  },
-  statusBadgeText: {
-    fontSize: 12,
-    fontWeight: "600",
-    fontFamily: 'Manrope_600SemiBold',
-    color: "#166534",
-  },
-  statusDescription: {
-    fontSize: 13,
-    fontFamily: 'Manrope_400Regular',
-    color: "#666",
-    lineHeight: 20,
-  },
-  balanceCard: {
-    backgroundColor: "#007AFF",
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 16,
-  },
-  balanceLabel: {
-    fontSize: 13,
-    fontFamily: 'Manrope_400Regular',
-    color: "rgba(255, 255, 255, 0.8)",
-    marginBottom: 8,
-  },
-  balanceAmount: {
-    fontSize: 36,
-    letterSpacing: -0.5,
-    fontWeight: "700",
-    fontFamily: 'Manrope_700Bold',
-    color: "#fff",
-    marginBottom: 4,
-  },
-  balanceAmountCompact: {
-    fontSize: 30,
-  },
-  balanceNote: {
-    fontSize: 12,
-    fontFamily: 'Manrope_400Regular',
-    color: "rgba(255, 255, 255, 0.7)",
-    marginBottom: 16,
-  },
-  withdrawButton: {
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "space-between",
     paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.3)",
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  withdrawButtonText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
-    fontFamily: 'Manrope_600SemiBold',
-  },
-  card: {
-    backgroundColor: "#f9f9f9",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#eee",
-  },
-  cardTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    fontFamily: 'Manrope_600SemiBold',
-    color: "#000",
-    marginBottom: 12,
-  },
-  pendingRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-    marginBottom: 12,
-  },
-  pendingRowCompact: {
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    gap: 8,
-  },
-  pendingLabel: {
-    fontSize: 12,
-    fontFamily: 'Manrope_400Regular',
-    color: "#999",
-    marginBottom: 4,
-  },
-  pendingAmount: {
-    fontSize: 18,
-    fontWeight: "600",
-    fontFamily: 'Manrope_600SemiBold',
-    color: "#000",
-  },
-  processingBadge: {
-    backgroundColor: "#fef08a",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  processingText: {
-    fontSize: 12,
-    fontWeight: "500",
-    fontFamily: 'Manrope_500Medium',
-    color: "#92400e",
-  },
-  pendingNote: {
-    fontSize: 12,
-    fontFamily: 'Manrope_400Regular',
-    color: "#999",
-  },
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  infoDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#007AFF",
-    marginRight: 12,
-    marginTop: 2,
-  },
-  infoLabel: {
-    fontSize: 12,
-    fontFamily: 'Manrope_400Regular',
-    color: "#999",
-    marginBottom: 2,
-  },
-  infoValue: {
-    fontSize: 13,
-    fontWeight: "500",
-    fontFamily: 'Manrope_500Medium',
-    color: "#000",
-  },
-  feeDescription: {
-    fontSize: 13,
-    fontFamily: 'Manrope_400Regular',
-    color: "#666",
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  exampleContainer: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: "#eee",
-  },
-  exampleRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 8,
-  },
-  exampleLabel: {
-    fontSize: 12,
-    fontFamily: 'Manrope_400Regular',
-    color: "#666",
-  },
-  exampleValue: {
-    fontSize: 12,
-    fontWeight: "500",
-    fontFamily: 'Manrope_500Medium',
-    color: "#000",
-  },
-  feeValue: {
-    color: "#ef4444",
-  },
-  exampleTotal: {
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
-  },
-  earningValue: {
-    color: "#22c55e",
-    fontWeight: "600",
-    fontFamily: 'Manrope_600SemiBold',
-  },
-  supportLink: {
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  supportLinkText: {
-    fontSize: 13,
-    color: "#007AFF",
-    fontWeight: "500",
-    fontFamily: 'Manrope_500Medium',
-  },
-  errorText: {
-    fontSize: 16,
-    color: "#ef4444",
-    fontWeight: "500",
-    fontFamily: 'Manrope_500Medium',
-  },
+  headerTitle: { fontSize: 18, fontFamily: 'Manrope_700Bold' },
+  content: { paddingTop: 16, paddingBottom: 32, width: "100%", maxWidth: 640, alignSelf: "center" },
+  muted: { fontSize: 14, textAlign: "center", fontFamily: "Manrope_500Medium" },
+
+  card: { borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, padding: 16, marginBottom: 16 },
+  listCard: { padding: 0, overflow: "hidden" },
+  label: { fontSize: 13, fontFamily: "Manrope_600SemiBold" },
+  amount: { fontSize: 34, fontFamily: "Manrope_800ExtraBold", letterSpacing: -1, marginTop: 4 },
+  amountCompact: { fontSize: 28 },
+  amountSmall: { fontSize: 22, fontFamily: "Manrope_800ExtraBold", letterSpacing: -0.5, marginTop: 2 },
+  statusRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 10 },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  statusText: { flex: 1, fontSize: 13, fontFamily: "Manrope_500Medium" },
+  primaryButton: { marginTop: 16, minHeight: 48, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  primaryButtonText: { color: "#fff", fontSize: 15, fontFamily: "Manrope_700Bold" },
+  rowBetween: { flexDirection: "row", alignItems: "center", gap: 12 },
+  pill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
+  pillText: { fontSize: 12, fontFamily: "Manrope_700Bold" },
+  note: { fontSize: 13, lineHeight: 18, marginTop: 10, fontFamily: "Manrope_400Regular" },
+  sectionLabel: { fontSize: 12, fontFamily: "Manrope_700Bold", letterSpacing: 0.8, marginBottom: 8, marginLeft: 4 },
+  listRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 14, gap: 12 },
+  listLabel: { fontSize: 14, fontFamily: "Manrope_500Medium" },
+  listValue: { fontSize: 14, fontFamily: "Manrope_700Bold" },
 })

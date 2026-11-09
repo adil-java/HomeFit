@@ -5,14 +5,8 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/LOGO.png",
-    "splash": {
-      "image": "./assets/images/LOGO.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#2f3b4b"
-    },
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -75,6 +69,15 @@
     },
     "plugins": [
       [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/LOGO.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#2f3b4b",
+          "imageWidth": 200
+        }
+      ],
+      [
         "@react-native-google-signin/google-signin",
         {
           "iosUrlScheme": "com.googleusercontent.apps.1066517448696-rffitabve6rg0j8bhje6quh1j8mqie9o"
@@ -83,13 +86,13 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "The app accesses your photos to let you share them with your friends."
+          "photosPermission": "HomeFit uses your photos to set your profile picture and add product images."
         }
       ],
       [
         "expo-camera",
         {
-          "cameraPermission": "The app accesses your camera to let you take pictures of your products."
+          "cameraPermission": "HomeFit uses the camera to show furniture in your room with AR and to photograph products."
         }
       ],
       [

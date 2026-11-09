@@ -138,9 +138,9 @@ export default function SellerApplicationScreen() {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'PENDING': return '#FFA500';
-      case 'APPROVED': return '#4CAF50';
-      case 'REJECTED': return '#F44336';
+      case 'PENDING': return '#C98A12';
+      case 'APPROVED': return '#3E9A6A';
+      case 'REJECTED': return '#D2504A';
       default: return '#666';
     }
   };
@@ -424,8 +424,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   headerTitle: {
-    fontSize: 20,
-    letterSpacing: -0.3,
+    fontSize: 18,
     fontWeight: '700',
     fontFamily: 'Manrope_700Bold',
   },

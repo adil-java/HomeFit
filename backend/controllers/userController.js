@@ -1,4 +1,5 @@
 import prisma from '../config/db.js';
+import { uploadImageDataUri } from '../utils/cloudinary.js';
 import { Role } from '@prisma/client';
 import logger from '../utils/logger.js';
 
@@ -28,11 +29,13 @@ const createOrUpdateUser = async (firebaseUser) => {
       // Update existing user
       user = await prisma.user.update({
         where: { firebaseUid: firebaseUser.uid },
+        // Profile edits made in the app (PUT /me) win: Firebase values only
+        // fill fields that are still empty.
         data: {
           email: firebaseUser.email,
-          name: firebaseUser.displayName || user.name,
-          phoneNumber: firebaseUser.phoneNumber || user.phoneNumber,
-          photoURL: firebaseUser.photoURL || user.photoURL,
+          name: user.name || firebaseUser.displayName,
+          phoneNumber: user.phoneNumber || firebaseUser.phoneNumber,
+          photoURL: user.photoURL || firebaseUser.photoURL,
         }
       });
       logger.debug('User updated in database:', user.id);
@@ -520,5 +523,62 @@ export const rejectSellerApplication = async (req, res) => {
       success: false,
       error: "Failed to reject seller application"
     });
+  }
+};
+
+
+// @desc    Update the signed-in user's own profile (name, phone, photo)
+// @route   PUT /api/users/me
+// @access  Private
+const PHOTO_DATA_URI = /^data:image\/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=]+$/;
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+
+export const updateMe = async (req, res) => {
+  try {
+    const { name, phoneNumber, photo } = req.body || {};
+    const data = {};
+
+    if (name !== undefined) {
+      const clean = String(name).trim().replace(/\s+/g, ' ');
+      if (clean.length < 2 || clean.length > 60) {
+        return res.status(400).json({ success: false, error: 'Please enter a name between 2 and 60 characters' });
+      }
+      data.name = clean;
+    }
+
+    if (phoneNumber !== undefined) {
+      const clean = String(phoneNumber).trim();
+      if (clean && (clean.replace(/[^\d]/g, '').length < 7 || clean.length > 20 || !/^[+\d\s()-]+$/.test(clean))) {
+        return res.status(400).json({ success: false, error: 'Please enter a valid phone number' });
+      }
+      data.phoneNumber = clean || null;
+    }
+
+    if (photo !== undefined && photo !== null) {
+      if (typeof photo !== 'string' || !PHOTO_DATA_URI.test(photo)) {
+        return res.status(400).json({ success: false, error: 'Please choose a JPG, PNG or WebP photo' });
+      }
+      const bytes = Math.floor((photo.length - photo.indexOf(',') - 1) * 0.75);
+      if (bytes > MAX_PHOTO_BYTES) {
+        return res.status(400).json({ success: false, error: 'That photo is too large. Please choose one under 5 MB' });
+      }
+      const uploaded = await uploadImageDataUri(photo, 'avatars');
+      data.photoURL = uploaded.url;
+    }
+
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({ success: false, error: 'Nothing to update' });
+    }
+
+    const user = await prisma.user.update({
+      where: { id: req.user.id },
+      data,
+      select: { id: true, email: true, name: true, phoneNumber: true, photoURL: true, role: true },
+    });
+
+    res.json({ success: true, user });
+  } catch (error) {
+    logger.error('Update profile error:', error);
+    res.status(500).json({ success: false, error: 'Could not update your profile. Please try again.' });
   }
 };

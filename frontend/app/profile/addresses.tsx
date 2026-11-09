@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 16,
   },
-  headerTitle: { fontSize: 20, letterSpacing: -0.3, fontWeight: '700', fontFamily: 'Manrope_700Bold' },
+  headerTitle: { fontSize: 18, letterSpacing: -0.3, fontWeight: '700', fontFamily: 'Manrope_700Bold' },
   errorBanner: { padding: 12, borderRadius: 12, borderWidth: 1, marginBottom: 16 },
   errorText: { fontSize: 13, fontFamily: 'Manrope_500Medium' },
   addressCard: { borderWidth: 1.5, borderRadius: 16, padding: 16, marginBottom: 14 },

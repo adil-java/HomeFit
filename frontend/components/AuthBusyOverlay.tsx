@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 
 /**
- * Full-screen loader while signing in or out. Rendered once at the app root,
+ * Small loading dialog while signing in or out. Rendered once at the app root,
  * so it stays visible while the app moves from the sign-in screen to Home, and
  * it swallows taps so buttons can't be pressed twice.
  */
@@ -31,28 +31,37 @@ export default function AuthBusyOverlay() {
 
   return (
     <Animated.View
-      style={[styles.overlay, { backgroundColor: theme.colors.background, opacity }]}
+      style={[styles.overlay, { opacity }]}
       accessibilityViewIsModal
       accessibilityLiveRegion="polite"
     >
-      <View style={styles.content}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
+      <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+        <ActivityIndicator color={theme.colors.primary} />
         <Text style={[styles.title, { color: theme.colors.text }]}>{message}</Text>
-        <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>This only takes a moment</Text>
       </View>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
+  // Dims the screen and swallows taps; the screen underneath stays visible
   overlay: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
     zIndex: 1000,
     elevation: 1000,
   },
-  content: { alignItems: 'center', paddingHorizontal: 32 },
-  title: { marginTop: 18, fontSize: 17, fontFamily: 'Manrope_700Bold', letterSpacing: -0.2 },
-  subtitle: { marginTop: 6, fontSize: 14, fontFamily: 'Manrope_400Regular' },
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 18,
+    paddingHorizontal: 22,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    minWidth: 200,
+  },
+  title: { fontSize: 15, fontFamily: 'Manrope_600SemiBold' },
 });

@@ -48,34 +48,19 @@ export default function AuthIndex() {
   }
 
   // Theme-aware colors
-  const gradientColors = isDark
-    ? [theme.colors.background, theme.colors.surface] as const
-    : ['#f8f9fc', '#eef1f8'] as const;
+  // Flat page colour (the cool blue-tinted gradient clashed with the warm theme)
+  const gradientColors = [theme.colors.background, theme.colors.background] as const;
 
-  const cardBg = isDark
-    ? 'rgba(255, 255, 255, 0.06)'
-    : 'rgba(0, 0, 0, 0.02)';
+  const cardBg = '#2F3B4B'; // matches the logo image background
 
   const primaryBtnBg = theme.colors.primary;
-  const secondaryBtnBg = isDark
-    ? 'transparent'
-    : '#FFFFFF';
-  const secondaryBtnBorder = isDark
-    ? 'rgba(255, 255, 255, 0.2)'
-    : theme.colors.border;
-  const secondaryBtnText = isDark
-    ? '#FFFFFF'
-    : theme.colors.primary;
+  const secondaryBtnBg = theme.colors.surface;
+  const secondaryBtnBorder = theme.colors.border;
+  const secondaryBtnText = theme.colors.text;
 
-  const googleBtnBg = isDark
-    ? 'transparent'
-    : '#FFFFFF';
-  const googleBtnBorder = isDark
-    ? 'rgba(255, 255, 255, 0.2)'
-    : '#E0E0E0';
-  const googleBtnText = isDark
-    ? '#FFFFFF'
-    : '#333333';
+  const googleBtnBg = theme.colors.surface;
+  const googleBtnBorder = theme.colors.border;
+  const googleBtnText = theme.colors.text;
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -154,9 +139,9 @@ export default function AuthIndex() {
 
               {/* Divider */}
               <View style={styles.dividerContainer}>
-                <View style={[styles.dividerLine, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#E0E0E0' }]} />
+                <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
                 <Text style={[styles.dividerText, { color: theme.colors.textSecondary }]}>or</Text>
-                <View style={[styles.dividerLine, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#E0E0E0' }]} />
+                <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
               </View>
 
               {/* Google Sign-In Button */}

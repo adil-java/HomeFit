@@ -44,31 +44,31 @@ const getStatusConfig = (status: string) => {
   
   // Map of all possible status values from the API to our config
   const statusMap: Record<string, { icon: any; color: string; label: string }> = {
-    'pending': { icon: Clock, color: '#f59e0b', label: 'Order Pending' },
-    'processing': { icon: Package, color: '#3b82f6', label: 'Processing' },
-    'shipped': { icon: Truck, color: '#8b5cf6', label: 'Shipped' },
-    'delivered': { icon: CheckCircle, color: '#10b981', label: 'Delivered' },
-    'cancelled': { icon: XCircle, color: '#ef4444', label: 'Cancelled' },
+    'pending': { icon: Clock, color: '#C98A12', label: 'Order Pending' },
+    'processing': { icon: Package, color: '#5576B5', label: 'Processing' },
+    'shipped': { icon: Truck, color: '#4F8A8B', label: 'Shipped' },
+    'delivered': { icon: CheckCircle, color: '#3E9A6A', label: 'Delivered' },
+    'cancelled': { icon: XCircle, color: '#D2504A', label: 'Cancelled' },
     // Map any other possible statuses from the API
-    'completed': { icon: CheckCircle, color: '#10b981', label: 'Completed' },
-    'refunded': { icon: XCircle, color: '#ef4444', label: 'Refunded' },
-    'failed': { icon: XCircle, color: '#ef4444', label: 'Failed' },
+    'completed': { icon: CheckCircle, color: '#3E9A6A', label: 'Completed' },
+    'refunded': { icon: XCircle, color: '#D2504A', label: 'Refunded' },
+    'failed': { icon: XCircle, color: '#D2504A', label: 'Failed' },
   };
   
   // Return the status config or a default one if status is not recognized
   return statusMap[statusLower] || { 
     icon: Package, 
-    color: '#6b7280', 
+    color: '#8A867F', 
     label: status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
   };
 };
 
 const statusConfig = {
-  pending: { icon: Clock, color: '#f59e0b', label: 'Order Pending' },
-  processing: { icon: Package, color: '#3b82f6', label: 'Processing' },
-  shipped: { icon: Truck, color: '#8b5cf6', label: 'Shipped' },
-  delivered: { icon: CheckCircle, color: '#10b981', label: 'Delivered' },
-  cancelled: { icon: XCircle, color: '#ef4444', label: 'Cancelled' },
+  pending: { icon: Clock, color: '#C98A12', label: 'Order Pending' },
+  processing: { icon: Package, color: '#5576B5', label: 'Processing' },
+  shipped: { icon: Truck, color: '#4F8A8B', label: 'Shipped' },
+  delivered: { icon: CheckCircle, color: '#3E9A6A', label: 'Delivered' },
+  cancelled: { icon: XCircle, color: '#D2504A', label: 'Cancelled' },
 };
 
 export default function OrderDetailScreen() {
@@ -367,7 +367,7 @@ export default function OrderDetailScreen() {
                 <Text style={[styles.summaryLabel, { color: theme.colors.textSecondary }]}>
                   Discount
                 </Text>
-                <Text style={[styles.summaryValue, { color: '#10b981' }]}>
+                <Text style={[styles.summaryValue, { color: '#3E9A6A' }]}>
                   Rs. {order.discount.toFixed(2)}
                 </Text>
               </View>
@@ -382,8 +382,8 @@ export default function OrderDetailScreen() {
               </Text>
             </View>
             
-            <View style={[styles.paymentStatus, { backgroundColor: order.paymentMethod === 'card' ? '#10b98110' : '#ef444410' }]}>
-              <Text style={[styles.paymentStatusText, { color: order.paymentMethod === 'card' ? '#10b981' : '#ef4444' }]}>
+            <View style={[styles.paymentStatus, { backgroundColor: order.paymentMethod === 'card' ? '#3E9A6A10' : '#D2504A10' }]}>
+              <Text style={[styles.paymentStatusText, { color: order.paymentMethod === 'card' ? '#3E9A6A' : '#D2504A' }]}>
                 {order.paymentMethod === 'card' ? 'PAID' : 'PENDING PAYMENT'}
               </Text>
               <Text style={[styles.paymentMethod, { color: theme.colors.textSecondary }]}>
@@ -590,8 +590,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   headerTitle: {
-    fontSize: 20,
-    letterSpacing: -0.3,
+    fontSize: 18,
     fontWeight: '700',
     fontFamily: 'Manrope_700Bold',
   },
@@ -762,7 +761,7 @@ const styles = StyleSheet.create({
   },
   totalRow: {
     borderTopWidth: 1,
-    borderTopColor: '#e5e5e5',
+    borderTopColor: 'rgba(128,128,128,0.22)',
     paddingTop: 12,
     marginTop: 8,
     marginBottom: 0,
@@ -828,7 +827,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e5e5',
+    borderBottomColor: 'rgba(128,128,128,0.22)',
   },
   itemDetails: {
     fontSize: 14,
@@ -838,7 +837,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#e5e5e5',
+    backgroundColor: 'rgba(128,128,128,0.22)',
     marginVertical: 12,
   },
   customerInfo: {
@@ -900,7 +899,7 @@ const styles = StyleSheet.create({
   noteItem: {
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e5e5',
+    borderBottomColor: 'rgba(128,128,128,0.22)',
   },
   noteHeader: {
     flexDirection: 'row',
@@ -940,7 +939,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e5e5',
+    borderBottomColor: 'rgba(128,128,128,0.22)',
   },
   timelineDot: {
     width: 12,
@@ -1061,10 +1060,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(239, 68, 68, 0.1)',
     marginBottom: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#ef4444',
+    borderLeftColor: '#D2504A',
   },
   errorText: {
-    color: '#ef4444',
+    color: '#D2504A',
     fontSize: 14,
     fontFamily: 'Manrope_400Regular',
   },

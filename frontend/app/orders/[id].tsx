@@ -36,11 +36,11 @@ import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 import { logger } from '@/utils/logger';
 
 const statusConfig = {
-  pending: { icon: Clock, color: '#f59e0b', label: 'Order Pending' },
-  processing: { icon: Package, color: '#3b82f6', label: 'Processing' },
-  shipped: { icon: Truck, color: '#8b5cf6', label: 'Shipped' },
-  delivered: { icon: CheckCircle, color: '#10b981', label: 'Delivered' },
-  cancelled: { icon: XCircle, color: '#ef4444', label: 'Cancelled' },
+  pending: { icon: Clock, color: '#C98A12', label: 'Order Pending' },
+  processing: { icon: Package, color: '#5576B5', label: 'Processing' },
+  shipped: { icon: Truck, color: '#4F8A8B', label: 'Shipped' },
+  delivered: { icon: CheckCircle, color: '#3E9A6A', label: 'Delivered' },
+  cancelled: { icon: XCircle, color: '#D2504A', label: 'Cancelled' },
 };
 
 interface OrderItem {
@@ -397,8 +397,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   headerTitle: {
-    fontSize: 20,
-    letterSpacing: -0.3,
+    fontSize: 18,
     fontWeight: '700',
     fontFamily: 'Manrope_700Bold',
   },
@@ -596,7 +595,7 @@ const styles = StyleSheet.create({
   },
   totalRow: {
     borderTopWidth: 1,
-    borderTopColor: '#e5e5e5',
+    borderTopColor: 'rgba(128,128,128,0.22)',
     paddingTop: 12,
     marginTop: 8,
     marginBottom: 0,

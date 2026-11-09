@@ -401,7 +401,7 @@ export default function ProductDetailScreen() {
                 backgroundColor: stockQty > 0 
                   ? (theme.dark ? 'rgba(76, 175, 80, 0.2)' : 'rgba(76, 175, 80, 0.1)') 
                   : (theme.dark ? 'rgba(244, 67, 54, 0.2)' : 'rgba(244, 67, 54, 0.1)'),
-                borderColor: stockQty > 0 ? '#4CAF50' : '#F44336',
+                borderColor: stockQty > 0 ? '#3E9A6A' : '#D2504A',
                 borderWidth: 1,
               }
             ]}>
@@ -409,11 +409,11 @@ export default function ProductDetailScreen() {
                 width: 8,
                 height: 8,
                 borderRadius: 4,
-                backgroundColor: stockQty > 0 ? '#4CAF50' : '#F44336',
+                backgroundColor: stockQty > 0 ? '#3E9A6A' : '#D2504A',
               }} />
               <Text style={[
                 styles.stockText, 
-                { color: stockQty > 0 ? '#4CAF50' : '#F44336' }
+                { color: stockQty > 0 ? '#3E9A6A' : '#D2504A' }
               ]}>
                 {stockQty > 0 ? `In Stock (${stockQty} available)` : 'Out of Stock'}
               </Text>
@@ -814,7 +814,7 @@ const styles = StyleSheet.create({
   variantRequired: {
     fontSize: 12,
     fontFamily: 'Manrope_400Regular',
-    color: '#F44336',
+    color: '#D2504A',
   },
   variantOptions: {
     flexDirection: 'row',
@@ -833,8 +833,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   variantOptionSelectedBase: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: '#5576B5',
+    borderColor: '#5576B5',
   },
   variantOptionText: {
     fontSize: 14,
@@ -842,8 +842,8 @@ const styles = StyleSheet.create({
     fontFamily: 'Manrope_500Medium',
   },
   variantOptionSelected: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: '#5576B5',
+    borderColor: '#5576B5',
   },
   variantOptionSelectedText: {
     color: '#fff',

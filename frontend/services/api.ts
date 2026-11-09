@@ -1210,6 +1210,21 @@ class ApiService {
   deleteAddress(id: string) {
     return this.addressRequest(`/${encodeURIComponent(id)}`, 'DELETE');
   }
+
+  /** Update the signed-in user's own profile. `photo` is a data URI (base64 image). */
+  async updateMe(changes: { name?: string; phoneNumber?: string; photo?: string }) {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}/users/me`, {
+      method: 'PUT',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify(changes),
+    });
+    const json = await response.json().catch(() => ({}));
+    if (!response.ok || !json.success) {
+      throw new Error(json.error || json.message || 'Could not update your profile');
+    }
+    return json.user as { id: string; email: string; name: string; phoneNumber?: string | null; photoURL?: string | null; role: string };
+  }
 }
 
 export const apiService = new ApiService();

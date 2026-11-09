@@ -1,123 +1,91 @@
-import React, { useState } from 'react';
-import { TouchableOpacity, StyleSheet, View, Text, Alert, Platform } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { TouchableOpacity, StyleSheet, View, Text, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../contexts/ThemeContext';
 import { router } from 'expo-router';
-import Toast from 'react-native-toast-message';
-import Constants from 'expo-constants';
-import { logger } from '@/utils/logger';
+import { useTheme } from '../contexts/ThemeContext';
+import { checkARSupport } from '@/utils/checkARSupport';
 
 interface ARPreviewButtonProps {
-	modelUrl?: string | null;
+  modelUrl?: string | null;
 }
 
+/**
+ * "View in your room" on phones with ARCore/ARKit support (camera AR);
+ * "View in 3D" everywhere else (in-screen 3D viewer). Support is checked once
+ * when the product opens, so the button already says what it will do.
+ */
 export const ARPreviewButton = ({ modelUrl }: ARPreviewButtonProps) => {
-	const { theme } = useTheme();
-	const [isCheckingSupport, setIsCheckingSupport] = useState(false);
+  const { theme } = useTheme();
+  const [arSupported, setArSupported] = useState<boolean | null>(null);
+  const [opening, setOpening] = useState(false);
+  const hasModel = !!modelUrl && modelUrl.trim() !== '';
 
-	const handlePress = async () => {
-		// Check if model URL exists
-		if (!modelUrl || modelUrl.trim() === '') {
-			Alert.alert(
-				'3D Preview Not Available',
-				"This product doesn't have a 3D model yet.",
-				[{ text: 'OK' }]
-			);
-			return;
-		}
+  useEffect(() => {
+    let alive = true;
+    if (hasModel) {
+      checkARSupport().then((ok) => {
+        if (alive) setArSupported(ok);
+      });
+    }
+    return () => {
+      alive = false;
+    };
+  }, [hasModel]);
 
-		setIsCheckingSupport(true);
+  const handlePress = async () => {
+    if (!hasModel) {
+      Alert.alert('3D preview not available', "This product doesn't have a 3D model yet.", [{ text: 'OK' }]);
+      return;
+    }
+    const url = encodeURIComponent(modelUrl!);
 
-		try {
-			if (Constants.appOwnership === 'expo') {
-				Toast.show({
-					type: 'info',
-					text1: 'AR Preview Unavailable',
-					text2: 'Expo Go does not support AR native modules. Opening 3D viewer.',
-					position: 'top',
-				});
-				router.push(`/product/model-viewer?modelUrl=${encodeURIComponent(modelUrl)}`);
-				return;
-			}
+    setOpening(true);
+    try {
+      // Ask again on tap: instant once cached, and gives ARCore another
+      // chance if its first answer was still "checking".
+      const supported = await checkARSupport();
+      setArSupported(supported);
+      router.push(supported ? `/product/ar?modelUrl=${url}` : `/product/model-viewer?modelUrl=${url}`);
+    } finally {
+      setOpening(false);
+    }
+  };
 
-			// Check if device supports AR
-			if (Platform.OS === 'web') {
-				Alert.alert(
-					'AR Not Supported',
-					'3D preview is not available on web browsers. Please use a mobile device.',
-					[{ text: 'OK' }]
-				);
-				return;
-			}
+  const label = arSupported ? 'View in your room' : 'View in 3D';
+  const icon = arSupported ? 'scan-outline' : 'cube-outline';
 
-			// Always delegate capability gating to /product/ar screen.
-			// That route performs strict checks and safely falls back to 3D viewer.
-			router.push(`/product/ar?modelUrl=${encodeURIComponent(modelUrl)}`);
-		} catch (error) {
-			logger.error('Error checking AR support:', error);
-			// On any error, default to the safer 3D viewer fallback
-			Toast.show({
-				type: 'error',
-				text1: 'AR Preview Unavailable',
-				text2: 'Opening 3D viewer instead.',
-				position: 'top',
-			});
-			router.push(`/product/model-viewer?modelUrl=${encodeURIComponent(modelUrl)}`);
-		} finally {
-			setIsCheckingSupport(false);
-		}
-	};
-
-	return (
-		<TouchableOpacity
-			style={[
-				styles.button,
-				{
-					backgroundColor: isCheckingSupport ? theme.colors.border : theme.colors.primary,
-					opacity: isCheckingSupport ? 0.7 : 1,
-				}
-			]}
-			onPress={handlePress}
-			disabled={isCheckingSupport}
-			activeOpacity={0.8}
-		>
-			<View style={styles.buttonContent}>
-				<Ionicons
-					name={isCheckingSupport ? "ellipsis-horizontal" : "cube-outline"}
-					size={20}
-					color="white"
-				/>
-				<Text style={styles.buttonText}>
-					{isCheckingSupport ? 'Loading...' : 'Preview in 3D'}
-				</Text>
-			</View>
-		</TouchableOpacity>
-	);
+  return (
+    <TouchableOpacity
+      style={[styles.button, { backgroundColor: theme.colors.primary, opacity: opening ? 0.8 : 1 }]}
+      onPress={handlePress}
+      disabled={opening}
+      activeOpacity={0.85}
+      accessibilityRole="button"
+    >
+      <View style={styles.buttonContent}>
+        {opening ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name={icon} size={20} color="#fff" />}
+        <Text style={styles.buttonText}>{label}</Text>
+      </View>
+    </TouchableOpacity>
+  );
 };
 
 const styles = StyleSheet.create({
-	button: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		justifyContent: 'center',
-		paddingVertical: 16,
-		paddingHorizontal: 20,
-		borderRadius: 14,
-		elevation: 3,
-		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 4 },
-		shadowOpacity: 0.2,
-		shadowRadius: 8,
-	},
-	buttonContent: {
-		flexDirection: 'row',
-		alignItems: 'center',
-	},
-	buttonText: {
-		color: 'white',
-		marginLeft: 8,
-		fontWeight: '600',
-		fontFamily: 'Manrope_600SemiBold',
-		fontSize: 16,
-	},
+  button: {
+    minHeight: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    borderRadius: 14,
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  buttonText: {
+    color: '#fff',
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 16,
+  },
 });

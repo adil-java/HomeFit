@@ -9,7 +9,7 @@ import {
   signOut,
   onAuthStateChanged,
   User as FirebaseUser,
-  updateProfile,
+  updateProfile as updateFirebaseProfile,
   GoogleAuthProvider,
   signInWithCredential,
 } from 'firebase/auth';
@@ -37,6 +37,7 @@ export interface User {
   name: string;
   role: string;
   photoURL?: string | null;
+  phone?: string | null;
 }
 
 interface AuthContextType {
@@ -46,6 +47,8 @@ interface AuthContextType {
   register: (email: string, password: string, name: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
+  /** Save name / phone / photo (data URI) to the account; updates `user`. */
+  updateProfile: (changes: { name?: string; phoneNumber?: string; photo?: string }) => Promise<void>;
   /** True only while restoring the session at app start. */
   isLoading: boolean;
   /**
@@ -109,9 +112,12 @@ async function loadProfile(fbUser: FirebaseUser, mode: SyncMode, nameOverride?: 
     const data = response?.user || response || {};
     return {
       ...base,
+      // The account's saved profile (editable in Personal information) wins
+      name: data.name || base.name,
       uid: data.id || fbUser.uid,
       role: String(data.role || 'customer').toLowerCase(),
-      photoURL: fbUser.photoURL || data.photoURL || data.avatar || data.profileImage || null,
+      photoURL: data.photoURL || fbUser.photoURL || null,
+      phone: data.phoneNumber || null,
     };
   } catch (error) {
     logger.warn('[Auth] Profile sync failed, using cached profile:', error);
@@ -275,7 +281,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await runSignIn('Creating your account…', async () => {
       try {
         const credential = await createUserWithEmailAndPassword(auth, email.trim(), password);
-        await updateProfile(credential.user, { displayName: name });
+        await updateFirebaseProfile(credential.user, { displayName: name });
         await finishSignIn(credential.user, 'register', { title: 'Welcome to HomeFit' }, name);
       } catch (error: any) {
         logger.error('Registration error:', error);
@@ -327,6 +333,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateProfile = async (changes: { name?: string; phoneNumber?: string; photo?: string }) => {
+    const fbUser = auth.currentUser;
+    const current = userRef.current;
+    if (!fbUser || !current) throw new Error('Please sign in again.');
+    try {
+      const saved = await apiService.updateMe(changes);
+      const next: User = {
+        ...current,
+        name: saved.name || current.name,
+        photoURL: saved.photoURL ?? current.photoURL,
+        phone: saved.phoneNumber ?? null,
+      };
+      await commitUser(next, fbUser);
+    } catch (error) {
+      logger.error('Update profile error:', error);
+      throw new FriendlyError(error, 'Could not update your profile. Please try again.');
+    }
+  };
+
   const logout = async () => {
     // Invalidate any profile request still in flight, and leave immediately
     generation.current++;
@@ -348,7 +373,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Stable value: consumers re-render only when auth state changes. The
   // functions only use refs, setters and stable callbacks.
   const value = React.useMemo(
-    () => ({ user, token, login, register, loginWithGoogle, logout, isLoading, authBusy }),
+    () => ({ user, token, login, register, loginWithGoogle, logout, updateProfile, isLoading, authBusy }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [user, token, isLoading, authBusy]
   );

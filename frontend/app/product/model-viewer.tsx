@@ -22,46 +22,46 @@ function getViewerColors(isDark: boolean) {
   if (isDark) {
     return {
       // WebView HTML colors
-      bgGradientStart: '#1a1a2e',
-      bgGradientMid: '#16213e',
-      bgGradientEnd: '#0f3460',
+      bgGradientStart: '#1E1E1C',
+      bgGradientMid: '#191918',
+      bgGradientEnd: '#141413',
       loadingText: 'rgba(255, 255, 255, 0.7)',
       spinnerBorder: 'rgba(255, 255, 255, 0.1)',
-      spinnerAccent: '#6C63FF',
+      spinnerAccent: '#5576B5',
       hintBg: 'rgba(0, 0, 0, 0.6)',
       hintText: 'white',
       errorTitle: 'white',
       errorText: 'rgba(255, 255, 255, 0.6)',
       // React Native colors
-      headerBg: 'rgba(26, 26, 46, 0.95)',
+      headerBg: 'rgba(20, 20, 19, 0.95)',
       headerText: '#fff',
       backButtonBg: 'rgba(255, 255, 255, 0.1)',
       backButtonIcon: '#fff',
-      containerBg: '#1a1a2e',
-      bannerBg: 'rgba(108, 99, 255, 0.12)',
-      bannerBorder: 'rgba(108, 99, 255, 0.25)',
+      containerBg: '#141413',
+      bannerBg: 'rgba(85, 118, 181, 0.14)',
+      bannerBorder: 'rgba(85, 118, 181, 0.3)',
       bannerText: 'rgba(255, 255, 255, 0.8)',
       bannerClose: 'rgba(255, 255, 255, 0.6)',
     };
   } else {
     return {
       // WebView HTML colors
-      bgGradientStart: '#f0f2f5',
-      bgGradientMid: '#e8ecf1',
-      bgGradientEnd: '#dfe4ea',
+      bgGradientStart: '#F6F5F2',
+      bgGradientMid: '#F1EFEB',
+      bgGradientEnd: '#ECE9E4',
       loadingText: 'rgba(0, 0, 0, 0.6)',
       spinnerBorder: 'rgba(0, 0, 0, 0.1)',
       spinnerAccent: '#2F3C7E',
       hintBg: 'rgba(0, 0, 0, 0.65)',
       hintText: 'white',
-      errorTitle: '#1A1A1A',
+      errorTitle: '#1C1B19',
       errorText: 'rgba(0, 0, 0, 0.5)',
       // React Native colors
       headerBg: 'rgba(255, 255, 255, 0.95)',
-      headerText: '#1A1A1A',
+      headerText: '#1C1B19',
       backButtonBg: 'rgba(0, 0, 0, 0.06)',
-      backButtonIcon: '#1A1A1A',
-      containerBg: '#f0f2f5',
+      backButtonIcon: '#1C1B19',
+      containerBg: '#F6F5F2',
       bannerBg: 'rgba(47, 60, 126, 0.08)',
       bannerBorder: 'rgba(47, 60, 126, 0.2)',
       bannerText: 'rgba(0, 0, 0, 0.7)',
@@ -76,7 +76,7 @@ function getViewerColors(isDark: boolean) {
  */
 function generateModelViewerHTML(modelUrl: string, isDark: boolean): string {
   const c = getViewerColors(isDark);
-  const accentColor = isDark ? '#6C63FF' : '#2F3C7E';
+  const accentColor = isDark ? '#5576B5' : '#2F3C7E';
   const retryBg = accentColor;
 
   return `
@@ -432,9 +432,9 @@ export default function ModelViewerScreen() {
       {showBanner && (
         <View style={[styles.banner, { backgroundColor: colors.bannerBg, borderColor: colors.bannerBorder }]}>
           <View style={styles.bannerContent}>
-            <Ionicons name="information-circle-outline" size={20} color={isDark ? '#6C63FF' : '#2F3C7E'} />
+            <Ionicons name="information-circle-outline" size={20} color={isDark ? '#5576B5' : '#2F3C7E'} />
             <Text style={[styles.bannerText, { color: colors.bannerText }]}>
-              AR placement isn't supported on this device. Showing interactive 3D preview — pinch to zoom, swipe to rotate.
+              Your phone doesn't support AR, so here's an interactive 3D view. Pinch to zoom, drag to rotate.
             </Text>
           </View>
           <TouchableOpacity onPress={() => setShowBanner(false)} style={styles.bannerClose}>
@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    fontFamily: 'Manrope_600SemiBold',
+    fontFamily: 'Manrope_700Bold',
   },
   headerSpacer: {
     width: 40,

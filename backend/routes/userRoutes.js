@@ -1,5 +1,5 @@
 import express from "express";
-import { getProfile, verifyToken, login, register, getMe, applyForSeller, getAllSellerApplications, acceptSellerApplication, rejectSellerApplication, getCurrentSellerApplication } from "../controllers/userController.js";
+import { getProfile, verifyToken, login, register, getMe, applyForSeller, getAllSellerApplications, acceptSellerApplication, rejectSellerApplication, getCurrentSellerApplication, updateMe } from "../controllers/userController.js";
 import { protect, checkAdmin } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
@@ -12,6 +12,7 @@ router.post("/verify-token", protect, verifyToken);
 
 router.get("/profile", protect, getProfile);
 router.get("/me", protect, getMe);
+router.put("/me", protect, updateMe);
 
 router.post("/apply-seller", protect, applyForSeller);
 

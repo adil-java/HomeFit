@@ -47,21 +47,21 @@ const getStatusConfig = (status: string) => {
   
   // Map of all possible status values from the API to our config
   const statusMap: Record<string, { icon: any; color: string; label: string }> = {
-    'pending': { icon: Clock, color: '#f59e0b', label: 'Pending' },
-    'processing': { icon: Package, color: '#3b82f6', label: 'Processing' },
-    'shipped': { icon: Truck, color: '#8b5cf6', label: 'Shipped' },
-    'delivered': { icon: CheckCircle, color: '#10b981', label: 'Delivered' },
-    'cancelled': { icon: XCircle, color: '#ef4444', label: 'Cancelled' },
+    'pending': { icon: Clock, color: '#C98A12', label: 'Pending' },
+    'processing': { icon: Package, color: '#5576B5', label: 'Processing' },
+    'shipped': { icon: Truck, color: '#4F8A8B', label: 'Shipped' },
+    'delivered': { icon: CheckCircle, color: '#3E9A6A', label: 'Delivered' },
+    'cancelled': { icon: XCircle, color: '#D2504A', label: 'Cancelled' },
     // Map any other possible statuses from the API
-    'completed': { icon: CheckCircle, color: '#10b981', label: 'Completed' },
-    'refunded': { icon: XCircle, color: '#ef4444', label: 'Refunded' },
-    'failed': { icon: XCircle, color: '#ef4444', label: 'Failed' },
+    'completed': { icon: CheckCircle, color: '#3E9A6A', label: 'Completed' },
+    'refunded': { icon: XCircle, color: '#D2504A', label: 'Refunded' },
+    'failed': { icon: XCircle, color: '#D2504A', label: 'Failed' },
   };
   
   // Return the status config or a default one if status is not recognized
   return statusMap[statusLower] || { 
     icon: Package, 
-    color: '#6b7280', 
+    color: '#8A867F', 
     label: status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
   };
 };
@@ -297,12 +297,12 @@ export default function OrdersScreen() {
             {order.items?.length || 0} items • Rs. {order.total?.toFixed(2) || '0.00'}
           </Text>
           {order.paymentMethod === 'card' ? (
-            <View style={[styles.paidBadge, { backgroundColor: '#10b98120' }]}>
-              <Text style={[styles.paidText, { color: '#10b981' }]}>Paid</Text>
+            <View style={[styles.paidBadge, { backgroundColor: '#3E9A6A20' }]}>
+              <Text style={[styles.paidText, { color: '#3E9A6A' }]}>Paid</Text>
             </View>
           ) : (
-            <View style={[styles.paidBadge, { backgroundColor: '#ef444420' }]}>
-              <Text style={[styles.paidText, { color: '#ef4444' }]}>Unpaid</Text>
+            <View style={[styles.paidBadge, { backgroundColor: '#D2504A20' }]}>
+              <Text style={[styles.paidText, { color: '#D2504A' }]}>Unpaid</Text>
             </View>
           )}
         </View>
@@ -496,7 +496,7 @@ export default function OrdersScreen() {
                 onPress={() => setIsStatusModalVisible(false)}
                 disabled={isUpdating}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={[styles.cancelButtonText, { color: theme.colors.text }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
@@ -551,8 +551,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   headerTitle: {
-    fontSize: 20,
-    letterSpacing: -0.3,
+    fontSize: 18,
     fontWeight: '700',
     fontFamily: 'Manrope_700Bold',
   },
@@ -789,10 +788,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 0,
   },
   cancelButton: {
-    backgroundColor: '#f1f1f1',
+    backgroundColor: 'rgba(128,128,128,0.14)',
   },
   updateButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#5576B5',
   },
   cancelButtonText: {
     color: '#333',

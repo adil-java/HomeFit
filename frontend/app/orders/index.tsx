@@ -31,12 +31,12 @@ import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 import { logger } from '@/utils/logger';
 
 const statusConfig = {
-  PENDING: { icon: Clock, color: '#f59e0b', label: 'Pending' },
-  PROCESSING: { icon: Package, color: '#3b82f6', label: 'Processing' },
-  SHIPPED: { icon: Truck, color: '#8b5cf6', label: 'Shipped' },
-  DELIVERED: { icon: CheckCircle, color: '#10b981', label: 'Delivered' },
-  CANCELLED: { icon: XCircle, color: '#ef4444', label: 'Cancelled' },
-  REFUNDED: { icon: AlertCircle, color: '#8b5cf6', label: 'Refunded' },
+  PENDING: { icon: Clock, color: '#C98A12', label: 'Pending' },
+  PROCESSING: { icon: Package, color: '#5576B5', label: 'Processing' },
+  SHIPPED: { icon: Truck, color: '#4F8A8B', label: 'Shipped' },
+  DELIVERED: { icon: CheckCircle, color: '#3E9A6A', label: 'Delivered' },
+  CANCELLED: { icon: XCircle, color: '#D2504A', label: 'Cancelled' },
+  REFUNDED: { icon: AlertCircle, color: '#4F8A8B', label: 'Refunded' },
 };
 
 const filterOptions = [
@@ -158,7 +158,7 @@ export default function OrdersScreen() {
 
   const OrderCard = ({ order }: { order: any }) => {
     const statusKey = order.status as keyof typeof statusConfig;
-    const statusInfo = statusConfig[statusKey] || { icon: Package, color: '#6b7280', label: order.status };
+    const statusInfo = statusConfig[statusKey] || { icon: Package, color: '#8A867F', label: order.status };
     const StatusIcon = statusInfo.icon;
     const statusColor = statusInfo.color;
     const statusLabel = statusInfo.label;
@@ -353,8 +353,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   headerTitle: {
-    fontSize: 20,
-    letterSpacing: -0.3,
+    fontSize: 18,
     fontWeight: '700',
     fontFamily: 'Manrope_700Bold',
   },
@@ -458,12 +457,12 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: 'rgba(128,128,128,0.22)',
   },
   orderDate: {
     fontSize: 12,
     fontFamily: 'Manrope_400Regular',
-    color: '#6b7280',
+    color: '#8A867F',
     marginBottom: 4,
   },
   orderDateCompact: {

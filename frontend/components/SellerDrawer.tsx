@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Drawer, DrawerContentScrollView } from 'expo-router/drawer';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -19,7 +19,6 @@ import {
   CreditCard,
   ShieldCheck
 } from 'lucide-react-native';
-import { Text } from 'react-native-paper';
 
 const DrawerContent = (props: any) => {
   const { theme } = useTheme();
@@ -73,10 +72,8 @@ const DrawerContent = (props: any) => {
     item.roles.includes(user?.role || 'customer')
   );
 
-  const handleLogout = async () => {
-    await logout();
-    router.replace('/(tabs)');
-  };
+  // logout() itself returns to the sign-in screen
+  const handleLogout = () => logout();
 
   return (
     <DrawerContentScrollView 
@@ -88,9 +85,12 @@ const DrawerContent = (props: any) => {
           source={require('@/assets/images/logo.png')}
           style={styles.logo}
         />
-        <Text variant="titleLarge" style={[styles.headerTitle, { color: theme.colors.primary }]}>
-          seller Panel
-        </Text>
+        <View>
+          <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Seller centre</Text>
+          {!!user?.name && (
+            <Text style={[styles.headerSubtitle, { color: theme.colors.textSecondary }]} numberOfLines={1}>{user.name}</Text>
+          )}
+        </View>
       </View>
 
       <View style={styles.menuContainer}>
@@ -104,12 +104,12 @@ const DrawerContent = (props: any) => {
             style={[
               styles.menuItem, 
               { borderBottomColor: theme.colors.border },
-              isActive(item.path) && { backgroundColor: theme.colors.primary + '20' }
+              isActive(item.path) && { backgroundColor: theme.colors.primary + (theme.dark ? '33' : '14') }
             ]}
           >
             <View style={styles.menuItemContent}>
-              <item.icon size={20} color={theme.colors.primary} />
-              <Text style={[styles.menuItemText, { color: theme.colors.text }]}>{item.label}</Text>
+              <item.icon size={20} color={isActive(item.path) ? theme.colors.primary : theme.colors.text} strokeWidth={1.8} />
+              <Text style={[styles.menuItemText, { color: isActive(item.path) ? theme.colors.primary : theme.colors.text }]}>{item.label}</Text>
             </View>
             <ChevronRight size={16} color={theme.colors.textSecondary} />
           </TouchableOpacity>
@@ -157,58 +157,63 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    padding: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 20,
   },
   logo: {
-    width: 60,
-    height: 60,
-    marginBottom: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 10,
   },
   headerTitle: {
-    fontWeight: 'bold',
-    fontFamily: 'Manrope_700Bold',
-    textAlign: 'center',
+    fontSize: 17,
+    fontFamily: 'Manrope_800ExtraBold',
+    letterSpacing: -0.3,
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    fontFamily: 'Manrope_500Medium',
+    marginTop: 1,
   },
   menuContainer: {
     flex: 1,
-    paddingVertical: 8,
+    paddingHorizontal: 10,
+    gap: 2,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
+    paddingVertical: 13,
+    paddingHorizontal: 12,
+    borderRadius: 10,
   },
   menuItemContent: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   menuItemText: {
-    marginLeft: 16,
+    marginLeft: 14,
     fontSize: 15,
-    fontWeight: '500',
-    fontFamily: 'Manrope_500Medium',
+    fontFamily: 'Manrope_600SemiBold',
   },
   footer: {
-    padding: 20,
-    borderTopWidth: 1,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 8,
-    borderRadius: 8,
+    paddingVertical: 8,
   },
   logoutText: {
-    marginLeft: 12,
+    marginLeft: 14,
     fontSize: 15,
-    fontWeight: '500',
-    fontFamily: 'Manrope_500Medium',
+    fontFamily: 'Manrope_600SemiBold',
   },
 });

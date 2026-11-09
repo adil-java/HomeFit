@@ -42,3 +42,15 @@ export const deleteFromCloudinary = async (publicId) => {
     throw error;
   }
 };
+/**
+ * Upload an image sent as a data URI ("data:image/jpeg;base64,...").
+ * Used for profile photos, which the app sends already cropped and compressed.
+ */
+export const uploadImageDataUri = async (dataUri, folder = 'avatars') => {
+  const result = await cloudinary.uploader.upload(dataUri, {
+    folder,
+    resource_type: 'image',
+    transformation: [{ width: 512, height: 512, crop: 'fill', gravity: 'face' }],
+  });
+  return { url: result.secure_url, public_id: result.public_id };
+};
