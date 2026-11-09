@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useTheme } from '@/contexts/ThemeContext';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { 
   Search, 
   Filter, 
@@ -34,10 +34,11 @@ import {
   ChevronLeft,
   ChevronRight as ChevronRightIcon,
 } from 'lucide-react-native';
-import { BackHandler } from 'react-native';
+import { BackHandler, Alert } from 'react-native';
 import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 
 import { apiService } from '@/services/api';
+import { useScreenCache } from '@/hooks/useScreenCache';
 import { useAuth, User } from '@/contexts/AuthContext';
 
 interface Product {
@@ -73,8 +74,12 @@ export default function ProductsScreen() {
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  // Last loaded list for this seller (kept in Redux while the app is open)
+  const [cachedProducts, saveCachedProducts] = useScreenCache<Product[]>(
+    user?.uid ? `sellerProducts:${user.uid}` : null
+  );
+  const [products, setProducts] = useState<Product[]>(() => cachedProducts ?? []);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>(() => cachedProducts ?? []);
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -87,22 +92,21 @@ export default function ProductsScreen() {
     inStock: false,
   });
 
-    // Handle hardware back button press
-    useEffect(() => {
-      const backAction = () => {
-        router.replace('/(tabs)');
-        return true;
-      };
-    
-      const backHandler = BackHandler.addEventListener(
-        'hardwareBackPress',
-        backAction
-      );
-    
-      return () => backHandler.remove();
-    }, []);
+    // Handle hardware back button press — only while this screen is focused,
+    // so it doesn't hijack "back" on screens pushed on top of it.
+    useFocusEffect(
+      useCallback(() => {
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+          router.dismissTo('/(tabs)');
+          return true;
+        });
+        return () => backHandler.remove();
+      }, [])
+    );
   
-  const fetchProducts = async () => {
+  // silent     = no full-screen spinner
+  // background = automatic refresh behind cached data: on failure keep what's shown, no popup
+  const fetchProducts = async (silent = false, background = false) => {
     if (!user?.uid) {
       // console.log('No user UID found', user);
       return;
@@ -110,7 +114,7 @@ export default function ProductsScreen() {
     
     try {
       // console.log('Fetching products for user:', user.uid);
-      setLoading(true);
+      if (!silent) setLoading(true);
       const result = await apiService.getSellerProducts(user.uid);
       // console.log('API Response:', result);
       
@@ -118,6 +122,7 @@ export default function ProductsScreen() {
         // console.log(`Found ${result.data.length} products`);
         setProducts(result.data);
         setFilteredProducts(result.data);
+        saveCachedProducts(result.data);
       } else {
         // console.log('No products found or invalid response format');
         setProducts([]);
@@ -129,9 +134,11 @@ export default function ProductsScreen() {
         error: errorMessage,
         stack: error instanceof Error ? error.stack : undefined
       });
-      Alert.alert('Error', errorMessage);
-      setProducts([]);
-      setFilteredProducts([]);
+      if (!background) {
+        Alert.alert('Error', errorMessage);
+        setProducts([]);
+        setFilteredProducts([]);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -139,14 +146,29 @@ export default function ProductsScreen() {
   };
 
   useEffect(() => {
-    fetchProducts();
+    // With a cached list on screen, refresh behind it instead of showing a spinner.
+    if (cachedProducts) {
+      fetchProducts(true, true);
+    } else {
+      fetchProducts();
+    }
   }, [user?.uid]);
+
+  // When returning to this list (e.g. after adding/editing a product),
+  // refresh quietly. Skips the first focus since the effect above already loads.
+  const hasFocusedOnce = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (hasFocusedOnce.current) {
+        fetchProducts(true, true);
+      }
+      hasFocusedOnce.current = true;
+    }, [user?.uid])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchProducts();
-    // await new Promise(resolve => setTimeout(resolve, 1000));
-    setRefreshing(false);
+    fetchProducts(true); // clears `refreshing` when done
   };
 
   const navigateToAddProduct = () => {
@@ -214,7 +236,9 @@ export default function ProductsScreen() {
       const result = await apiService.deleteProduct(productToDelete);
       if (result.success) {
         // Update local state to remove the deleted product
-        setProducts(products.filter(p => p.id !== productToDelete));
+        const remaining = products.filter(p => p.id !== productToDelete);
+        setProducts(remaining);
+        saveCachedProducts(remaining);
         setFilteredProducts(filteredProducts.filter(p => p.id !== productToDelete));
         // Show success message
         setDeleteModalVisible(false);
@@ -328,7 +352,7 @@ export default function ProductsScreen() {
       <View style={[styles.header, { borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.1)' : theme.colors.border, paddingHorizontal: horizontalPadding, paddingVertical: compact ? 12 : 16 }]}> 
         <View style={styles.headerLeft}>
           <HeaderBackButton
-            onPress={() => router.replace('/(tabs)')}
+            onPress={() => router.dismissTo('/(tabs)')}
             size={20}
             style={styles.backButtonInline}
           />

@@ -34,7 +34,6 @@ const protect = async (req, res, next) => {
       req.headers.authorization.startsWith('Bearer')
     ) {
       token = req.headers.authorization.split(' ')[1];
-      console.log('[Auth DEBUG] Token extracted (first 50 chars):', token?.substring(0, 50) + '...');
     }
 
     if (!token) {
@@ -83,9 +82,9 @@ const protect = async (req, res, next) => {
               'User',
             phoneNumber: firebaseUser.phoneNumber,
             photoURL: firebaseUser.photoURL,
-            role: firebaseUser.email?.toLowerCase().includes('admin')
-              ? 'ADMIN'
-              : 'CUSTOMER',
+            // New users are always customers. Promote admins/sellers explicitly
+            // (Admin panel role update or seller application approval).
+            role: 'CUSTOMER',
           },
         });
         console.log('[Auth DEBUG] New user created in DB:', dbUser.id);

@@ -297,7 +297,8 @@ class OrderService {
                 id: true,
                 name: true,
                 images: true,
-                slug: true
+                slug: true,
+                sellerId: true
               }
             }
           }

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/store/store';
 import { ProductCard } from '@/components/ProductCard';
 import { CategoryCard } from '@/components/CategoryCard';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router';
 import { fetchWishlist } from '@/store/slices/wishlistSlice';
 import { fetchCart } from '@/store/slices/cartSlice';
 import { apiService } from '@/services/api';
@@ -72,13 +72,16 @@ export default function HomeScreen() {
     }
   }, [user, isLoading]);
 
-  // Refresh wishlist when screen comes into focus
+  // Refresh wishlist when returning to Home. Skips the first focus: the effect
+  // above already loads it on open, and running both sent the request twice.
+  const hasFocusedOnce = useRef(false);
   useFocusEffect(
     React.useCallback(() => {
-      if (user) {
-        // Refresh lightweightly when returning to Home
+      if (user && hasFocusedOnce.current) {
+        // Refresh lightweightly when returning to Home (uses the cache if loaded)
         dispatch(fetchWishlist({ forceRefresh: false }) as any).catch(console.error);
       }
+      hasFocusedOnce.current = true;
     }, [user])
   );
   
@@ -102,7 +105,9 @@ export default function HomeScreen() {
   
   const fetchProducts = async (isRefreshing = false) => {
     try {
-      setIsLoadingProducts(true);
+      // Pull-to-refresh has its own indicator; the full-screen loader is only
+      // for the very first load (see render below).
+      if (!isRefreshing) setIsLoadingProducts(true);
       setError(null);
       const response = await apiService.getProducts();
       // Debug: inspect raw products payload and rating-related fields
@@ -165,7 +170,11 @@ export default function HomeScreen() {
     }
   };
 
-  if (isLoading || isLoadingProducts) {
+  // Products already in Redux (from an earlier visit) are shown straight away
+  // while fresh data loads; the full-screen loader is only for an empty store.
+  const hasProducts = products.length > 0;
+
+  if (isLoading || (isLoadingProducts && !hasProducts)) {
     return (
       <View style={[styles.centered, { backgroundColor: theme.colors.background }]}>
         <Text style={[styles.loadingText, { color: theme.colors.text }]}>
@@ -175,7 +184,8 @@ export default function HomeScreen() {
     );
   }
   
-  if (error) {
+  // A failed background refresh keeps showing the products we already have.
+  if (error && !hasProducts) {
     return (
       <View style={[styles.centered, { backgroundColor: theme.colors.background }]}>
         <Text style={[styles.errorText, { color: theme.colors.error }]}>{error}</Text>

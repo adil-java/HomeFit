@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { 
   View, 
   Text, 
@@ -14,7 +14,7 @@ import {
 import { apiService } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
 import { BackHandler } from 'react-native';
@@ -50,20 +50,17 @@ export default function OnboardingPage() {
   const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
   const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus | null>(null);
 
-    // Handle hardware back button press
-    useEffect(() => {
-      const backAction = () => {
-        router.replace('/(tabs)');
-        return true;
-      };
-    
-      const backHandler = BackHandler.addEventListener(
-        'hardwareBackPress',
-        backAction
-      );
-    
-      return () => backHandler.remove();
-    }, []);
+    // Handle hardware back button press — only while this screen is focused,
+    // so it doesn't hijack "back" on screens pushed on top of it.
+    useFocusEffect(
+      useCallback(() => {
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+          router.dismissTo('/(tabs)');
+          return true;
+        });
+        return () => backHandler.remove();
+      }, [])
+    );
 
   const checkOnboardingStatus = async (): Promise<OnboardingStatus | null> => {
     if (!sellerId) return null;
@@ -445,7 +442,7 @@ export default function OnboardingPage() {
           <View style={[styles.buttonContainer, compact && styles.buttonContainerCompact]}>
             <TouchableOpacity
               style={[styles.button, styles.secondaryButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
-              onPress={() => router.replace('/(tabs)')}
+              onPress={() => router.dismissTo('/(tabs)')}
               disabled={loading}
             >
               <Text style={[styles.secondaryButtonText, { color: theme.colors.primary }]}>Maybe Later</Text>

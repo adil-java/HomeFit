@@ -198,10 +198,7 @@ export default function ProductForm() {
           [
             { 
               text: 'OK', 
-              onPress: () => router.replace({
-                pathname: '/seller/products',
-                params: { refresh: new Date().getTime() }
-              }) 
+              onPress: () => router.back() // list refreshes itself on focus
             }
           ]
         );

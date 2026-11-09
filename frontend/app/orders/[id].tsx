@@ -27,6 +27,8 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { apiService } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { useScreenCache } from '@/hooks/useScreenCache';
 import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 
 const statusConfig = {
@@ -83,9 +85,7 @@ export default function OrderDetailScreen() {
   const { width } = useWindowDimensions();
   const compact = width < 360;
   const horizontalPadding = compact ? 14 : 20;
-  const [order, setOrder] = React.useState<Order | null>(null);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
+  const { user } = useAuth();
 
   // Log the params to see what we're getting
   React.useEffect(() => {
@@ -98,6 +98,14 @@ export default function OrderDetailScreen() {
     return Array.isArray(params.id) ? params.id[0] : params.id;
   }, [params?.id]);
 
+  // Last loaded copy of this order (kept in Redux while the app is open)
+  const [cachedOrder, saveCachedOrder] = useScreenCache<Order>(
+    user?.uid && orderId ? `order:${user.uid}:${orderId}` : null
+  );
+  const [order, setOrder] = React.useState<Order | null>(() => cachedOrder ?? null);
+  const [loading, setLoading] = React.useState(() => !cachedOrder);
+  const [error, setError] = React.useState<string | null>(null);
+
   const fetchOrderDetails = async () => {
     if (!orderId) {
       console.error('No order ID available for fetching');
@@ -108,7 +116,8 @@ export default function OrderDetailScreen() {
 
     try {
       // console.log('Fetching order with ID:', orderId);
-      setLoading(true);
+      // With a cached copy on screen, refresh behind it (no spinner)
+      if (!order) setLoading(true);
       setError(null);
       
       const orderData = await apiService.getOrderDetails(orderId);
@@ -119,10 +128,12 @@ export default function OrderDetailScreen() {
       }
       
       setOrder(orderData);
+      saveCachedOrder(orderData);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load order';
       console.error('Failed to fetch order:', err);
-      setError(errorMessage);
+      // Keep showing the cached order if the refresh fails
+      if (!order) setError(errorMessage);
     } finally {
       setLoading(false);
     }

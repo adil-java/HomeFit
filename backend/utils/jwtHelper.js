@@ -1,6 +1,9 @@
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
+if (!process.env.JWT_SECRET) {
+  console.warn('[Security] JWT_SECRET is not set — admin tokens use an insecure default secret. Set JWT_SECRET in backend/.env.');
+}
 const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '1h';
 
 export const generateToken = (user) => {

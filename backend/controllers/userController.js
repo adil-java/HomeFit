@@ -18,7 +18,8 @@ const createOrUpdateUser = async (firebaseUser) => {
           name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
           phoneNumber: firebaseUser.phoneNumber,
           photoURL: firebaseUser.photoURL,
-          role: firebaseUser.email?.includes('admin') ? Role.ADMIN : Role.CUSTOMER
+          // Never grant roles based on email text; promote users explicitly.
+          role: Role.CUSTOMER
         }
       });
       console.log('New user created in database:', user.id);

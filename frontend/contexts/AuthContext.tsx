@@ -22,6 +22,10 @@ import {
 } from 'firebase/auth';
 import { auth } from '../firebaseConfig';
 import { apiService } from '../services/api';
+import { useAppDispatch } from '../store/hooks';
+import { resetUserData } from '../store/actions';
+import { NOTIFICATIONS_STORAGE_KEY } from '../store/slices/notificationsSlice';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface User {
   id: string;
@@ -56,6 +60,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const dispatch = useAppDispatch();
 
   // Configure Google Sign-In for native popup (skipped if module unavailable)
   useEffect(() => {
@@ -135,6 +140,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         setUser(null);
         setToken(null);
+        // Drop this user's data (cart, wishlist, orders, notifications, screen
+        // cache) so the next account on this device never sees it.
+        dispatch(resetUserData());
+        AsyncStorage.removeItem(NOTIFICATIONS_STORAGE_KEY).catch(() => {});
         await SecureStore.deleteItemAsync("token");
         await SecureStore.deleteItemAsync("user");
       }

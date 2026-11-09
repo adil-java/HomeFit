@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiService } from '@/services/api';
 import { RootState } from '../store';
 
-const NOTIFICATIONS_STORAGE_KEY = 'homefit_notifications_v1';
+export const NOTIFICATIONS_STORAGE_KEY = 'homefit_notifications_v1';
 
 export type NotificationType =
   | 'ORDER_STATUS'

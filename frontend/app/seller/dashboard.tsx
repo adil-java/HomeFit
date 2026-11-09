@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, Image, useWindowDimensions } from 'react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Text, Card, ActivityIndicator, Button } from 'react-native-paper';
@@ -20,9 +20,10 @@ import {
   RefreshCw
 } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { BackHandler } from 'react-native';
 import { apiService } from '@/services/api';
+import { useScreenCache } from '@/hooks/useScreenCache';
 
 // Types for our dashboard data
 type DashboardStats = {
@@ -135,20 +136,88 @@ const StatCard: React.FC<StatCardProps> = ({
   );
 };
 
+// Raw responses from the four dashboard endpoints (plain JSON → safe to cache).
+interface DashboardRaw {
+  statsData: any;
+  revenueData: any;
+  monthlyData: any;
+  productsData: any;
+}
+
+// Turns raw API responses into the screen's state. Fields are undefined when the
+// response wasn't in the expected shape, so the caller keeps its previous value.
+function buildDashboardState(raw: DashboardRaw, isDark: boolean) {
+  const { statsData, revenueData, monthlyData, productsData } = raw;
+
+  const stats: DashboardStats = {
+    totalUsers: statsData?.totalUsers || 0,
+    activeUsers: statsData?.activeUsers || 0,
+    totalRevenue: statsData?.totalRevenue || 0,
+    totalOrders: statsData?.totalOrders || 0,
+    monthlyGrowth: statsData?.monthlyGrowth || 0,
+  };
+
+  // Format revenue by category for the chart
+  const revenueByCategory: RevenueByCategory | undefined = Array.isArray(revenueData)
+    ? revenueData.map((item: any, index: number) => ({
+        ...item,
+        population: item.revenue,
+        color: [
+          '#FF6B6B',
+          '#4ECDC4',
+          '#45B7D1',
+          '#96CEB4',
+          '#FFEEAD'
+        ][index % 5] || `#${Math.floor(Math.random()*16777215).toString(16)}`,
+        legendFontColor: isDark ? '#E5E7EB' : '#7F7F7F',
+        legendFontSize: 12
+      }))
+    : undefined;
+
+  // Format monthly revenue data
+  const monthlyRevenue: MonthlyRevenue | undefined =
+    monthlyData && monthlyData.labels && monthlyData.datasets
+      ? {
+          labels: monthlyData.labels,
+          datasets: [{
+            data: monthlyData.datasets[0]?.data || [],
+            color: (opacity = 1) => `rgba(134, 65, 244, ${opacity})`,
+            strokeWidth: 2
+          }]
+        }
+      : undefined;
+
+  const topProducts: TopProduct[] | undefined = Array.isArray(productsData) ? productsData : undefined;
+
+  return { stats, revenueByCategory, monthlyRevenue, topProducts };
+}
+
 export default function DashboardScreen() {
   const { theme, isDark } = useTheme();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const { user } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<DashboardStats>(defaultStats);
-  const [revenueByCategory, setRevenueByCategory] = useState<RevenueByCategory>(defaultRevenueByCategory);
-  const [monthlyRevenue, setMonthlyRevenue] = useState<MonthlyRevenue>(defaultMonthlyRevenue);
-  const [topProducts, setTopProducts] = useState<TopProduct[]>(defaultTopProducts);
+  // Raw API responses from the last successful load (kept in Redux while the app is open).
+  // Chart objects contain functions, so we cache the raw data and rebuild them.
+  const [cachedRaw, saveCachedRaw] = useScreenCache<DashboardRaw>(
+    user?.uid ? `sellerDashboard:${user.uid}` : null
+  );
+  const initial = cachedRaw ? buildDashboardState(cachedRaw, isDark) : null;
+  const [loading, setLoading] = useState(!initial);
+  const [stats, setStats] = useState<DashboardStats>(() => initial?.stats ?? defaultStats);
+  const [revenueByCategory, setRevenueByCategory] = useState<RevenueByCategory>(
+    () => initial?.revenueByCategory ?? defaultRevenueByCategory
+  );
+  const [monthlyRevenue, setMonthlyRevenue] = useState<MonthlyRevenue>(
+    () => initial?.monthlyRevenue ?? defaultMonthlyRevenue
+  );
+  const [topProducts, setTopProducts] = useState<TopProduct[]>(() => initial?.topProducts ?? defaultTopProducts);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchDashboardData = async () => {
+  // background = refresh behind data already on screen: no spinner, and on
+  // failure keep showing that data instead of the error screen.
+  const fetchDashboardData = async (background = false) => {
     try {
-      setLoading(true);
+      if (!background) setLoading(true);
       setError(null);
       
       // Fetch all data in parallel
@@ -159,80 +228,44 @@ export default function DashboardScreen() {
         apiService.getTopProducts()
       ]);
 
-      // Update state with fetched data
-      setStats({
-        totalUsers: statsData.totalUsers || 0,
-        activeUsers: statsData.activeUsers || 0,
-        totalRevenue: statsData.totalRevenue || 0,
-        totalOrders: statsData.totalOrders || 0,
-        monthlyGrowth: statsData.monthlyGrowth || 0,
-      });
-
-      // Format revenue by category for the chart
-      if (Array.isArray(revenueData)) {
-        const formattedCategories = revenueData.map((item, index) => ({
-          ...item,
-          population: item.revenue,
-          color: [
-            '#FF6B6B',
-            '#4ECDC4',
-            '#45B7D1',
-            '#96CEB4',
-            '#FFEEAD'
-          ][index % 5] || `#${Math.floor(Math.random()*16777215).toString(16)}`,
-          legendFontColor: isDark ? '#E5E7EB' : '#7F7F7F',
-          legendFontSize: 12
-        }));
-        setRevenueByCategory(formattedCategories);
-      }
-
-      // Format monthly revenue data
-      if (monthlyData && monthlyData.labels && monthlyData.datasets) {
-        setMonthlyRevenue({
-          labels: monthlyData.labels,
-          datasets: [{
-            data: monthlyData.datasets[0]?.data || [],
-            color: (opacity = 1) => `rgba(134, 65, 244, ${opacity})`,
-            strokeWidth: 2
-          }]
-        });
-      }
-
-      // Set top products
-      if (Array.isArray(productsData)) {
-        setTopProducts(productsData);
-      }
+      const raw: DashboardRaw = { statsData, revenueData, monthlyData, productsData };
+      const next = buildDashboardState(raw, isDark);
+      setStats(next.stats);
+      if (next.revenueByCategory) setRevenueByCategory(next.revenueByCategory);
+      if (next.monthlyRevenue) setMonthlyRevenue(next.monthlyRevenue);
+      if (next.topProducts) setTopProducts(next.topProducts);
+      saveCachedRaw(raw);
 
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
-      setError('Failed to load dashboard data. Please try again.');
+      if (!background) {
+        setError('Failed to load dashboard data. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchDashboardData();
+    // Cached data is already on screen → refresh behind it.
+    fetchDashboardData(!!cachedRaw);
 
-    // Setup refresh every 5 minutes
-    const interval = setInterval(fetchDashboardData, 5 * 60 * 1000);
+    // Refresh every 5 minutes, quietly in the background
+    const interval = setInterval(() => fetchDashboardData(true), 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
-  // Handle hardware back button press
-  useEffect(() => {
-    const backAction = () => {
-      router.replace('/(tabs)');
-      return true;
-    };
-  
-    const backHandler = BackHandler.addEventListener(
-      'hardwareBackPress',
-      backAction
-    );
-  
-    return () => backHandler.remove();
-  }, []);
+  // Handle hardware back button press — only while this screen is focused,
+  // so it doesn't hijack "back" on screens pushed on top of it.
+  useFocusEffect(
+    useCallback(() => {
+      const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+        router.dismissTo('/(tabs)');
+        return true;
+      });
+      return () => backHandler.remove();
+    }, [])
+  );
 
   // Show loading indicator
   if (loading) {
@@ -250,7 +283,7 @@ export default function DashboardScreen() {
         <Text style={{ color: theme.colors.error, marginBottom: 16, textAlign: 'center', paddingHorizontal: 20 }}>
           {error}
         </Text>
-        <Button mode="contained" onPress={fetchDashboardData}>
+        <Button mode="contained" onPress={() => fetchDashboardData()}>
           Retry
         </Button>
       </View>
@@ -301,7 +334,7 @@ export default function DashboardScreen() {
     >
       {/* Header */}
       <View style={styles.headerRow}>
-          <HeaderBackButton onPress={() => router.replace('/(tabs)')} />
+          <HeaderBackButton onPress={() => router.dismissTo('/(tabs)')} />
         <Text variant="headlineMedium" style={[styles.title, { color: theme.colors.text }]}>
           Dashboard
         </Text>

@@ -31,41 +31,46 @@ const router = express.Router();
 
 
 
-router.route('/login').post(adminLogin); 
-router.route('/user/:id',adminJwtVerify).get(getUserById);
-router.route('/users',adminJwtVerify).get(getAllUsers);
-router.route('/users/:id/role',adminJwtVerify).put(updateUserRole);
-router.route('/users/:id',adminJwtVerify).delete(deleteUser);
-router.route("/sellers",adminJwtVerify).get( allSellers);
+router.route('/login').post(adminLogin);
 
-router.route('/seller-requests', adminJwtVerify).get(listSellerRequests);
-router.route('/seller-requests/:id/approve', adminJwtVerify).post(approveSellerRequest);
-router.route('/seller-requests/:id/reject', adminJwtVerify).post(rejectSellerRequest);
+// Every admin route below this line requires a valid admin JWT.
+// (Note: router.route(path, middleware) ignores the middleware argument,
+// so protection must be applied with router.use.)
+router.use(adminJwtVerify);
+router.route('/user/:id').get(getUserById);
+router.route('/users').get(getAllUsers);
+router.route('/users/:id/role').put(updateUserRole);
+router.route('/users/:id').delete(deleteUser);
+router.route("/sellers").get( allSellers);
+
+router.route('/seller-requests').get(listSellerRequests);
+router.route('/seller-requests/:id/approve').post(approveSellerRequest);
+router.route('/seller-requests/:id/reject').post(rejectSellerRequest);
 
 
-router.route('/analytics/summary', adminJwtVerify).get(analyticsSummary);
-router.route('/analytics/revenue-monthly', adminJwtVerify).get(revenueMonthly);
-router.route('/analytics/top-products', adminJwtVerify).get(topProducts);
-router.route('/analytics/sales-by-seller', adminJwtVerify).get(salesBySeller);
+router.route('/analytics/summary').get(analyticsSummary);
+router.route('/analytics/revenue-monthly').get(revenueMonthly);
+router.route('/analytics/top-products').get(topProducts);
+router.route('/analytics/sales-by-seller').get(salesBySeller);
 
 // Admin order management
-router.route('/orders', adminJwtVerify).get(adminListAllOrders);
-router.route('/orders/:id/status', adminJwtVerify).put(adminUpdateOrderStatus);
+router.route('/orders').get(adminListAllOrders);
+router.route('/orders/:id/status').put(adminUpdateOrderStatus);
 
 // Admin-only product status toggle (allows admin to change isActive / isFeatured)
-router.route('/products/:id/status', adminJwtVerify).patch(toggleProductStatus);
+router.route('/products/:id/status').patch(toggleProductStatus);
 
 // Admin-only product delete (can delete any product)
-router.route('/products/:id', adminJwtVerify).delete(adminDeleteProduct);
+router.route('/products/:id').delete(adminDeleteProduct);
 
 // Admin category management
-router.route('/categories', adminJwtVerify).get(adminGetCategories);
-router.route('/categories', adminJwtVerify).post(adminCreateCategory);
-router.route('/categories/:id', adminJwtVerify).put(adminUpdateCategory);
-router.route('/categories/:id', adminJwtVerify).delete(adminDeleteCategory);
+router.route('/categories').get(adminGetCategories);
+router.route('/categories').post(adminCreateCategory);
+router.route('/categories/:id').put(adminUpdateCategory);
+router.route('/categories/:id').delete(adminDeleteCategory);
 
 // Admin payment management
-router.route('/orders/:orderId/payment-status', adminJwtVerify).put(adminUpdatePaymentStatus);
-router.route('/simulate-payment-statuses', adminJwtVerify).post(adminSimulatePaymentStatuses);
+router.route('/orders/:orderId/payment-status').put(adminUpdatePaymentStatus);
+router.route('/simulate-payment-statuses').post(adminSimulatePaymentStatuses);
 
 export default router;

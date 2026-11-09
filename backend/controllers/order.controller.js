@@ -15,6 +15,16 @@ const handleValidationErrors = (req, res) => {
   return null;
 };
 
+// True if the user sells at least one product in this order (or is the order's seller).
+const isSellerOfOrder = (order, user) =>
+  !!user?.id &&
+  (order.sellerId === user.id ||
+    (order.items || []).some((item) => item.product?.sellerId === user.id));
+
+// Buyer, seller of an item in the order, or admin may view an order.
+const canViewOrder = (order, user) =>
+  user?.role === 'ADMIN' || order.userId === user?.id || isSellerOfOrder(order, user);
+
 // @desc    Create a new order
 // @route   POST /api/orders
 // @access  Private
@@ -111,7 +121,11 @@ export const getOrder = async (req, res) => {
   try {
     const { id } = req.params;    
     const order = await OrderService.getOrderDetails(id, req.user.id);
-    
+
+    if (!canViewOrder(order, req.user)) {
+      return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+
     res.json({
       success: true,
       data: order
@@ -199,6 +213,13 @@ export const updateOrderStatus = async (req, res) => {
 
     const { id: orderId } = req.params;
     const { status, notes } = req.body;
+
+    if (req.user.role !== 'ADMIN') {
+      const existing = await OrderService.getOrderDetails(orderId, req.user.id);
+      if (!isSellerOfOrder(existing, req.user)) {
+        return res.status(403).json({ success: false, error: 'Not authorized to update this order' });
+      }
+    }
 
     const order = await OrderService.updateOrderStatus(
       orderId,

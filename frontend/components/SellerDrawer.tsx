@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { Drawer } from 'expo-router/drawer';
-import { DrawerContentScrollView } from '@react-navigation/drawer';
+import { Drawer, DrawerContentScrollView } from 'expo-router/drawer';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { router, usePathname } from 'expo-router';
@@ -31,7 +30,7 @@ const DrawerContent = (props: any) => {
     { 
       label: 'Dashboard', 
       icon: LayoutDashboard, 
-      path: '/seller',
+      path: '/seller/dashboard',
       roles: ['seller']
     },
     { 
@@ -52,16 +51,16 @@ const DrawerContent = (props: any) => {
       path: '/seller/onboarding',
       roles: ['seller']
     },
-    { 
-      label: 'Sellers', 
-      icon: Store, 
-      path: '/seller/sellers',
+    {
+      label: 'Balance',
+      icon: DollarSign,
+      path: '/seller/sellerBalance',
       roles: ['seller']
     },
-    { 
-      label: 'Settings', 
-      icon: Settings, 
-      path: '/seller/settings',
+    {
+      label: 'Settings',
+      icon: Settings,
+      path: '/profile/settings',
       roles: ['seller']
     },
   ];

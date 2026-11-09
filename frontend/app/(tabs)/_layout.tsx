@@ -1,4 +1,5 @@
 import { Tabs } from 'expo-router';
+import { tabsAnimation } from '@/constants/navigation';
 import { Home, Search, ShoppingCart, Heart, User, LayoutDashboard, Bell } from 'lucide-react-native';
 import { BarChart2, Package, ShoppingBag, Users, BarChart, PackagePlus, Tag, LayoutTemplate, Settings, Shield, LogOut, CreditCard } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -11,7 +12,7 @@ import { useState, useCallback } from 'react';
 import Toast from 'react-native-toast-message';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { initializeNotifications, syncNotifications } from '@/store/slices/notificationsSlice';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router';
 
 function TabBarBadge({ count }: { count: number }) {
   const { theme } = useTheme();
@@ -57,200 +58,208 @@ export default function TabLayout() {
           >
             <LayoutDashboard size={24} color={theme.colors.primary} />
           </TouchableOpacity>
-          
-          <Modal
-            animationType="fade"
-            transparent={true}
-            visible={showSellerMenu}
-            onRequestClose={() => setShowSellerMenu(false)}
-          >
-            <Pressable 
-              style={styles.modalOverlay} 
-              onPress={() => setShowSellerMenu(false)}
-            >
-              <ScrollView style={[styles.sellerMenu, { backgroundColor: theme.colors.surface }]}>
-                {/* Dashboard */}
-                <TouchableOpacity 
-                  style={styles.menuItem}
-                  onPress={() => {
-                    router.push('/seller/dashboard');
-                    setShowSellerMenu(false);
-                  }}
-                >
-                  <BarChart2 size={20} color={theme.colors.primary} style={styles.menuIcon} />
-                  <View style={styles.menuTextContainer}>
-                    <Text style={[styles.menuText, { color: theme.colors.text }]}>
-                      Dashboard
-                    </Text>
-                    <Text style={[styles.menuSubtext, { color: theme.colors.textSecondary }]}>
-                      Overview & Analytics
-                    </Text>
-                  </View>
-                </TouchableOpacity>
 
-                {/* <TouchableOpacity 
-                  style={styles.menuItem}
-                  onPress={() => {
-                    router.push('/seller/seller-requests');
-                    setShowSellerMenu(false);
-                  }}
-                >
-                  <Users size={20} color={theme.colors.primary} style={styles.menuIcon} />
-                  <View style={styles.menuTextContainer}>
-                    <Text style={[styles.menuText, { color: theme.colors.text }]}>
-                      Users
-                    </Text>
-                    <Text style={[styles.menuSubtext, { color: theme.colors.textSecondary }]}>
-                      Manage users, sellers management
-                    </Text>
-                  </View>
-                </TouchableOpacity> */}
-
-                {/* Product Management */}
-                <TouchableOpacity 
-                  style={styles.menuItem}
-                  onPress={() => {
-                    router.push('/seller/products');
-                    setShowSellerMenu(false);
-                  }}
-                >
-                  <Package size={20} color={theme.colors.primary} style={styles.menuIcon} />
-                  <View style={styles.menuTextContainer}>
-                    <Text style={[styles.menuText, { color: theme.colors.text }]}>
-                      Products
-                    </Text>
-                    <Text style={[styles.menuSubtext, { color: theme.colors.textSecondary }]}>
-                      Manage inventory & listings
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-
-                {/* Order Management */}
-                <TouchableOpacity 
-                  style={styles.menuItem}
-                  onPress={() => {
-                    router.push('/seller/orders');
-                    setShowSellerMenu(false);
-                  }}
-                >
-                  <ShoppingBag size={20} color={theme.colors.primary} style={styles.menuIcon} />
-                  <View style={styles.menuTextContainer}>
-                    <Text style={[styles.menuText, { color: theme.colors.text }]}>
-                      Orders
-                    </Text>
-                    <Text style={[styles.menuSubtext, { color: theme.colors.textSecondary }]}>
-                      Process & track orders
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-
-                {/* Payment Setup */}
-                <TouchableOpacity 
-                  style={styles.menuItem}
-                  onPress={() => {
-                    router.push('/seller/onboarding');
-                    setShowSellerMenu(false);
-                  }}
-                >
-                  <CreditCard size={20} color={theme.colors.primary} style={styles.menuIcon} />
-                  <View style={styles.menuTextContainer}>
-                    <Text style={[styles.menuText, { color: theme.colors.text }]}>
-                      Payment Setup
-                    </Text>
-                    <Text style={[styles.menuSubtext, { color: theme.colors.textSecondary }]}>
-                      Connect your payment account
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-
-                {/* Promotions & Discounts */}
-                {/* <TouchableOpacity 
-                  style={styles.menuItem}
-                  onPress={() => {
-                    router.push('/seller/promotions');
-                    setShowSellerMenu(false);
-                  }}
-                >
-                  <Tag size={20} color={theme.colors.primary} style={styles.menuIcon} />
-                  <View style={styles.menuTextContainer}>
-                    <Text style={[styles.menuText, { color: theme.colors.text }]}>
-                      Promotions
-                    </Text>
-                    <Text style={[styles.menuSubtext, { color: theme.colors.textSecondary }]}>
-                      Manage discounts & offers
-                    </Text>
-                  </View>
-                </TouchableOpacity> */}
-
-                {/* Content Management */}
-                {/* <TouchableOpacity 
-                  style={styles.menuItem}
-                  onPress={() => {
-                    router.push('/seller/content');
-                    setShowSellerMenu(false);
-                  }}
-                >
-                  <LayoutTemplate size={20} color={theme.colors.primary} style={styles.menuIcon} />
-                  <View style={styles.menuTextContainer}>
-                    <Text style={[styles.menuText, { color: theme.colors.text }]}>
-                      Content
-                    </Text>
-                    <Text style={[styles.menuSubtext, { color: theme.colors.textSecondary }]}>
-                      Banners & categories
-                    </Text>
-                  </View>
-                </TouchableOpacity> */}
-
-                {/* Notification Center */}
-                <TouchableOpacity 
-                  style={styles.menuItem}
-                  onPress={() => {
-                    Toast.show({
-                      type: 'info',
-                      text1: 'Coming Soon',
-                      text2: 'The Notifications feature will be available in the next update!',
-                      position: 'top'
-                    });
-                    setShowSellerMenu(false);
-                  }}
-                >
-                  <Bell size={20} color={theme.colors.primary} style={styles.menuIcon} />
-                  <View style={styles.menuTextContainer}>
-                    <Text style={[styles.menuText, { color: theme.colors.text }]}>
-                      Notifications
-                    </Text>
-                    <Text style={[styles.menuSubtext, { color: theme.colors.textSecondary }]}>
-                      Send announcements
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-
-                {/* Logout */}
-                <TouchableOpacity 
-                  style={[styles.menuItem, { borderTopWidth: 1, borderTopColor: theme.colors.border, marginTop: 8, paddingTop: 12 }]}
-                  onPress={() => {
-                    logout();
-                    setShowSellerMenu(false);
-                  }}
-                >
-                  <LogOut size={20} color={theme.colors.error} style={styles.menuIcon} />
-                  <Text style={[styles.menuText, { color: theme.colors.error }]}>
-                    Logout
-                  </Text>
-                </TouchableOpacity>
-              </ScrollView>
-            </Pressable>
-          </Modal>
         </View>
       );
     }
     return null;
   };
 
+  // Seller menu: rendered ONCE here. It used to live inside `headerRight`, and
+  // every tab has its own header, so each visited tab opened its own copy at the
+  // same time — stacked dark overlays made the background look black.
+  const sellerMenuModal = user?.role === 'seller' ? (
+    
+    <Modal
+      animationType="fade"
+      transparent={true}
+      visible={showSellerMenu}
+      onRequestClose={() => setShowSellerMenu(false)}
+    >
+      <Pressable 
+        style={styles.modalOverlay} 
+        onPress={() => setShowSellerMenu(false)}
+      >
+        <ScrollView style={[styles.sellerMenu, { backgroundColor: theme.colors.surface }]}>
+          {/* Dashboard */}
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => {
+              router.navigate('/seller/dashboard');
+              setShowSellerMenu(false);
+            }}
+          >
+            <BarChart2 size={20} color={theme.colors.primary} style={styles.menuIcon} />
+            <View style={styles.menuTextContainer}>
+              <Text style={[styles.menuText, { color: theme.colors.text }]}>
+                Dashboard
+              </Text>
+              <Text style={[styles.menuSubtext, { color: theme.colors.textSecondary }]}>
+                Overview & Analytics
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => {
+              router.push('/seller/seller-requests');
+              setShowSellerMenu(false);
+            }}
+          >
+            <Users size={20} color={theme.colors.primary} style={styles.menuIcon} />
+            <View style={styles.menuTextContainer}>
+              <Text style={[styles.menuText, { color: theme.colors.text }]}>
+                Users
+              </Text>
+              <Text style={[styles.menuSubtext, { color: theme.colors.textSecondary }]}>
+                Manage users, sellers management
+              </Text>
+            </View>
+          </TouchableOpacity> */}
+
+          {/* Product Management */}
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => {
+              router.navigate('/seller/products');
+              setShowSellerMenu(false);
+            }}
+          >
+            <Package size={20} color={theme.colors.primary} style={styles.menuIcon} />
+            <View style={styles.menuTextContainer}>
+              <Text style={[styles.menuText, { color: theme.colors.text }]}>
+                Products
+              </Text>
+              <Text style={[styles.menuSubtext, { color: theme.colors.textSecondary }]}>
+                Manage inventory & listings
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* Order Management */}
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => {
+              router.navigate('/seller/orders');
+              setShowSellerMenu(false);
+            }}
+          >
+            <ShoppingBag size={20} color={theme.colors.primary} style={styles.menuIcon} />
+            <View style={styles.menuTextContainer}>
+              <Text style={[styles.menuText, { color: theme.colors.text }]}>
+                Orders
+              </Text>
+              <Text style={[styles.menuSubtext, { color: theme.colors.textSecondary }]}>
+                Process & track orders
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* Payment Setup */}
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => {
+              router.navigate('/seller/onboarding');
+              setShowSellerMenu(false);
+            }}
+          >
+            <CreditCard size={20} color={theme.colors.primary} style={styles.menuIcon} />
+            <View style={styles.menuTextContainer}>
+              <Text style={[styles.menuText, { color: theme.colors.text }]}>
+                Payment Setup
+              </Text>
+              <Text style={[styles.menuSubtext, { color: theme.colors.textSecondary }]}>
+                Connect your payment account
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* Promotions & Discounts */}
+          {/* <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => {
+              router.push('/seller/promotions');
+              setShowSellerMenu(false);
+            }}
+          >
+            <Tag size={20} color={theme.colors.primary} style={styles.menuIcon} />
+            <View style={styles.menuTextContainer}>
+              <Text style={[styles.menuText, { color: theme.colors.text }]}>
+                Promotions
+              </Text>
+              <Text style={[styles.menuSubtext, { color: theme.colors.textSecondary }]}>
+                Manage discounts & offers
+              </Text>
+            </View>
+          </TouchableOpacity> */}
+
+          {/* Content Management */}
+          {/* <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => {
+              router.push('/seller/content');
+              setShowSellerMenu(false);
+            }}
+          >
+            <LayoutTemplate size={20} color={theme.colors.primary} style={styles.menuIcon} />
+            <View style={styles.menuTextContainer}>
+              <Text style={[styles.menuText, { color: theme.colors.text }]}>
+                Content
+              </Text>
+              <Text style={[styles.menuSubtext, { color: theme.colors.textSecondary }]}>
+                Banners & categories
+              </Text>
+            </View>
+          </TouchableOpacity> */}
+
+          {/* Notification Center */}
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => {
+              Toast.show({
+                type: 'info',
+                text1: 'Coming Soon',
+                text2: 'The Notifications feature will be available in the next update!',
+                position: 'top'
+              });
+              setShowSellerMenu(false);
+            }}
+          >
+            <Bell size={20} color={theme.colors.primary} style={styles.menuIcon} />
+            <View style={styles.menuTextContainer}>
+              <Text style={[styles.menuText, { color: theme.colors.text }]}>
+                Notifications
+              </Text>
+              <Text style={[styles.menuSubtext, { color: theme.colors.textSecondary }]}>
+                Send announcements
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* Logout */}
+          <TouchableOpacity 
+            style={[styles.menuItem, { borderTopWidth: 1, borderTopColor: theme.colors.border, marginTop: 8, paddingTop: 12 }]}
+            onPress={() => {
+              logout();
+              setShowSellerMenu(false);
+            }}
+          >
+            <LogOut size={20} color={theme.colors.error} style={styles.menuIcon} />
+            <Text style={[styles.menuText, { color: theme.colors.error }]}>
+              Logout
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </Pressable>
+    </Modal>
+  ) : null;
+
   return (
+    <>
     <Tabs
       screenOptions={{
-        animation: 'shift',
+        animation: tabsAnimation,
         headerShown: true,
         headerStyle: {
           backgroundColor: theme.colors.background,
@@ -374,6 +383,8 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    {sellerMenuModal}
+    </>
   );
 }
 
@@ -443,7 +454,9 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    // Transparent: the screen stays visible behind the menu; tapping outside
+    // still closes it. The menu card has its own shadow to stand out.
+    backgroundColor: 'transparent',
     justifyContent: 'flex-start',
     alignItems: 'flex-end',
     paddingTop: 60,

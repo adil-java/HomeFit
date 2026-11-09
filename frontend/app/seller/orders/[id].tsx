@@ -29,8 +29,10 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useDispatch } from 'react-redux';
-import { updateOrderStatus } from '@/store/slices/ordersSlice';
+import { setOrderStatus } from '@/store/slices/ordersSlice';
 import { apiService } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { useScreenCache } from '@/hooks/useScreenCache';
 import { Order } from '@/types/order';
 import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 
@@ -75,10 +77,15 @@ export default function OrderDetailScreen() {
   const horizontalPadding = compact ? 14 : 20;
   const dispatch = useDispatch();
   const [showStatusModal, setShowStatusModal] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
+  // Last loaded copy of this order (kept in Redux while the app is open)
+  const [cachedOrder, saveCachedOrder] = useScreenCache<Order>(
+    user?.uid && id ? `sellerOrder:${user.uid}:${id}` : null
+  );
+  const [isLoading, setIsLoading] = useState(() => !cachedOrder);
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState('');
-  const [order, setOrder] = useState<Order | null>(null);
+  const [order, setOrder] = useState<Order | null>(() => cachedOrder ?? null);
 
   // Fetch order details when component mounts or ID changes
   useEffect(() => {
@@ -86,12 +93,14 @@ export default function OrderDetailScreen() {
       if (!id) return;
       
       try {
-        setIsLoading(true);
+        // With a cached copy on screen, refresh behind it (no spinner)
+        if (!cachedOrder) setIsLoading(true);
         const orderData = await apiService.getSellerOrderDetails(id as string);
         setOrder(orderData);
+        saveCachedOrder(orderData);
       } catch (err) {
         console.error('Error fetching order details:', err);
-        setError('Failed to load order details. Please try again.');
+        if (!cachedOrder) setError('Failed to load order details. Please try again.');
       } finally {
         setIsLoading(false);
       }
@@ -110,12 +119,17 @@ export default function OrderDetailScreen() {
       // Update the order status via API
       await apiService.updateOrderStatus(order.id, newStatus);
       
-      // Update local state
-      setOrder({
+      // Keep the seller order list (Redux) in sync so going back shows the new status
+      dispatch(setOrderStatus({ orderId: order.id, status: newStatus }));
+
+      // Update local state (and the cached copy)
+      const updated = {
         ...order,
         status: newStatus,
         updatedAt: new Date().toISOString()
-      });
+      } as Order;
+      setOrder(updated);
+      saveCachedOrder(updated);
       
       setShowStatusModal(false);
     } catch (err) {

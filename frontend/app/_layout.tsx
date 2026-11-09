@@ -14,6 +14,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { apiService } from '@/services/api';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import AnimatedSplashScreen from '@/components/AnimatedSplashScreen';
+import { stackScreenOptions, fadeScreenOptions } from '@/constants/navigation';
 
 // Prevent the native splash from auto-hiding so we can transition smoothly
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -155,9 +156,10 @@ export default function RootLayout() {
             <AuthProvider>
               <PaperProvider theme={paperTheme}>
                 <StripeProvider publishableKey={publishableKey || ''}>
-                  <Stack screenOptions={{ headerShown: false }}>
-                    <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                    <Stack.Screen name="auth" options={{ headerShown: false }} />
+                  <Stack screenOptions={stackScreenOptions}>
+                    {/* Signing in/out swaps these two sections → fade instead of slide */}
+                    <Stack.Screen name="(tabs)" options={{ headerShown: false, ...fadeScreenOptions }} />
+                    <Stack.Screen name="auth" options={{ headerShown: false, ...fadeScreenOptions }} />
                     <Stack.Screen name="product" options={{ headerShown: false }} />
                     <Stack.Screen name="checkout" options={{ headerShown: false }} />
                     <Stack.Screen name="seller" options={{ headerShown: false }} />

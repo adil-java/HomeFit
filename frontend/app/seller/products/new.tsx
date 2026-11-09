@@ -287,7 +287,7 @@ function ProductForm() {
         Alert.alert('Success', 'Product created successfully!', [
           {
             text: 'OK',
-            onPress: () => router.replace('/seller/products')
+            onPress: () => router.back()
           },
           {
             text: 'Add Another',

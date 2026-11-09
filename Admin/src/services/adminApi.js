@@ -21,6 +21,12 @@ async function request(path, options = {}) {
     headers,
   });
   const data = await res.json().catch(() => ({}));
+  // Expired/invalid admin session: clear it and send the user back to login.
+  if (res.status === 401 && path !== '/login') {
+    localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_user');
+    if (window.location.pathname !== '/') window.location.assign('/');
+  }
   if (!res.ok) {
     const msg = data?.message || data?.error || 'Request failed';
     throw new Error(msg);

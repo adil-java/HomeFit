@@ -50,6 +50,19 @@ const normalizeOptions = (opts?: Record<string, string>) => {
     .join('|');
 };
 
+/**
+ * Unique key for one cart row: the server cart-item id when known, otherwise
+ * productId + normalized options. Two colours of the same product are two rows,
+ * so screens must use this (not the product id) for update/remove.
+ */
+export const getCartItemKey = (item: Pick<CartItem, 'id' | 'cartItemId' | 'options'>) =>
+  item.cartItemId || `${item.id}::${normalizeOptions(item.options)}`;
+
+const findItemByKey = (items: CartItem[], key: string) =>
+  items.find(i => getCartItemKey(i) === key || i.cartItemId === key || `${i.id}::${normalizeOptions(i.options)}` === key)
+  // Backwards compatibility: callers that still pass a bare product id
+  ?? items.find(i => i.id === key);
+
 // Thunks
 export const fetchCart = createAsyncThunk(
   'cart/fetchCart',
@@ -138,12 +151,26 @@ export const addToCart = createAsyncThunk(
         }));
         const total = mapped.reduce((s, i) => s + i.price * i.quantity, 0);
         const itemCount = mapped.reduce((s, i) => s + i.quantity, 0);
+        // Clear our own pending flag first, otherwise setCartFromServer ignores
+        // this response (it skips updates while any action is pending).
+        dispatch(cartSlice.actions.clearPendingAction(actionId));
         dispatch(cartSlice.actions.setCartFromServer({ items: mapped, total, itemCount, timestamp: Date.now() }));
       }
       return { actionId };
     } catch (e: any) {
-      // rollback
-      dispatch(cartSlice.actions.removeItemOptimistic(id));
+      // Rollback: reload the real cart from the server. If that also fails,
+      // undo the optimistic quantity locally.
+      dispatch(cartSlice.actions.clearPendingAction(actionId));
+      try {
+        await dispatch(fetchCart()).unwrap();
+      } catch {
+        const rowKey = `${id}::${normalizeOptions(options)}`;
+        if (existingQty > 0) {
+          dispatch(cartSlice.actions.updateQuantityOptimistic({ id: rowKey, quantity: existingQty }));
+        } else {
+          dispatch(cartSlice.actions.removeItemOptimistic(rowKey));
+        }
+      }
       return rejectWithValue(e.message || 'Failed to add to cart');
     } finally {
       dispatch(cartSlice.actions.clearPendingAction(actionId));
@@ -159,15 +186,10 @@ export const updateQuantity = createAsyncThunk(
   ) => {
     const actionId = genId('update');
     const state = getState() as { cart: CartState };
-    const prev = state.cart.items.find(i => {
-      const composite = `${i.id}::${Object.keys(i.options || {})
-        .sort()
-        .map(k => `${k}:${(i.options as any)[k]}`)
-        .join('|')}`;
-      return i.id === id || i.cartItemId === id || composite === id;
-    });
+    const prev = findItemByKey(state.cart.items, id);
+    const rowKey = prev ? getCartItemKey(prev) : id;
     dispatch(cartSlice.actions.setPendingAction({ id: actionId, status: true }));
-    dispatch(cartSlice.actions.updateQuantityOptimistic({ id, quantity }));
+    dispatch(cartSlice.actions.updateQuantityOptimistic({ id: rowKey, quantity }));
     try {
       // Prefer server cartItemId when present
       const serverId = prev?.cartItemId || id;
@@ -177,7 +199,7 @@ export const updateQuantity = createAsyncThunk(
     } catch (e: any) {
       // rollback to previous quantity if we had one
       if (prev) {
-        dispatch(cartSlice.actions.updateQuantityOptimistic({ id, quantity: prev.quantity }));
+        dispatch(cartSlice.actions.updateQuantityOptimistic({ id: rowKey, quantity: prev.quantity }));
       }
       return rejectWithValue(e.message || 'Failed to update cart item');
     } finally {
@@ -191,13 +213,7 @@ export const removeFromCart = createAsyncThunk(
   async (id: string, { dispatch, getState, rejectWithValue }) => {
     const actionId = genId('remove');
     const state = getState() as { cart: CartState };
-    const prev = state.cart.items.find(i => {
-      const composite = `${i.id}::${Object.keys(i.options || {})
-        .sort()
-        .map(k => `${k}:${(i.options as any)[k]}`)
-        .join('|')}`;
-      return i.id === id || i.cartItemId === id || composite === id;
-    });
+    const prev = findItemByKey(state.cart.items, id);
     dispatch(cartSlice.actions.setPendingAction({ id: actionId, status: true }));
     const removeKey = prev?.cartItemId || `${prev?.id}::${Object.keys(prev?.options || {})
   .map(k => k.trim().toLowerCase())
@@ -245,6 +261,7 @@ dispatch(cartSlice.actions.removeItemOptimistic(removeKey));
         }));
         const total = mapped.reduce((s, i) => s + i.price * i.quantity, 0);
         const itemCount = mapped.reduce((s, i) => s + i.quantity, 0);
+        dispatch(cartSlice.actions.clearPendingAction(actionId));
         dispatch(cartSlice.actions.setCartFromServer({ items: mapped, total, itemCount, timestamp: Date.now() }));
       }
       return { actionId };

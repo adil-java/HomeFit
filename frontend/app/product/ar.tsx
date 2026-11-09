@@ -54,7 +54,7 @@ export default function ProductARScreen() {
           return;
         }
 
-        const nativeModule = require('./ar-native');
+        const nativeModule = require('@/components/ProductARNativeScreen');
         if (mounted) {
           setNativeARScreen(() => nativeModule.default);
         }

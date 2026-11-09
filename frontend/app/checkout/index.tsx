@@ -22,7 +22,6 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store/store';
 import { clearCart } from '@/store/slices/cartSlice';
-import { addOrder } from '@/store/slices/ordersSlice';
 import Toast from 'react-native-toast-message';
 import { useStripe } from '@stripe/stripe-react-native';
 import { apiService } from '@/services/api';
@@ -281,8 +280,8 @@ export default function CheckoutScreen() {
         paymentMethod: paymentMethod.name,
       };
 
-      // Save the order to Redux
-      dispatch(addOrder(orderWithItems));
+      // Note: not added to `state.orders` — that list is the *seller's* orders.
+      // The customer's "My Orders" screen fetches its own list.
       
       // Show success message with order number if available
       const orderNumber = createdOrder.orderNumber || createdOrder.id?.substring(0, 8) || '';

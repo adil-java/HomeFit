@@ -1,4 +1,5 @@
 import { Stack } from 'expo-router';
+import { Drawer } from 'expo-router/drawer';
 import { useAuth } from '@/contexts/AuthContext';
 import { Redirect } from 'expo-router';
 import SellerDrawer from '@/components/SellerDrawer';
@@ -13,6 +14,9 @@ export default function SellerLayout() {
     return <Redirect href="/(tabs)" />;
   }
 
+  // SellerDrawer renders a Drawer navigator, so its children must be
+  // Drawer.Screen (expo-router ignores any other child type and only shows
+  // declared screens).
   return (
     <View style={{ flex: 1 }}>
       <Stack.Screen
@@ -21,35 +25,35 @@ export default function SellerLayout() {
         }}
       />
       <SellerDrawer>
-        <Stack.Screen
+        <Drawer.Screen
           name="dashboard"
           options={{
             headerShown: false,
             title: 'Dashboard',
           }}
         />
-        <Stack.Screen
+        <Drawer.Screen
           name="products"
           options={{
             headerShown: false,
             title: 'Products',
           }}
         />
-        <Stack.Screen
+        <Drawer.Screen
           name="orders"
           options={{
             headerShown: false,
             title: 'Orders',
           }}
         />
-        <Stack.Screen
+        <Drawer.Screen
           name="onboarding"
           options={{
             headerShown: false,
             title: 'Payment Setup',
           }}
         />
-        <Stack.Screen
+        <Drawer.Screen
           name="sellerBalance"
           options={{
             headerShown: false,

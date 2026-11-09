@@ -2,7 +2,7 @@ import pkg from '@prisma/client';
 const { PrismaClient } = pkg;
 
 // Configure Prisma with connection retry and logging
-const prisma = new PrismaClient({
+const basePrisma = new PrismaClient({
   log: process.env.NODE_ENV === 'development' 
     ? ['query', 'error', 'warn'] 
     : ['error'],
@@ -16,7 +16,7 @@ const INITIAL_DELAY = 1000; // 1 second
 async function connectWithRetry(retries = MAX_RETRIES, delay = INITIAL_DELAY) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      await prisma.$connect();
+      await basePrisma.$connect();
       // console.log('[DB] Connected to database successfully');
       return true;
     } catch (error) {
@@ -38,43 +38,41 @@ async function connectWithRetry(retries = MAX_RETRIES, delay = INITIAL_DELAY) {
   }
 }
 
-// Middleware to handle query errors with retry
-prisma.$use(async (params, next) => {
-  const MAX_QUERY_RETRIES = 3;
-  let lastError;
-  
-  for (let attempt = 1; attempt <= MAX_QUERY_RETRIES; attempt++) {
-    try {
-      return await next(params);
-    } catch (error) {
-      lastError = error;
-      
-      // Only retry on connection errors (P1001, P1002, P1008, P1017)
-      const retryableErrors = ['P1001', 'P1002', 'P1008', 'P1017'];
-      if (error.code && retryableErrors.includes(error.code)) {
-        console.warn(`[DB] Query failed with ${error.code}, retry ${attempt}/${MAX_QUERY_RETRIES}`);
-        
-        if (attempt < MAX_QUERY_RETRIES) {
-          // Try to reconnect
+// Retry queries on connection errors. Uses a client extension because
+// prisma.$use() middleware was removed in Prisma 6.14+.
+const RETRYABLE_ERRORS = ['P1001', 'P1002', 'P1008', 'P1017'];
+const MAX_QUERY_RETRIES = 3;
+
+const prisma = basePrisma.$extends({
+  query: {
+    async $allOperations({ args, query }) {
+      let lastError;
+      for (let attempt = 1; attempt <= MAX_QUERY_RETRIES; attempt++) {
+        try {
+          return await query(args);
+        } catch (error) {
+          lastError = error;
+          if (!(error.code && RETRYABLE_ERRORS.includes(error.code)) || attempt === MAX_QUERY_RETRIES) {
+            throw error;
+          }
+          console.warn(`[DB] Query failed with ${error.code}, retry ${attempt}/${MAX_QUERY_RETRIES}`);
           try {
-            await prisma.$disconnect();
-            await prisma.$connect();
+            await basePrisma.$disconnect();
+            await basePrisma.$connect();
           } catch (reconnectError) {
             console.error('[DB] Reconnection failed:', reconnectError.message);
           }
           await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-          continue;
         }
       }
-      throw error;
-    }
-  }
-  throw lastError;
+      throw lastError;
+    },
+  },
 });
 
 // Graceful shutdown
 process.on('beforeExit', async () => {
-  await prisma.$disconnect();
+  await basePrisma.$disconnect();
 });
 
 export { connectWithRetry };

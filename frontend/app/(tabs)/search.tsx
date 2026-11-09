@@ -21,7 +21,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store/store';
 import { setSearchQuery, setSelectedCategory, setSelectedTags } from '@/store/slices/productsSlice';
 import { ProductCard } from '@/components/ProductCard';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router';
 
 export default function SearchScreen() {
   const { theme } = useTheme();

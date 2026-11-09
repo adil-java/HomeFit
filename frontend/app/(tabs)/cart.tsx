@@ -15,7 +15,7 @@ import { ShoppingBag, Minus, Plus, Trash2 } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { updateQuantity, removeFromCart, fetchCart } from '@/store/slices/cartSlice';
+import { updateQuantity, removeFromCart, fetchCart, getCartItemKey } from '@/store/slices/cartSlice';
 import { CartItem } from '@/components/CartItem';
 import Toast from 'react-native-toast-message';
 
@@ -107,19 +107,14 @@ export default function CartScreen() {
         <>
           <FlatList
             data={items}
-            keyExtractor={(item) => {
-              const optionKey = Object.keys(item.options || {})
-                .map(k => k.trim().toLowerCase())
-                .sort()
-                .map(k => `${k}:${String((item.options as any)[k]).trim().toLowerCase()}`)
-                .join('|');
-              return item.cartItemId || `${item.id}::${optionKey}`;
-            }}
+            keyExtractor={(item) => getCartItemKey(item)}
             renderItem={({ item }) => (
               <CartItem
                 item={item}
-                onRemove={handleRemoveItem}
-                onUpdateQuantity={handleUpdateQuantity}
+                // Use the row's unique key, not the product id: the same product in
+                // two colours/sizes is two rows.
+                onRemove={() => handleRemoveItem(getCartItemKey(item))}
+                onUpdateQuantity={(_productId, quantity) => handleUpdateQuantity(getCartItemKey(item), quantity)}
               />
             )}
             contentContainerStyle={[styles.listContent, { paddingHorizontal: horizontalPadding }]}

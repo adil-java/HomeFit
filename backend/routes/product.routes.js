@@ -70,13 +70,14 @@ const uploadSingle = multer({
 const router = express.Router();
 
 router.get('/', getProducts);
-router.get('/:id', getProductById);
-router.get('/slug/:slug', getProductBySlug);
+// Static paths must be registered before '/:id', otherwise '/:id' swallows them.
 router.get('/featured', getFeaturedProducts);
 router.get('/search', searchProducts);
+router.get('/slug/:slug', getProductBySlug);
+router.get('/:id', getProductById);
 
 
-router.post('/generate-3d', uploadSingle, generate3DModelEndpoint);
+router.post('/generate-3d', protect, checkSeller, uploadSingle, generate3DModelEndpoint);
 
 
 router.post('/', upload, protect, checkSeller, createProduct);

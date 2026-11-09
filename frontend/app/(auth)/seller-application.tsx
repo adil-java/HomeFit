@@ -116,7 +116,7 @@ export default function SellerApplicationScreen() {
           text1: 'Application Submitted!',
           text2: 'Your seller application has been submitted successfully.',
           visibilityTime: 4000,
-          onHide: () => router.replace('/(tabs)')
+          onHide: () => router.dismissTo('/(tabs)')
         });
       } else {
         throw new Error(response.error || 'Failed to submit application');
@@ -210,7 +210,7 @@ export default function SellerApplicationScreen() {
 
             <TouchableOpacity
               style={[styles.backToHomeButton, { backgroundColor: theme.colors.primary }]}
-              onPress={() => router.replace('/(tabs)')}
+              onPress={() => router.dismissTo('/(tabs)')}
             >
               <Text style={[styles.backButtonText, { color: '#fff' }]}>
                 Back to Home
@@ -239,7 +239,7 @@ export default function SellerApplicationScreen() {
           </Text>
           <TouchableOpacity
             style={[styles.backToHomeButton, { backgroundColor: theme.colors.primary }]}
-            onPress={() => router.replace('/(tabs)')}
+            onPress={() => router.dismissTo('/(tabs)')}
           >
             <Text style={[styles.backButtonText, { color: '#fff' }]}>
               Back to Home

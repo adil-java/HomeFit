@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Package, Truck, CircleCheck as CheckCircle, Clock, Circle as XCircle, MessageCircle, Edit } from 'lucide-react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/store/store';
@@ -100,44 +100,21 @@ export default function OrdersScreen() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const limit = 10;
 
-  // Set initial loading state and fetch orders on mount
-  useEffect(() => {
-    let isMounted = true;
-    
-    const loadInitialData = async () => {
-      try {
-        dispatch(setLoading(true));
-        await fetchOrders(false, 1);
-      } catch (err) {
-        console.error('Error loading initial data:', err);
-      } finally {
-        if (isMounted) {
-          dispatch(setLoading(false));
-        }
-      }
-    };
-    
-    loadInitialData();
-    
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  // Initial load happens in the `selectedFilter` effect below (it also runs on
+  // mount), so there is no separate mount fetch — that used to request page 1 twice.
+  // Orders live in Redux, so a revisit shows the last list while it refreshes.
 
-  // Handle hardware back button press
-  useEffect(() => {
-    const backAction = () => {
-      router.replace('/(tabs)');
-      return true;
-    };
-  
-    const backHandler = BackHandler.addEventListener(
-      'hardwareBackPress',
-      backAction
-    );
-  
-    return () => backHandler.remove();
-  }, []);
+  // Handle hardware back button press — only while this screen is focused,
+  // so it doesn't hijack "back" on screens pushed on top of it.
+  useFocusEffect(
+    useCallback(() => {
+      const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+        router.dismissTo('/(tabs)');
+        return true;
+      });
+      return () => backHandler.remove();
+    }, [])
+  );
 
   const fetchOrders = async (isRefreshing = false, currentPage = page) => {
     try {
@@ -393,7 +370,7 @@ export default function OrdersScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
       <View style={[styles.header, { paddingHorizontal: horizontalPadding }]}> 
-        <HeaderBackButton onPress={() => router.replace('/(tabs)')} />
+        <HeaderBackButton onPress={() => router.dismissTo('/(tabs)')} />
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Manage Orders</Text>
         <View style={{ width: 24 }} />
       </View>

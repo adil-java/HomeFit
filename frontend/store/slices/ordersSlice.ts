@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { RootState } from '../store';
+import { apiService } from '@/services/api';
 
 export interface Order {
   id: string;
@@ -76,24 +77,11 @@ export const updateOrderStatus = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      // Replace with your actual API endpoint
-      const response = await fetch(`/api/orders/${orderId}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        return rejectWithValue(error.message || 'Failed to update status');
-      }
-
-      const data = await response.json();
-      return { orderId, status, updatedAt: data.updatedAt };
-    } catch (error) {
-      return rejectWithValue(error.message || 'Network error');
+      // Uses the shared API client (correct base URL + auth token).
+      const data = await apiService.updateOrderStatus(orderId, String(status).toUpperCase());
+      return { orderId, status, updatedAt: data?.data?.updatedAt || new Date().toISOString() };
+    } catch (error: any) {
+      return rejectWithValue(error?.message || 'Network error');
     }
   }
 );
@@ -110,6 +98,15 @@ const ordersSlice = createSlice({
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
+    },
+    // Keep the seller order list in sync after a status change made elsewhere
+    // (e.g. on the order details screen).
+    setOrderStatus: (state, action: PayloadAction<{ orderId: string; status: string }>) => {
+      const order = state.orders.find(o => o.id === action.payload.orderId);
+      if (order) {
+        (order as any).status = action.payload.status;
+        (order as any).updatedAt = new Date().toISOString();
+      }
     },
   },
   extraReducers: (builder) => {
@@ -166,5 +163,5 @@ const ordersSlice = createSlice({
   },
 });
 
-export const { addOrder, setOrders, setLoading } = ordersSlice.actions;
+export const { addOrder, setOrders, setLoading, setOrderStatus } = ordersSlice.actions;
 export default ordersSlice.reducer;

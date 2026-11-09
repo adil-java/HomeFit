@@ -12,6 +12,8 @@ import {
   useWindowDimensions,
 } from "react-native"
 import { useAuth } from "@/contexts/AuthContext"
+import { apiService } from "@/services/api"
+import { useScreenCache } from "@/hooks/useScreenCache"
 
 interface SellerBalanceScreenProps {
   sellerId: string
@@ -32,8 +34,10 @@ export const SellerBalanceScreen: React.FC<SellerBalanceScreenProps> = ({ seller
   const { width } = useWindowDimensions()
   const compact = width < 360
   const horizontalPadding = compact ? 12 : 16
-  const [balance, setBalance] = useState<BalanceData | null>(null)
-  const [loading, setLoading] = useState(true)
+  // Last loaded balance (kept in Redux while the app is open) → instant on revisit
+  const [cachedBalance, saveCachedBalance] = useScreenCache<BalanceData>(sellerId ? `sellerBalance:${sellerId}` : null)
+  const [balance, setBalance] = useState<BalanceData | null>(() => cachedBalance ?? null)
+  const [loading, setLoading] = useState(() => !cachedBalance)
   const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
@@ -55,12 +59,28 @@ export const SellerBalanceScreen: React.FC<SellerBalanceScreenProps> = ({ seller
         return
       }
 
-      // API Call: GET /api/stripe/balance
-      const response = await fetch(`/api/stripe/balance?sellerId=${sellerId}`)
-      const data = await response.json()
-      setBalance(data)
+      // Previously this called a relative URL (no server address, no auth token),
+      // so it always failed. Use the shared API client instead.
+      // Balance fails with "not connected to Stripe" until onboarding is done → show zeros.
+      const [balanceRes, status] = await Promise.all([
+        apiService.getSellerBalance().catch(() => null),
+        apiService.getSellerStatus(sellerId).catch(() => null),
+      ])
+      const amounts = balanceRes?.data || {}
+      const next: BalanceData = {
+        currentBalance: amounts.available || 0,
+        pendingAmount: amounts.pending || 0,
+        pendingPayout: 0,
+        lastPayoutDate: "N/A",
+        nextPayoutDate: "N/A",
+        chargesEnabled: !!status?.chargesEnabled,
+        isVerified: !!(status?.detailsSubmitted ?? status?.isOnboarded),
+      }
+      setBalance(next)
+      saveCachedBalance(next)
     } catch (error: any) {
-      Alert.alert("Error", "Failed to fetch balance")
+      // Keep showing cached data if we have it
+      if (!balance) Alert.alert("Error", "Failed to fetch balance")
     } finally {
       setLoading(false)
     }

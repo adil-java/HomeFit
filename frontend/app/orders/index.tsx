@@ -24,6 +24,8 @@ import {
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { apiService } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { useScreenCache } from '@/hooks/useScreenCache';
 import { format } from 'date-fns';
 import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 
@@ -48,18 +50,25 @@ const filterOptions = [
 
 const ITEMS_PER_PAGE = 10;
 
+type OrdersPagination = { page: number; total: number; limit: number; totalPages: number };
+
 export default function OrdersScreen() {
   const { theme } = useTheme();
   const { width } = useWindowDimensions();
   const compact = width < 360;
   const horizontalPadding = compact ? 14 : 20;
-  const [orders, setOrders] = useState<any[]>([]);
+  const { user } = useAuth();
+  // First page of the "All" tab from the last visit (kept in Redux while the app is open)
+  const [cachedFirstPage, saveCachedFirstPage] = useScreenCache<{ orders: any[]; pagination: OrdersPagination; hasMore: boolean }>(
+    user?.uid ? `myOrders:${user.uid}` : null
+  );
+  const [orders, setOrders] = useState<any[]>(() => cachedFirstPage?.orders ?? []);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(true);
+  const [hasMore, setHasMore] = useState(() => cachedFirstPage?.hasMore ?? true);
   const [selectedFilter, setSelectedFilter] = useState('All');
-  const [pagination, setPagination] = useState({
+  const [pagination, setPagination] = useState<OrdersPagination>(() => cachedFirstPage?.pagination ?? {
     page: 1,
     total: 0,
     limit: ITEMS_PER_PAGE,
@@ -80,16 +89,23 @@ export default function OrdersScreen() {
         limit: ITEMS_PER_PAGE,
       });
 
-      setPagination({
+      const nextPagination = {
         page: response.page || 1,
         total: response.total || 0,
         limit: response.limit || ITEMS_PER_PAGE,
         totalPages: response.totalPages || 1,
-      });
+      };
+      const nextHasMore = response.totalPages > page;
+      setPagination(nextPagination);
 
       setOrders(prev => (page === 1 ? response.data : [...prev, ...response.data]));
       setError(null);
-      setHasMore(response.totalPages > page);
+      setHasMore(nextHasMore);
+
+      // Remember the first page of the "All" tab for the next visit
+      if (page === 1 && selectedFilter === 'All' && Array.isArray(response.data)) {
+        saveCachedFirstPage({ orders: response.data, pagination: nextPagination, hasMore: nextHasMore });
+      }
     } catch (err) {
       console.error('Error fetching orders:', err);
       setError('Failed to load orders. Please try again.');
@@ -97,7 +113,7 @@ export default function OrdersScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [selectedFilter]);
+  }, [selectedFilter, saveCachedFirstPage]);
 
   useEffect(() => {
     fetchOrders(1);

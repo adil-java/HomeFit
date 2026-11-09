@@ -18,6 +18,24 @@ import path from 'path'
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { generate3DModel } from '../services/3dModel.service.js';
+import prisma from '../config/db.js';
+
+// Returns an error response object if the current user may not modify the product,
+// or null if allowed. Admins may modify any product; sellers only their own.
+const checkProductOwnership = async (productId, user) => {
+  const product = await prisma.product.findUnique({
+    where: { id: productId },
+    select: { sellerId: true },
+  });
+  if (!product) {
+    return { status: 404, body: { success: false, error: 'Product not found' } };
+  }
+  if (user?.role === 'ADMIN') return null;
+  if (!user?.id || product.sellerId !== user.id) {
+    return { status: 403, body: { success: false, error: 'Unauthorized action.' } };
+  }
+  return null;
+};
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -263,6 +281,11 @@ export const updateProduct = async (req, res) => {
       });
     }
 
+    const denied = await checkProductOwnership(id, req.user);
+    if (denied) {
+      return res.status(denied.status).json(denied.body);
+    }
+
     const result = await updateProductService(id, req.body, req.files);
 
     if (!result.success) {
@@ -337,6 +360,11 @@ export const toggleProductStatus = async (req, res) => {
         success: false,
         error: 'Invalid field. Must be "isActive" or "isFeatured"',
       });
+    }
+
+    const denied = await checkProductOwnership(id, req.user);
+    if (denied) {
+      return res.status(denied.status).json(denied.body);
     }
 
     const result = await toggleProductStatusService(id, field, value);
