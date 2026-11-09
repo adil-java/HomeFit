@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import Constants from 'expo-constants';
 import Toast from 'react-native-toast-message';
 import { checkARSupport, resetARSupportCache } from '@/utils/checkARSupport';
+import { logger } from '@/utils/logger';
 
 type NativeARComponent = React.ComponentType<{ modelUrl: string }>;
 
@@ -59,7 +60,7 @@ export default function ProductARScreen() {
           setNativeARScreen(() => nativeModule.default);
         }
       } catch (error) {
-        console.error('[AR] Failed to load native AR screen:', error);
+        logger.error('[AR] Failed to load native AR screen:', error);
         redirectToViewer('Opening 3D viewer instead.');
       } finally {
         if (mounted) {

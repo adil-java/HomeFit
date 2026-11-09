@@ -1,3 +1,4 @@
+import { friendlyError } from '@/utils/errorMessages';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -17,6 +18,7 @@ import { apiService } from '@/services/api';
 import Toast from 'react-native-toast-message';
 import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 import KeyboardAwareView from '@/components/Shared/KeyboardAwareView';
+import { logger } from '@/utils/logger';
 
 export default function SellerApplicationScreen() {
   const { theme } = useTheme();
@@ -60,7 +62,7 @@ export default function SellerApplicationScreen() {
         }
       }
     } catch (error) {
-      console.error('Error checking application status:', error);
+      logger.error('Error checking application status:', error);
       Toast.show({
         type: 'error',
         text1: 'Error',
@@ -123,11 +125,11 @@ export default function SellerApplicationScreen() {
         throw new Error(response.error || 'Failed to submit application');
       }
     } catch (error: any) {
-      console.error('Submit application error:', error);
+      logger.error('Submit application error:', error);
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: error.message || 'Failed to submit application. Please try again.',
+        text2: friendlyError(error, 'Failed to submit application. Please try again.'),
       });
     } finally {
       setIsLoading(false);

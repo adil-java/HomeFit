@@ -1,6 +1,8 @@
+import { friendlyError } from '@/utils/errorMessages';
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { RootState } from '../store';
 import { apiService } from '@/services/api';
+import { logger } from '@/utils/logger';
 
 export interface Order {
   id: string;
@@ -81,7 +83,7 @@ export const updateOrderStatus = createAsyncThunk(
       const data = await apiService.updateOrderStatus(orderId, String(status).toUpperCase());
       return { orderId, status, updatedAt: data?.data?.updatedAt || new Date().toISOString() };
     } catch (error: any) {
-      return rejectWithValue(error?.message || 'Network error');
+      return rejectWithValue(friendlyError(error, 'Network error'));
     }
   }
 );
@@ -156,7 +158,7 @@ const ordersSlice = createSlice({
         state.loading = false;
       })
       .addCase(updateOrderStatus.rejected, (state, action) => {
-        console.error('Failed to update order status:', action.payload);
+        logger.error('Failed to update order status:', action.payload);
         state.loading = false;
         // You might want to show an error toast/message here
       });

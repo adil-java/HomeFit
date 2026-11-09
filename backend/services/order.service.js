@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 import Stripe from "stripe";
+import logger from '../utils/logger.js';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // Helper function to generate unique order number
@@ -8,31 +9,26 @@ function generateOrderNumber() {
   return `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 }
 
+// Tax applied to every order. The checkout screen shows the same rate
+// (frontend/constants/pricing.ts) — keep the two in sync.
+export const TAX_RATE = 0.1;
+
+const httpError = (statusCode, message) => Object.assign(new Error(message), { statusCode });
+
+/** Order total in the smallest currency unit (paisa / cents), as Stripe charges it. */
+export const toMinorUnits = (amount) => Math.round(amount * 100);
+
 class OrderService {
-  async createOrder(userId, orderData) {
-    if (!orderData || typeof orderData !== 'object') {
-      throw new Error('Invalid order data');
-    }
-
-    const {
-      items,
-      shippingAddress,
-      billingAddress = shippingAddress, // Default to shipping address if not provided
-      paymentMethod = 'card',
-      notes,
-      couponCode,
-    } = orderData;
-
-    // Validate required fields
+  /**
+   * Price a list of {productId, quantity} from the database (never from the
+   * client) and check stock. Used both to create the Stripe payment and the
+   * order, so the amount charged always equals the order total.
+   */
+  async quoteOrder(items) {
     if (!items || !Array.isArray(items) || items.length === 0) {
-      throw new Error('At least one order item is required');
+      throw httpError(400, 'At least one order item is required');
     }
 
-    if (!shippingAddress) {
-      throw new Error('Shipping address is required');
-    }
-
-    // 1. First, validate all products and check stock outside transaction
     const productIds = items.map(item => item.productId);
     const products = await prisma.product.findMany({
       where: { id: { in: productIds } },
@@ -46,7 +42,6 @@ class OrderService {
       },
     });
 
-    // 2. Validate products and calculate totals
     let subtotal = 0;
     const orderItems = [];
     const inventoryUpdates = [];
@@ -55,51 +50,220 @@ class OrderService {
     for (const item of items) {
       const product = products.find((p) => p.id === item.productId);
       if (!product) {
-        throw new Error(`Product not found: ${item.productId}`);
+        throw httpError(400, `Product not found: ${item.productId}`);
+      }
+
+      const quantity = Number(item.quantity);
+      if (!Number.isInteger(quantity) || quantity < 1) {
+        throw httpError(400, `Invalid quantity for product: ${product.name}`);
       }
 
       if (!sellerId && product.sellerId) {
         sellerId = product.sellerId;
       }
 
-      // Check stock availability
-      if (product.quantity < item.quantity) {
-        throw new Error(`Insufficient stock for product: ${product.name}`);
+      if (product.quantity < quantity) {
+        throw httpError(409, `Insufficient stock for product: ${product.name}`);
       }
 
-      // Calculate item total
-      const itemTotal = product.price * item.quantity;
-      subtotal += itemTotal;
+      subtotal += product.price * quantity;
 
-      // Prepare order item with image URL in options
       orderItems.push({
         productId: product.id,
         productName: product.name,
         price: product.price,
-        quantity: item.quantity,
+        quantity,
         options: {
           ...(item.options || {}),
           // Store the first image URL if available
-          imageUrl: product.images && product.images.length > 0 
-            ? product.images[0] 
+          imageUrl: product.images && product.images.length > 0
+            ? product.images[0]
             : null
         }
       });
 
-      // Track inventory updates
-      inventoryUpdates.push({
-        productId: product.id,
-        quantity: item.quantity,
-      });
+      inventoryUpdates.push({ productId: product.id, quantity });
     }
 
-    // 3. Calculate order totals
-    const taxRate = 0.1; // 10% tax
-    const tax = subtotal * taxRate;
+    const tax = subtotal * TAX_RATE;
     const shipping = 0; // Free shipping for now
-    const discount = 0; // Calculate discount based on coupon if needed
+    const discount = 0; // Coupons are not implemented on the server yet
     const total = subtotal + tax + shipping - discount;
 
+    return { orderItems, inventoryUpdates, sellerId, subtotal, tax, shipping, discount, total };
+  }
+
+  /**
+   * Check that a Stripe PaymentIntent really paid for this order: it belongs to
+   * this user, it succeeded, it hasn't been used for another order, and the
+   * amount matches the server-side total.
+   */
+  async verifyCardPayment(userId, paymentIntentId, total) {
+    if (!paymentIntentId || typeof paymentIntentId !== 'string') {
+      throw httpError(400, 'Card payment is required for this order');
+    }
+
+    let paymentIntent;
+    try {
+      paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    } catch {
+      throw httpError(400, 'Payment not found');
+    }
+
+    if (paymentIntent.metadata?.userId !== userId) {
+      throw httpError(403, 'This payment does not belong to your account');
+    }
+
+    if (!['succeeded', 'processing'].includes(paymentIntent.status)) {
+      throw httpError(402, 'Payment was not completed');
+    }
+
+    const alreadyUsed = await prisma.order.findUnique({
+      where: { stripePaymentIntent: paymentIntent.id },
+      select: { id: true },
+    });
+    if (alreadyUsed) {
+      throw httpError(409, 'This payment has already been used for an order');
+    }
+
+    if (paymentIntent.amount !== toMinorUnits(total)) {
+      // Prices changed between paying and placing the order: give the money back.
+      await this.refundSafely(paymentIntent.id);
+      throw Object.assign(
+        httpError(409, 'Prices changed while you were paying. Your payment has been refunded — please try again.'),
+        { refunded: true }
+      );
+    }
+
+    return paymentIntent;
+  }
+
+  async refundSafely(paymentIntentId) {
+    try {
+      await stripe.refunds.create({ payment_intent: paymentIntentId });
+      return true;
+    } catch (refundError) {
+      logger.error(`[Payments] Refund failed for ${paymentIntentId} — refund it manually in Stripe:`, refundError);
+      return false;
+    }
+  }
+
+  /**
+   * Refund a payment only if it is this user's, actually went through, is not
+   * attached to any order and hasn't been refunded already.
+   */
+  async refundIfUnused(userId, paymentIntentId) {
+    try {
+      const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+      if (pi.metadata?.userId !== userId) return false;
+      if (!['succeeded', 'processing'].includes(pi.status)) return false;
+      const attached = await prisma.order.findUnique({
+        where: { stripePaymentIntent: pi.id },
+        select: { id: true },
+      });
+      if (attached) return false;
+      const existing = await stripe.refunds.list({ payment_intent: pi.id, limit: 1 });
+      if (existing.data.length > 0) return false;
+      return await this.refundSafely(pi.id);
+    } catch {
+      return false;
+    }
+  }
+
+  async createOrder(userId, orderData) {
+    if (!orderData || typeof orderData !== 'object') {
+      throw httpError(400, 'Invalid order data');
+    }
+
+    const {
+      items,
+      addressId,
+      paymentMethod = 'card',
+      paymentIntentId,
+    } = orderData;
+    let { shippingAddress, billingAddress } = orderData;
+    let quote;
+    let paymentIntent = null;
+    try {
+
+      // A saved address was chosen: ship to exactly that address (looked up
+      // here, and only if it belongs to this user).
+      if (addressId) {
+        const saved = await prisma.address.findFirst({
+          where: { id: addressId, userId },
+          include: { user: { select: { name: true, email: true, phoneNumber: true } } },
+        });
+        if (!saved) {
+          throw httpError(400, 'Please choose a delivery address');
+        }
+        shippingAddress = {
+          name: saved.user?.name || shippingAddress?.name || 'Customer',
+          email: saved.user?.email || shippingAddress?.email,
+          phone: saved.phone || saved.user?.phoneNumber || shippingAddress?.phone,
+          street: saved.street,
+          city: saved.city,
+          state: saved.state || '',
+          postalCode: saved.postalCode,
+          country: saved.country,
+          type: saved.type,
+        };
+      }
+      billingAddress = billingAddress || shippingAddress; // Default to shipping address
+
+      if (!shippingAddress) {
+        throw httpError(400, 'Shipping address is required');
+      }
+
+      // 1-3. Price the items from the database and check stock
+      quote = await this.quoteOrder(items);
+
+      // Card orders must come with a payment that Stripe confirms.
+      if (paymentMethod === 'card') {
+        paymentIntent = await this.verifyCardPayment(userId, paymentIntentId, quote.total);
+      }
+    } catch (error) {
+      // The app only calls this after the customer has paid. If the order is
+      // rejected before the payment is attached (address, stock, …), give the
+      // money back instead of keeping it with no order.
+      if (paymentIntentId && !error.refunded) {
+        const refunded = await this.refundIfUnused(userId, paymentIntentId);
+        if (refunded) {
+          throw httpError(error.statusCode || 400, `${error.message || 'Could not place the order'}. Your payment has been refunded.`);
+        }
+      }
+      throw error;
+    }
+    const { orderItems, inventoryUpdates, sellerId, subtotal, tax, shipping, discount, total } = quote;
+    const isPaid = paymentIntent?.status === 'succeeded';
+
+    try {
+      return await this.createOrderRecord({
+        userId, sellerId, subtotal, tax, shipping, discount, total,
+        paymentMethod, shippingAddress, billingAddress, orderItems, inventoryUpdates,
+        paymentIntent, isPaid,
+      });
+    } catch (error) {
+      // The customer has paid but the order couldn't be saved (e.g. stock ran
+      // out a moment ago). Refund — unless the payment is already attached to
+      // an order (duplicate submit), which must keep its money.
+      if (paymentIntent && error?.code !== 'P2002') {
+        const refunded = await this.refundSafely(paymentIntent.id);
+        throw httpError(
+          error.statusCode || 500,
+          refunded
+            ? `${error.message || 'Could not place the order'}. Your payment has been refunded.`
+            : `${error.message || 'Could not place the order'}. Please contact support about your payment.`
+        );
+      }
+      throw error;
+    }
+  }
+
+  async createOrderRecord({
+    userId, sellerId, subtotal, tax, shipping, discount, total,
+    paymentMethod, shippingAddress, billingAddress, orderItems, inventoryUpdates,
+    paymentIntent, isPaid,
+  }) {
     // 4. Start a transaction with increased timeout (30 seconds)
     return await prisma.$transaction(async (tx) => {
       // 5. Create the order
@@ -114,8 +278,13 @@ class OrderService {
           discount,
           total,
           status: 'PENDING',
-          paymentStatus: 'PENDING',
+          paymentStatus: isPaid ? 'PAID' : 'PENDING',
           paymentMethod,
+          ...(paymentIntent && {
+            stripePaymentIntent: paymentIntent.id,
+            paymentId: paymentIntent.id,
+            ...(isPaid && { paymentConfirmedAt: new Date() }),
+          }),
           shippingAddress,
           billingAddress,
           items: {
@@ -128,15 +297,20 @@ class OrderService {
       });
 
       // 6. Update inventory
+      // Only decrement while enough stock is left, so two buyers can't both
+      // take the last item (the whole order rolls back if one runs out).
       for (const update of inventoryUpdates) {
-        await tx.product.update({
-          where: { id: update.productId },
+        const { count } = await tx.product.updateMany({
+          where: { id: update.productId, quantity: { gte: update.quantity } },
           data: {
             quantity: {
               decrement: update.quantity
             }
           }
         });
+        if (count === 0) {
+          throw httpError(409, 'An item in your order just went out of stock');
+        }
       }
 
       // 7. Get user's cart ID for later cleanup (outside transaction)

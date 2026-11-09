@@ -1,11 +1,28 @@
 import { auth } from '../firebaseConfig';
 import { Platform } from 'react-native';
+import { logger } from '@/utils/logger';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://home-fit-backend.onrender.com/api';
 
 // Debug: Log API base URL on startup
-// console.log('[API DEBUG] API_BASE_URL:', API_BASE_URL);
-// console.log('[API DEBUG] EXPO_PUBLIC_API_BASE_URL env:', process.env.EXPO_PUBLIC_API_BASE_URL);
+// logger.log('[API DEBUG] API_BASE_URL:', API_BASE_URL);
+// logger.log('[API DEBUG] EXPO_PUBLIC_API_BASE_URL env:', process.env.EXPO_PUBLIC_API_BASE_URL);
+
+export type AddressType = 'home' | 'work' | 'other';
+
+export interface SavedAddress {
+  id: string;
+  type: AddressType;
+  street: string;
+  city: string;
+  state?: string | null;
+  postalCode: string;
+  country: string;
+  phone?: string | null;
+  isDefault: boolean;
+}
+
+export type AddressInput = Omit<SavedAddress, 'id' | 'isDefault'> & { isDefault?: boolean };
 
 class ApiService {
   private async getAuthHeaders(): Promise<Record<string, string>> {
@@ -17,11 +34,11 @@ class ApiService {
     if (user) {
       const token = await user.getIdToken();
       headers['Authorization'] = `Bearer ${token}`;
-      // console.log('[API DEBUG] User UID:', user.uid);
-      // console.log('[API DEBUG] User Email:', user.email);
-      // console.log('[API DEBUG] Token (first 50 chars):', token.substring(0, 50) + '...');
+      // logger.log('[API DEBUG] User UID:', user.uid);
+      // logger.log('[API DEBUG] User Email:', user.email);
+      // logger.log('[API DEBUG] Token (first 50 chars):', token.substring(0, 50) + '...');
     } else {
-      // console.log('[API DEBUG] No user logged in - no auth token');
+      // logger.log('[API DEBUG] No user logged in - no auth token');
     }
 
     return headers;
@@ -43,39 +60,39 @@ class ApiService {
       }
       return json;
     } catch (error) {
-      console.error('Update order status error:', error);
+      logger.error('Update order status error:', error);
       throw error;
     }
   }
 
   async verifyToken() {
     try {
-      // console.log('[API DEBUG] verifyToken - Starting token verification');
-      // console.log('[API DEBUG] verifyToken - API URL:', `${API_BASE_URL}/users/verify-token`);
+      // logger.log('[API DEBUG] verifyToken - Starting token verification');
+      // logger.log('[API DEBUG] verifyToken - API URL:', `${API_BASE_URL}/users/verify-token`);
       const headers = await this.getAuthHeaders();
-      // console.log('[API DEBUG] verifyToken - Headers (excluding token):', { 'Content-Type': headers['Content-Type'] });
+      // logger.log('[API DEBUG] verifyToken - Headers (excluding token):', { 'Content-Type': headers['Content-Type'] });
       
       const response = await fetch(`${API_BASE_URL}/users/verify-token`, {
         method: 'POST',
         headers,
       });
 
-      // console.log('[API DEBUG] verifyToken - Response status:', response.status);
-      // console.log('[API DEBUG] verifyToken - Response ok:', response.ok);
+      // logger.log('[API DEBUG] verifyToken - Response status:', response.status);
+      // logger.log('[API DEBUG] verifyToken - Response ok:', response.ok);
       
       const json = await response.json().catch(() => ({ success: false }));
-      // console.log('[API DEBUG] verifyToken - Response body:', JSON.stringify(json).substring(0, 200));
+      // logger.log('[API DEBUG] verifyToken - Response body:', JSON.stringify(json).substring(0, 200));
       
       if (!response.ok) {
         const message = (json as any)?.error || 'Token verification failed';
-        console.error('[API DEBUG] verifyToken - FAILED with error:', message);
+        logger.error('[API DEBUG] verifyToken - FAILED with error:', message);
         throw new Error(message);
       }
 
-      // console.log('[API DEBUG] verifyToken - SUCCESS');
+      // logger.log('[API DEBUG] verifyToken - SUCCESS');
       return json;
     } catch (error) {
-      console.warn(
+      logger.warn(
         'Token verification error (network/API unavailable):',
         error
       );
@@ -102,7 +119,7 @@ class ApiService {
 
       return json;
     } catch (error) {
-      console.error('Login error:', error);
+      logger.error('Login error:', error);
       throw error;
     }
   }
@@ -123,7 +140,7 @@ class ApiService {
 
       return json;
     } catch (error) {
-      console.warn(
+      logger.warn(
         'Backend registration error (network/API unavailable):',
         error
       );
@@ -139,7 +156,7 @@ class ApiService {
       });
       return await response.json();
     } catch (error) {
-      console.error('Failed to fetch products:', error);
+      logger.error('Failed to fetch products:', error);
       return { success: false, error: 'Failed to fetch products' };
     }
   }
@@ -163,7 +180,7 @@ class ApiService {
 
       return await response.json();
     } catch (error) {
-      console.error('Error creating product:', error);
+      logger.error('Error creating product:', error);
       throw error;
     }
   }
@@ -187,7 +204,7 @@ class ApiService {
       data 
     };
   } catch (error) {
-    console.error('Error fetching product:', error);
+    logger.error('Error fetching product:', error);
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Failed to fetch product' 
@@ -211,7 +228,7 @@ class ApiService {
 
       return json;
     } catch (error) {
-      console.warn('Profile fetch error (network/API unavailable):', error);
+      logger.warn('Profile fetch error (network/API unavailable):', error);
       // Return a mock profile for build environments or when backend is unavailable
       return {
         success: true,
@@ -252,7 +269,7 @@ class ApiService {
 
       return json;
     } catch (error) {
-      console.warn('Apply for seller error (network/API unavailable):', error);
+      logger.warn('Apply for seller error (network/API unavailable):', error);
       // Return a mock response for build environments or when backend is unavailable
       return {
         success: true,
@@ -281,7 +298,7 @@ class ApiService {
 
       return json;
     } catch (error) {
-      console.warn(
+      logger.warn(
         'Get seller application status error (network/API unavailable):',
         error
       );
@@ -340,7 +357,7 @@ class ApiService {
       // Return the categories array directly as the data property
       return { data };
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      logger.error('Error fetching categories:', error);
       // Return an empty array in case of error to prevent UI breaking
       return { data: [] };
     }
@@ -369,7 +386,7 @@ class ApiService {
         description: category.description || '',
       }));
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      logger.error('Error fetching categories:', error);
       throw error;
     }
   }
@@ -608,7 +625,7 @@ class ApiService {
 
       return json;
     } catch (error) {
-      console.error('Error fetching seller products:', error);
+      logger.error('Error fetching seller products:', error);
       throw error;
     }
   }
@@ -661,7 +678,7 @@ class ApiService {
 
       return { success: true, data: json };
     } catch (error) {
-      console.error('Error updating product:', error);
+      logger.error('Error updating product:', error);
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Failed to update product' 
@@ -685,12 +702,12 @@ class ApiService {
 
       return json;
     } catch (error) {
-      console.error('Error deleting product:', error);
+      logger.error('Error deleting product:', error);
       throw error;
     }
   }
 
-  async startSellerOnboarding(businessName: string, email: string) {
+  async startSellerOnboarding(businessName: string, email: string, appReturnUrl?: string) {
     try {
       const headers = await this.getAuthHeaders();
       const response = await fetch(`${API_BASE_URL}/Stripe/connect/onboard`, {
@@ -703,6 +720,8 @@ class ApiService {
           businessName,
           email,
           isMobile: Platform.OS !== 'web',
+          // Where Stripe's "done" page sends the seller back to (deep link)
+          appReturnUrl,
         }),
       });
 
@@ -725,7 +744,7 @@ class ApiService {
 
       return responseData.data;
     } catch (error) {
-      console.error('Start seller onboarding error:', error);
+      logger.error('Start seller onboarding error:', error);
       throw error;
     }
   }
@@ -769,14 +788,17 @@ class ApiService {
       }
 
       return {
-        isOnboarded: true,
+        ...responseData.data,
+        // "Onboarded" = the seller has submitted their details to Stripe.
+        // (Previously always true, which showed "Verification in progress"
+        // to sellers who had never started.)
+        isOnboarded: !!responseData.data?.detailsSubmitted,
         chargesEnabled: responseData.data?.chargesEnabled || false,
         detailsSubmitted: responseData.data?.detailsSubmitted || false,
         requirements: responseData.data?.requirements || [],
-        ...responseData.data,
       };
     } catch (error) {
-      console.error('Get seller status error:', error);
+      logger.error('Get seller status error:', error);
       throw error;
     }
   }
@@ -794,16 +816,21 @@ class ApiService {
 
       return response.json();
     } catch (error) {
-      console.error('Get seller balance error:', error);
+      logger.error('Get seller balance error:', error);
       throw error;
     }
   }
 
-  async createPaymentIntentnew(amount: number, currency: string = 'PKR') {
+  /**
+   * Create a Stripe payment for the cart. The server prices the items itself
+   * (same calculation as the order), so the amount can't be changed by the app.
+   */
+  async createPaymentIntentnew(
+    items: { productId: string; quantity: number }[],
+    currency: string = 'PKR'
+  ) {
     try {
       const headers = await this.getAuthHeaders();
-      // Convert amount to the smallest currency unit (e.g., cents)
-      const amountInCents = Math.round(amount * 100);
 
       const response = await fetch(
         `${API_BASE_URL}/stripe/create-payment-intent`,
@@ -814,7 +841,7 @@ class ApiService {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            amount: amountInCents,
+            items,
             currency: currency.toLowerCase(),
           }),
         }
@@ -823,7 +850,7 @@ class ApiService {
       const responseData = await response.json();
 
       if (!response.ok) {
-        console.error('Payment intent error response:', responseData);
+        logger.error('Payment intent error response:', responseData);
         throw new Error(
           responseData.message || 'Failed to create payment intent'
         );
@@ -837,6 +864,8 @@ class ApiService {
 
       return {
         paymentIntent: responseData.paymentIntent,
+        paymentIntentId: responseData.paymentIntentId as string | undefined,
+        breakdown: responseData.breakdown,
         ephemeralKey: responseData.ephemeralKey,
         customer: responseData.customer,
         publishableKey: responseData.publishableKey,
@@ -844,7 +873,7 @@ class ApiService {
         currency: responseData.currency,
       };
     } catch (error) {
-      console.error('Create payment intent error:', error);
+      logger.error('Create payment intent error:', error);
       throw error;
     }
   }
@@ -852,7 +881,7 @@ class ApiService {
   async createOrder(orderData: any) {
     try {
       const headers = await this.getAuthHeaders();
-      // console.log(
+      // logger.log(
       //   'Creating order with data:',
       //   JSON.stringify(orderData, null, 2)
       // );
@@ -874,7 +903,7 @@ class ApiService {
           ? `Validation errors: ${JSON.stringify(responseData.errors, null, 2)}`
           : 'No additional error details';
 
-        console.error('Order creation failed:', {
+        logger.error('Order creation failed:', {
           status: response.status,
           statusText: response.statusText,
           response: responseData,
@@ -901,7 +930,7 @@ class ApiService {
 
       return responseData;
     } catch (error) {
-      console.error('Error in createOrder:', error);
+      logger.error('Error in createOrder:', error);
       throw error;
     }
   }
@@ -948,35 +977,35 @@ class ApiService {
 
       return await response.json();
     } catch (error) {
-      console.error('Error fetching user orders:', error);
+      logger.error('Error fetching user orders:', error);
       throw error;
     }
   }
 
   async getOrderDetails(orderId: string) {
     if (!orderId) {
-      console.error('No order ID provided to getOrderDetails');
+      logger.error('No order ID provided to getOrderDetails');
       throw new Error('Order ID is required');
     }
 
     try {
-      // console.log('Fetching order with ID:', orderId);
+      // logger.log('Fetching order with ID:', orderId);
       const headers = await this.getAuthHeaders();
       const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
         headers,
       });
 
-      // console.log('Response status:', response.status);
+      // logger.log('Response status:', response.status);
       const responseData = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        console.error('Error response data:', responseData);
+        logger.error('Error response data:', responseData);
         throw new Error(
           responseData.message || 'Failed to fetch order details'
         );
       }
 
-      // console.log('Order details response:', responseData);
+      // logger.log('Order details response:', responseData);
 
       // Handle both nested data and direct response
       const orderData = responseData.data || responseData;
@@ -987,7 +1016,7 @@ class ApiService {
 
       return orderData;
     } catch (error) {
-      console.error('Error in getOrderDetails:', error);
+      logger.error('Error in getOrderDetails:', error);
       throw error instanceof Error
         ? error
         : new Error('Failed to fetch order details');
@@ -1021,7 +1050,7 @@ class ApiService {
 
       return await response.json();
     } catch (error) {
-      console.error('Error fetching seller orders:', error);
+      logger.error('Error fetching seller orders:', error);
       throw error;
     }
   }
@@ -1048,7 +1077,7 @@ class ApiService {
       const responseData = await response.json();
       return responseData.data || responseData;
     } catch (error) {
-      console.error('Error fetching seller order details:', error);
+      logger.error('Error fetching seller order details:', error);
       throw error;
     }
   }
@@ -1069,7 +1098,7 @@ class ApiService {
       const responseData = await response.json();
       return responseData.data || responseData;
     } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
+      logger.error('Error fetching dashboard stats:', error);
       throw error;
     }
   }
@@ -1094,7 +1123,7 @@ class ApiService {
       const responseData = await response.json();
       return responseData.data || responseData;
     } catch (error) {
-      console.error('Error fetching revenue by category:', error);
+      logger.error('Error fetching revenue by category:', error);
       throw error;
     }
   }
@@ -1117,7 +1146,7 @@ class ApiService {
       const responseData = await response.json();
       return responseData.data || responseData;
     } catch (error) {
-      console.error('Error fetching monthly revenue:', error);
+      logger.error('Error fetching monthly revenue:', error);
       throw error;
     }
   }
@@ -1140,9 +1169,46 @@ class ApiService {
       const responseData = await response.json();
       return responseData.data || responseData;
     } catch (error) {
-      console.error('Error fetching top products:', error);
+      logger.error('Error fetching top products:', error);
       throw error;
     }
+  }
+
+  // ---------- Saved addresses ----------
+  // Every call returns the user's full, updated address list.
+
+  private async addressRequest(path: string, method: string, body?: unknown): Promise<SavedAddress[]> {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}/addresses${path}`, {
+      method,
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      ...(body !== undefined && { body: JSON.stringify(body) }),
+    });
+    const json = await response.json().catch(() => ({}));
+    if (!response.ok || !json.success) {
+      throw new Error(json.error || json.message || 'Could not update your addresses');
+    }
+    return json.data as SavedAddress[];
+  }
+
+  getAddresses() {
+    return this.addressRequest('', 'GET');
+  }
+
+  createAddress(address: AddressInput) {
+    return this.addressRequest('', 'POST', address);
+  }
+
+  updateAddress(id: string, address: AddressInput) {
+    return this.addressRequest(`/${encodeURIComponent(id)}`, 'PUT', address);
+  }
+
+  setDefaultAddress(id: string) {
+    return this.addressRequest(`/${encodeURIComponent(id)}/default`, 'PATCH');
+  }
+
+  deleteAddress(id: string) {
+    return this.addressRequest(`/${encodeURIComponent(id)}`, 'DELETE');
   }
 }
 

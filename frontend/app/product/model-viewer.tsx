@@ -13,6 +13,7 @@ import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import HeaderBackButton from '@/components/Shared/HeaderBackButton';
+import { logger } from '@/utils/logger';
 
 /**
  * Theme-aware color sets for the 3D viewer.
@@ -303,7 +304,7 @@ function generateModelViewerHTML(modelUrl: string, isDark: boolean): string {
 
     // Handle errors
     viewer.addEventListener('error', (event) => {
-      console.error('Model viewer error:', event);
+      logger.error('Model viewer error:', event);
       showError();
     });
     

@@ -24,6 +24,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { BackHandler } from 'react-native';
 import { apiService } from '@/services/api';
 import { useScreenCache } from '@/hooks/useScreenCache';
+import { logger } from '@/utils/logger';
 
 // Types for our dashboard data
 type DashboardStats = {
@@ -237,7 +238,7 @@ export default function DashboardScreen() {
       saveCachedRaw(raw);
 
     } catch (err) {
-      console.error('Error fetching dashboard data:', err);
+      logger.error('Error fetching dashboard data:', err);
       if (!background) {
         setError('Failed to load dashboard data. Please try again.');
       }

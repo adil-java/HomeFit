@@ -35,6 +35,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useScreenCache } from '@/hooks/useScreenCache';
 import { Order } from '@/types/order';
 import HeaderBackButton from '@/components/Shared/HeaderBackButton';
+import { logger } from '@/utils/logger';
 
 // Helper function to safely get status config with fallback
 const getStatusConfig = (status: string) => {
@@ -99,7 +100,7 @@ export default function OrderDetailScreen() {
         setOrder(orderData);
         saveCachedOrder(orderData);
       } catch (err) {
-        console.error('Error fetching order details:', err);
+        logger.error('Error fetching order details:', err);
         if (!cachedOrder) setError('Failed to load order details. Please try again.');
       } finally {
         setIsLoading(false);
@@ -133,7 +134,7 @@ export default function OrderDetailScreen() {
       
       setShowStatusModal(false);
     } catch (err) {
-      console.error('Failed to update status:', err);
+      logger.error('Failed to update status:', err);
       setError('Failed to update status. Please try again.');
     } finally {
       setIsUpdating(false);

@@ -6,12 +6,12 @@ import {
   listUserOrders,
   updateOrderStatus,
   listAllOrders,
-  handleStripeWebhook,
   addOrderNote,
   getOrderNotes,
   listSellersOrders
 } from '../controllers/order.controller.js';
 import { protect, checkSeller } from '../middlewares/authMiddleware.js';
+import { stripeWebhook } from '../controllers/StripeConnect.controller.js';
 import { body, param, query, validationResult } from 'express-validator';
 
 const router = express.Router();
@@ -68,6 +68,12 @@ const validateOrderCreate = [
     .optional()
     .isString(),
   body('notes')
+    .optional()
+    .isString(),
+  body('paymentIntentId')
+    .optional()
+    .isString(),
+  body('addressId')
     .optional()
     .isString()
 ];
@@ -216,11 +222,9 @@ router.get(
   getOrderNotes
 );
 
-// Webhook (no auth required)
-router.post(
-  '/webhook/stripe',
-  express.raw({ type: 'application/json' }),
-  handleStripeWebhook
-);
+// Webhook (no auth required). Raw body is kept in server.js; same handler as
+// /api/stripe/webhook (the old order-specific handler called methods that no
+// longer exist).
+router.post('/webhook/stripe', stripeWebhook);
 
 export default router;

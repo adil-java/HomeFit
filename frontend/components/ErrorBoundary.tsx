@@ -1,6 +1,8 @@
+import { friendlyError } from '@/utils/errorMessages';
 import React, { Component, ReactNode } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '@/contexts/ThemeContext';
+import { logger } from '@/utils/logger';
 
 interface Props {
   children: ReactNode;
@@ -23,7 +25,7 @@ class ErrorBoundaryClass extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    logger.error('ErrorBoundary caught an error:', error, errorInfo);
   }
 
   render() {
@@ -36,7 +38,7 @@ class ErrorBoundaryClass extends Component<Props, State> {
         <View style={styles.errorContainer}>
           <Text style={styles.errorTitle}>Something went wrong</Text>
           <Text style={styles.errorText}>
-            {this.state.error?.message || 'An unexpected error occurred'}
+            {friendlyError(this.state.error, 'An unexpected error occurred')}
           </Text>
           <TouchableOpacity
             style={styles.retryButton}

@@ -1,5 +1,7 @@
+import { friendlyError } from '@/utils/errorMessages';
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { apiService } from '@/services/api';
+import { logger } from '@/utils/logger';
 
 export interface WishlistItem {
   id: string;
@@ -56,7 +58,7 @@ export const fetchWishlist = createAsyncThunk(
       const startTime = performance.now();
       const response = await apiService.getWishlist();
       const duration = performance.now() - startTime;
-      // console.log(`[Performance] fetchWishlist took ${Math.round(duration)}ms`);
+      // logger.log(`[Performance] fetchWishlist took ${Math.round(duration)}ms`);
       
       // Always return an array, even if response.items is undefined
       return {
@@ -66,9 +68,9 @@ export const fetchWishlist = createAsyncThunk(
         isRefreshing: false
       };
     } catch (error: any) {
-      console.error('Error fetching wishlist:', error);
+      logger.error('Error fetching wishlist:', error);
       return rejectWithValue({
-        error: error.message || 'Failed to fetch wishlist',
+        error: friendlyError(error, 'Failed to fetch wishlist'),
         isInitialized: true,
         isRefreshing: false
       });
@@ -98,13 +100,13 @@ export const addToWishlist = createAsyncThunk(
       apiService.addToWishlist(product.id)
         .then(() => {
           const duration = performance.now() - startTime;
-          // console.log(`[Performance] addToWishlist API call took ${Math.round(duration)}ms`);
+          // logger.log(`[Performance] addToWishlist API call took ${Math.round(duration)}ms`);
         })
         .catch(error => {
-          console.error('Failed to add to wishlist:', error);
+          logger.error('Failed to add to wishlist:', error);
           // Revert the optimistic update
           dispatch(wishlistSlice.actions.removeItemOptimistic(product.id));
-          dispatch(wishlistSlice.actions.setError(error.message || 'Failed to add to wishlist'));
+          dispatch(wishlistSlice.actions.setError(friendlyError(error, 'Failed to add to wishlist')));
         })
         .finally(() => {
           dispatch(wishlistSlice.actions.clearPendingAction(actionId));
@@ -113,7 +115,7 @@ export const addToWishlist = createAsyncThunk(
       return { product, actionId };
     } catch (error: any) {
       dispatch(wishlistSlice.actions.clearPendingAction(actionId));
-      return rejectWithValue(error.message || 'Failed to add to wishlist');
+      return rejectWithValue(friendlyError(error, 'Failed to add to wishlist'));
     }
   }
 );
@@ -142,10 +144,10 @@ export const removeFromWishlist = createAsyncThunk(
       const promise = apiService.removeFromWishlist(productId)
         .then(() => {
           const duration = performance.now() - startTime;
-          // console.log(`[Performance] removeFromWishlist API call took ${Math.round(duration)}ms`);
+          // logger.log(`[Performance] removeFromWishlist API call took ${Math.round(duration)}ms`);
         })
         .catch((error: any) => {
-          console.error('Failed to remove from wishlist:', error);
+          logger.error('Failed to remove from wishlist:', error);
           
           // Only revert for network errors or server errors (not 404)
           if (error.status !== 404) {
@@ -155,11 +157,11 @@ export const removeFromWishlist = createAsyncThunk(
             }
             
             // Show error message for non-404 errors
-            const errorMessage = error.message || 'Failed to remove from wishlist';
+            const errorMessage = friendlyError(error, 'Failed to remove from wishlist');
             dispatch(wishlistSlice.actions.setError(errorMessage));
           } else {
             // For 404, the item was already removed on the server
-            console.log('Item already removed from wishlist on server');
+            logger.log('Item already removed from wishlist on server');
           }
         })
         .finally(() => {
@@ -172,7 +174,7 @@ export const removeFromWishlist = createAsyncThunk(
       return { productId, actionId };
     } catch (error: any) {
       dispatch(wishlistSlice.actions.clearPendingAction(actionId));
-      return rejectWithValue(error.message || 'Failed to remove from wishlist');
+      return rejectWithValue(friendlyError(error, 'Failed to remove from wishlist'));
     }
   }
 );

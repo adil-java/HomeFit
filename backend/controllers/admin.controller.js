@@ -2,6 +2,7 @@ import prisma from '../config/db.js';
 import { Role } from '@prisma/client';
 import { generateToken} from '../utils/jwtHelper.js';
 import { deleteProductService } from '../services/product.service.js';
+import logger from '../utils/logger.js';
 
 export const getAllUsers = async (req, res) => {
   try {
@@ -23,7 +24,7 @@ export const getAllUsers = async (req, res) => {
     });
     res.status(200).json({ success: true, data: users });
   } catch (error) {
-    console.error('Get all users error:', error);
+    logger.error('Get all users error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
@@ -51,7 +52,7 @@ export const adminDeleteProduct = async (req, res) => {
 
     res.status(200).json({ success: true, message: 'Product deleted successfully' });
   } catch (error) {
-    console.error('Admin delete product error:', error);
+    logger.error('Admin delete product error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
@@ -84,7 +85,7 @@ export const revenueMonthly = async (req, res) => {
 
     res.status(200).json({ success: true, data: months.map(m => ({ month: m.label, revenue: m.revenue })) });
   } catch (error) {
-    console.error('Revenue monthly error:', error);
+    logger.error('Revenue monthly error:', error);
     res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
@@ -103,7 +104,7 @@ export const topProducts = async (req, res) => {
       .slice(0, 5);
     res.status(200).json({ success: true, data: top });
   } catch (error) {
-    console.error('Top products error:', error);
+    logger.error('Top products error:', error);
     res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
@@ -123,7 +124,7 @@ export const updateUserRole = async (req, res) => {
     });
     res.status(200).json({ success: true, data: user });
   } catch (error) {
-    console.error('Update user role error:', error);
+    logger.error('Update user role error:', error);
     res.status(500).json({ success: false, message: 'cant update role Server Error' });
   }
 };
@@ -137,7 +138,7 @@ export const deleteUser = async (req, res) => {
     });
     res.status(200).json({ success: true, message: 'User deleted' });
   } catch (error) {
-    console.error('Delete user error:', error);
+    logger.error('Delete user error:', error);
     res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
@@ -145,7 +146,7 @@ export const deleteUser = async (req, res) => {
 
 export const getUserById = async (req, res) => {
   const { id } = req.params;
- console.log("Received ID:", id);
+ logger.debug("Received ID:", id);
   try {
     const user = await prisma.user.findUnique({
       where: { id:id },
@@ -165,62 +166,82 @@ export const getUserById = async (req, res) => {
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
-    console.log("Retrieved User:", user);
+    logger.debug("Retrieved User:", user);
     res.status(200).json({ success: true, data: user });
 
   } catch (error) {
-    console.error('Get user by ID error:', error);
-    console.log("Received ID:", id);
+    logger.error('Get user by ID error:', error);
+    logger.debug("Received ID:", id);
     res.status(500).json({ success: false, message: 'Internal Server Error' });
   }
 };
 
+// Checks the email + password against Firebase Authentication (the same
+// account the admin uses in the app). Returns the Firebase UID or null.
+async function verifyFirebasePassword(email, password) {
+  const apiKey = process.env.FIREBASE_WEB_API_KEY;
+  if (!apiKey) throw Object.assign(new Error('FIREBASE_WEB_API_KEY is not set'), { config: true });
+
+  const response = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${encodeURIComponent(apiKey)}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, returnSecureToken: false }),
+    }
+  );
+  const data = await response.json().catch(() => ({}));
+  if (response.ok && data.localId) return data.localId;
+
+  const code = data?.error?.message || '';
+  if (code.startsWith('TOO_MANY_ATTEMPTS')) {
+    throw Object.assign(new Error('Too many attempts'), { tooMany: true });
+  }
+  return null;
+}
+
 export const adminLogin = async (req, res) => {
-  const { email, password } = req.body;
-try {
-    const cleanEmail = (email || '').trim();
-    const cleanPassword = (password || '').trim();
+  const { email, password } = req.body || {};
+  // Same answer for unknown email, wrong password and non-admins, so the
+  // login form can't be used to discover accounts.
+  const invalid = () => res.status(401).json({ success: false, message: 'Invalid email or password' });
 
-    const user = await prisma.user.findUnique({
-        where: { email: cleanEmail },
-    });
+  try {
+    const cleanEmail = String(email || '').trim().toLowerCase();
+    const cleanPassword = String(password || '');
+    if (!cleanEmail || !cleanPassword) return invalid();
 
-    if (!user) {
-        return res.status(401).json({ success: false, message: 'no user found' });
-    }
+    const firebaseUid = await verifyFirebasePassword(cleanEmail, cleanPassword);
+    if (!firebaseUid) return invalid();
 
-    // Check password
-    // const isMatch = await bcrypt.compare(password, user.firebaseUid);
-    const isMatch = cleanPassword === user.firebaseUid; // Since firebaseUid is being used as password placeholder
-    if (!isMatch) {
-        return res.status(401).json({ success: false, message: 'Invalid credentials password' });
-    }
+    const user = await prisma.user.findUnique({ where: { firebaseUid } });
+    if (!user || user.role !== Role.ADMIN) return invalid();
 
-    // Check if user is admin
-    if (user.role !== Role.ADMIN) {
-        return res.status(403).json({ success: false, message: 'Access denied: Not an admin' });
-    }
-
-  
-    // Generate token
     const token = generateToken({ id: user.id, role: user.role });
 
     return res.status(200).json({
-        success: true,
-        token,
-        user: {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: user.role,
-        },
+      success: true,
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
     });
-} catch (error) {
-    console.error('Admin login error:', error);
+  } catch (error) {
+    if (error.tooMany) {
+      return res.status(429).json({ success: false, message: 'Too many attempts. Please wait a few minutes and try again.' });
+    }
+    if (error.config) {
+      logger.error('Admin login is not configured: set FIREBASE_WEB_API_KEY in backend/.env');
+      return res.status(503).json({ success: false, message: 'Admin login is not available right now.' });
+    }
+    logger.error('Admin login error:', error);
     return res.status(500).json({ success: false, message: 'Server Error' });
-}
-
+  }
 };
+
 export const allSellers = async (req, res) => {
   try {
     const sellers = await prisma.user.findMany({
@@ -285,9 +306,9 @@ export const allSellers = async (req, res) => {
     );
 
     res.status(200).json({ success: true, data: sellersWithCounts });
-    console.log(" /Sellers");
+    logger.debug(" /Sellers");
   } catch (error) {
-    console.error('Get all sellers error:', error);
+    logger.error('Get all sellers error:', error);
     res.status(500).json({ success: false, message: 'Cannot get all sellers. Server Error.' });
   }
 };
@@ -302,7 +323,7 @@ export const listSellerRequests = async (req, res) => {
     });
     res.status(200).json({ success: true, data: requests });
   } catch (error) {
-    console.error('List seller requests error:', error);
+    logger.error('List seller requests error:', error);
     res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
@@ -328,7 +349,7 @@ export const approveSellerRequest = async (req, res) => {
 
     res.status(200).json({ success: true, data: application });
   } catch (error) {
-    console.error('Approve seller request error:', error);
+    logger.error('Approve seller request error:', error);
     res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
@@ -346,7 +367,7 @@ export const rejectSellerRequest = async (req, res) => {
 
     res.status(200).json({ success: true, data: application });
   } catch (error) {
-    console.error('Reject seller request error:', error);
+    logger.error('Reject seller request error:', error);
     res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
@@ -384,7 +405,7 @@ export const analyticsSummary = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Analytics summary error:', error);
+    logger.error('Analytics summary error:', error);
     res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
@@ -430,7 +451,7 @@ export const salesBySeller = async (req, res) => {
 
     res.json({ success: true, data: result });
   } catch (error) {
-    console.error('Sales by seller error:', error);
+    logger.error('Sales by seller error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
@@ -520,7 +541,7 @@ export const adminListAllOrders = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Admin list orders error:', error);
+    logger.error('Admin list orders error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
@@ -552,7 +573,7 @@ export const adminUpdateOrderStatus = async (req, res) => {
 
     res.json({ success: true, data: order });
   } catch (error) {
-    console.error('Admin update order status error:', error);
+    logger.error('Admin update order status error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
@@ -565,7 +586,7 @@ export const adminGetCategories = async (req, res) => {
     });
     res.json({ success: true, data: categories });
   } catch (error) {
-    console.error('Admin get categories error:', error);
+    logger.error('Admin get categories error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
@@ -602,7 +623,7 @@ export const adminCreateCategory = async (req, res) => {
 
     res.status(201).json({ success: true, data: category });
   } catch (error) {
-    console.error('Admin create category error:', error);
+    logger.error('Admin create category error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
@@ -646,7 +667,7 @@ export const adminUpdateCategory = async (req, res) => {
     if (error.code === 'P2025') {
       return res.status(404).json({ success: false, message: 'Category not found' });
     }
-    console.error('Admin update category error:', error);
+    logger.error('Admin update category error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
@@ -681,7 +702,7 @@ export const adminDeleteCategory = async (req, res) => {
     if (error.code === 'P2025') {
       return res.status(404).json({ success: false, message: 'Category not found' });
     }
-    console.error('Admin delete category error:', error);
+    logger.error('Admin delete category error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
@@ -723,7 +744,7 @@ export const adminUpdatePaymentStatus = async (req, res) => {
       message: `Order payment status updated to ${paymentStatus}`,
     });
   } catch (error) {
-    console.error('Admin update payment status error:', error);
+    logger.error('Admin update payment status error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
@@ -785,7 +806,7 @@ export const adminSimulatePaymentStatuses = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Admin simulate payment statuses error:', error);
+    logger.error('Admin simulate payment statuses error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',

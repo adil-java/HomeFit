@@ -1,3 +1,4 @@
+import { friendlyError } from '@/utils/errorMessages';
 import React, { useState, useEffect } from 'react';
 import { 
   View, 
@@ -31,6 +32,7 @@ import {
 import { apiService } from '@/services/api';
 import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 import KeyboardAwareView from '@/components/Shared/KeyboardAwareView';
+import { logger } from '@/utils/logger';
 
 const getProductById = async (id: string) => {
   try {
@@ -40,7 +42,7 @@ const getProductById = async (id: string) => {
     }
     throw new Error(response.error || 'Failed to load product');
   } catch (error) {
-    console.error('Error fetching product:', error);
+    logger.error('Error fetching product:', error);
     throw error;
   }
 };
@@ -116,8 +118,8 @@ export default function ProductForm() {
         throw new Error(response.error || 'Failed to load product');
       }
     } catch (error) {
-      console.error('Error loading product:', error);
-      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to load product');
+      logger.error('Error loading product:', error);
+      Alert.alert('Error', friendlyError(error, 'Failed to load product'));
     } finally {
       setLoading(false);
     }
@@ -207,10 +209,10 @@ export default function ProductForm() {
         throw new Error(result.error || 'Failed to save product');
       }
     } catch (error) {
-      console.error('Error saving product:', error);
+      logger.error('Error saving product:', error);
       Alert.alert(
         'Error', 
-        error instanceof Error ? error.message : 'Failed to save product'
+        friendlyError(error, 'Failed to save product')
       );
     } finally {
       setSaving(false);

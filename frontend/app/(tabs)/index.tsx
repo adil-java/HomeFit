@@ -25,6 +25,7 @@ import { setProducts, setCategories, Category } from '@/store/slices/productsSli
 import { HeroBanner } from '@/components/HeroBanner';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Search, Bell } from 'lucide-react-native';
+import { logger } from '@/utils/logger';
 
 export default function HomeScreen() {
   const { theme } = useTheme();
@@ -59,7 +60,7 @@ export default function HomeScreen() {
         dispatch(fetchCart() as any)
       ]);
     } catch (error) {
-      console.error('Error refreshing data:', error);
+      logger.error('Error refreshing data:', error);
       setError('Failed to refresh data');
     } finally {
       setRefreshing(false);
@@ -101,7 +102,7 @@ export default function HomeScreen() {
       // Update Redux state with full category objects
       dispatch(setCategories(categories));
     } catch (err) {
-      console.error('Error fetching categories:', err);
+      logger.error('Error fetching categories:', err);
       // Handle error (you might want to show a user-friendly message)
     } finally {
       if (!isRefreshing) {
@@ -119,10 +120,10 @@ export default function HomeScreen() {
       const response = await apiService.getProducts();
       // Debug: inspect raw products payload and rating-related fields
       try {
-        // console.log('[Products][Fetch] raw response keys:', response && Object.keys(response));
+        // logger.log('[Products][Fetch] raw response keys:', response && Object.keys(response));
         const sample = Array.isArray(response?.data) ? response.data[0] : null;
         // if (sample) {
-        //   console.log('[Products][Fetch] sample product fields:', {
+        //   logger.log('[Products][Fetch] sample product fields:', {
         //     id: sample.id,
         //     name: sample.name,
         //     rating: sample.rating,
@@ -132,7 +133,7 @@ export default function HomeScreen() {
         //   });
         // }
       } catch (e) {
-        // console.log('[Products][Fetch] logging error:', e);
+        // logger.log('[Products][Fetch] logging error:', e);
       }
       if (response.success) {
         // Normalize product data for consistent UI
@@ -158,19 +159,19 @@ export default function HomeScreen() {
             modelUrl: p.modelUrl,
             inStock: p.inStock
           }));
-          // console.log('[Products][Fetch] normalized products preview:', preview);
+          // logger.log('[Products][Fetch] normalized products preview:', preview);
         } catch (e) {
-          // console.log('[Products][Fetch] error logging normalized products:', e);
+          // logger.log('[Products][Fetch] error logging normalized products:', e);
         }
         
         dispatch(setProducts(normalized));
       } else {
         setError('Failed to load products');
-        console.error('Failed to load products:', response.error);
+        logger.error('Failed to load products:', response.error);
       }
     } catch (err) {
       setError('Network error. Please try again.');
-      console.error('Error fetching products:', err);
+      logger.error('Error fetching products:', err);
     } finally {
       // Always set loading to false, regardless of whether it was a refresh or not
       setIsLoadingProducts(false);

@@ -28,6 +28,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useScreenCache } from '@/hooks/useScreenCache';
 import { format } from 'date-fns';
 import HeaderBackButton from '@/components/Shared/HeaderBackButton';
+import { logger } from '@/utils/logger';
 
 const statusConfig = {
   PENDING: { icon: Clock, color: '#f59e0b', label: 'Pending' },
@@ -107,7 +108,7 @@ export default function OrdersScreen() {
         saveCachedFirstPage({ orders: response.data, pagination: nextPagination, hasMore: nextHasMore });
       }
     } catch (err) {
-      console.error('Error fetching orders:', err);
+      logger.error('Error fetching orders:', err);
       setError('Failed to load orders. Please try again.');
     } finally {
       setLoading(false);

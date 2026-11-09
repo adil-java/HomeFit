@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import logger from '../utils/logger.js';
 
 const prisma = new PrismaClient();
 
@@ -62,7 +63,7 @@ const WishlistService = {
 
   async removeItemFromWishlist(userId, productId) {
     try {
-      console.log(`[Wishlist] Removing item ${productId} from user ${userId}'s wishlist`);
+      logger.debug(`[Wishlist] Removing item ${productId} from user ${userId}'s wishlist`);
       
       const wishlist = await prisma.wishlist.findUnique({
         where: { userId },
@@ -70,12 +71,12 @@ const WishlistService = {
       });
 
       if (!wishlist) {
-        console.log(`[Wishlist] Wishlist not found for user ${userId}`);
+        logger.debug(`[Wishlist] Wishlist not found for user ${userId}`);
         throw new Error('Wishlist not found');
       }
 
       if (wishlist.items.length === 0) {
-        console.log(`[Wishlist] Item ${productId} not found in user ${userId}'s wishlist`);
+        logger.debug(`[Wishlist] Item ${productId} not found in user ${userId}'s wishlist`);
         throw new Error('Item not found in wishlist');
       }
 
@@ -86,11 +87,11 @@ const WishlistService = {
         }
       });
 
-      console.log(`[Wishlist] Successfully removed item ${productId} from user ${userId}'s wishlist`);
+      logger.debug(`[Wishlist] Successfully removed item ${productId} from user ${userId}'s wishlist`);
       return await this.getWishlist(userId);
       
     } catch (error) {
-      console.error(`[Wishlist] Error removing item ${productId} from wishlist:`, error);
+      logger.error(`[Wishlist] Error removing item ${productId} from wishlist:`, error);
       throw error; 
     }
   },

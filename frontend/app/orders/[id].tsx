@@ -1,3 +1,5 @@
+import { SUPPORT_PHONE, SUPPORT_EMAIL } from '@/constants/support';
+import { friendlyError } from '@/utils/errorMessages';
 import React from 'react';
 import { 
   View, 
@@ -8,6 +10,7 @@ import {
   Image, 
   ActivityIndicator,
   useWindowDimensions,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
@@ -30,6 +33,7 @@ import { apiService } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useScreenCache } from '@/hooks/useScreenCache';
 import HeaderBackButton from '@/components/Shared/HeaderBackButton';
+import { logger } from '@/utils/logger';
 
 const statusConfig = {
   pending: { icon: Clock, color: '#f59e0b', label: 'Order Pending' },
@@ -89,7 +93,7 @@ export default function OrderDetailScreen() {
 
   // Log the params to see what we're getting
   React.useEffect(() => {
-    // console.log('Route params:', params);
+    // logger.log('Route params:', params);
   }, [params]);
 
   // Ensure id is always a string and handle array case
@@ -108,20 +112,20 @@ export default function OrderDetailScreen() {
 
   const fetchOrderDetails = async () => {
     if (!orderId) {
-      console.error('No order ID available for fetching');
+      logger.error('No order ID available for fetching');
       setError('Order ID is missing');
       setLoading(false);
       return;
     }
 
     try {
-      // console.log('Fetching order with ID:', orderId);
+      // logger.log('Fetching order with ID:', orderId);
       // With a cached copy on screen, refresh behind it (no spinner)
       if (!order) setLoading(true);
       setError(null);
       
       const orderData = await apiService.getOrderDetails(orderId);
-      // console.log('Order data received:', orderData);
+      // logger.log('Order data received:', orderData);
       
       if (!orderData) {
         throw new Error('No order data received');
@@ -130,8 +134,8 @@ export default function OrderDetailScreen() {
       setOrder(orderData);
       saveCachedOrder(orderData);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load order';
-      console.error('Failed to fetch order:', err);
+      const errorMessage = friendlyError(err, 'Failed to load order');
+      logger.error('Failed to fetch order:', err);
       // Keep showing the cached order if the refresh fails
       if (!order) setError(errorMessage);
     } finally {
@@ -141,10 +145,10 @@ export default function OrderDetailScreen() {
 
   React.useEffect(() => {
     if (orderId) {
-      // console.log('Order ID changed, fetching details...');
+      // logger.log('Order ID changed, fetching details...');
       fetchOrderDetails();
     } else {
-      console.error('No order ID provided in route params');
+      logger.error('No order ID provided in route params');
       setError('Order ID is missing');
       setLoading(false);
     }
@@ -224,16 +228,6 @@ export default function OrderDetailScreen() {
               </Text>
             </View>
           </View>
-          
-          {order.status === 'shipped' && (
-            <TouchableOpacity 
-              style={[styles.trackButton, { backgroundColor: theme.colors.primary }]}
-              onPress={() => router.push('/track-order')}
-            >
-              <Truck size={16} color="#fff" />
-              <Text style={styles.trackButtonText}>Track Package</Text>
-            </TouchableOpacity>
-          )}
         </View>
 
         {/* Order Items */}
@@ -349,34 +343,43 @@ export default function OrderDetailScreen() {
           </View>
         </View>
 
-        {/* Support Actions */}
+        {/* Support Actions (shown only when a support contact is configured) */}
+        {(!!SUPPORT_PHONE || !!SUPPORT_EMAIL) && (
         <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}> 
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
             Need Help?
           </Text>
           
           <View style={[styles.supportActions, compact && styles.supportActionsCompact]}>
+            {!!SUPPORT_PHONE && (
             <TouchableOpacity 
               style={[styles.supportButton, compact && styles.supportButtonCompact, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
-              onPress={() => router.push('/support')}
+              onPress={() => Linking.openURL(`tel:${SUPPORT_PHONE}`).catch(() => {})}
             >
               <Phone size={20} color={theme.colors.primary} />
               <Text style={[styles.supportButtonText, { color: theme.colors.text }]}>
                 Call Support
               </Text>
             </TouchableOpacity>
-            
+            )}
+            {!!SUPPORT_EMAIL && (
             <TouchableOpacity 
               style={[styles.supportButton, compact && styles.supportButtonCompact, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
-              onPress={() => router.push('/support')}
+              onPress={() =>
+                Linking.openURL(
+                  `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(`Order #${order.orderNumber || order.id}`)}`
+                ).catch(() => {})
+              }
             >
               <MessageCircle size={20} color={theme.colors.primary} />
               <Text style={[styles.supportButtonText, { color: theme.colors.text }]}>
-                Live Chat
+                Email Support
               </Text>
             </TouchableOpacity>
+            )}
           </View>
         </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

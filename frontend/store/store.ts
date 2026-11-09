@@ -6,6 +6,7 @@ import ordersReducer from './slices/ordersSlice';
 import commentsReducer from './slices/commentsSlice';
 import notificationsReducer from './slices/notificationsSlice';
 import screenCacheReducer from './slices/screenCacheSlice';
+import addressesReducer from './slices/addressesSlice';
 import { resetUserData } from './actions';
 
 const appReducer = combineReducers({
@@ -16,6 +17,7 @@ const appReducer = combineReducers({
   comments: commentsReducer,
   notifications: notificationsReducer,
   screenCache: screenCacheReducer,
+  addresses: addressesReducer,
 });
 
 type AppState = ReturnType<typeof appReducer>;
@@ -31,6 +33,7 @@ const rootReducer = (state: AppState | undefined, action: UnknownAction): AppSta
         orders: undefined,
         notifications: undefined,
         screenCache: undefined,
+        addresses: undefined,
       } as unknown as AppState,
       action
     );

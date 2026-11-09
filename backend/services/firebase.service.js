@@ -3,6 +3,7 @@ import { getMessaging } from "firebase-admin/messaging";
 import { getAuth } from "firebase-admin/auth";
 
 import serviceAccount  from "../utils/firebaseAdmin.js";
+import logger from '../utils/logger.js';
 
 class FirebaseServices {
   static instance;
@@ -12,15 +13,15 @@ class FirebaseServices {
       return FirebaseServices.instance;
     }
 
-    console.log('[Firebase Service DEBUG] Initializing Firebase Admin SDK');
-    console.log('[Firebase Service DEBUG] Project ID:', serviceAccount?.project_id);
-    console.log('[Firebase Service DEBUG] Client Email:', serviceAccount?.client_email);
+    logger.debug('[Firebase Service DEBUG] Initializing Firebase Admin SDK');
+    logger.debug('[Firebase Service DEBUG] Project ID:', serviceAccount?.project_id);
+    logger.debug('[Firebase Service DEBUG] Client Email:', serviceAccount?.client_email);
     
     this.app = initializeApp({
       credential: cert(serviceAccount),
     });
     
-    console.log('[Firebase Service DEBUG] Firebase Admin SDK initialized successfully');
+    logger.debug('[Firebase Service DEBUG] Firebase Admin SDK initialized successfully');
 
     this.messaging = getMessaging(this.app);
     this.auth = getAuth(this.app);
@@ -55,15 +56,15 @@ class FirebaseServices {
   
   async verifyToken(idToken) {
     try {
-      console.log('[Firebase DEBUG] verifyToken called');
-      console.log('[Firebase DEBUG] Token (first 50 chars):', idToken?.substring(0, 50) + '...');
-      console.log('[Firebase DEBUG] Project ID from service account:', process.env.FIREBASE_PROJECT_ID);
+      logger.debug('[Firebase DEBUG] verifyToken called');
+      logger.debug('[Firebase DEBUG] Token (first 50 chars):', idToken?.substring(0, 50) + '...');
+      logger.debug('[Firebase DEBUG] Project ID from service account:', process.env.FIREBASE_PROJECT_ID);
       
       const decoded = await this.auth.verifyIdToken(idToken);
-      console.log('[Firebase DEBUG] Token decoded successfully, UID:', decoded.uid);
+      logger.debug('[Firebase DEBUG] Token decoded successfully, UID:', decoded.uid);
       
       const user = await this.auth.getUser(decoded.uid);
-      console.log('[Firebase DEBUG] User fetched from Firebase:', user.uid, user.email);
+      logger.debug('[Firebase DEBUG] User fetched from Firebase:', user.uid, user.email);
       
       return {
         uid: user.uid,
@@ -73,8 +74,8 @@ class FirebaseServices {
         phoneNumber: user.phoneNumber,
       };
     } catch (error) {
-      console.error("[Firebase DEBUG] Error verifying token:", error.code, error.message);
-      console.error("[Firebase DEBUG] Full error:", error);
+      logger.error("[Firebase DEBUG] Error verifying token:", error.code, error.message);
+      logger.error("[Firebase DEBUG] Full error:", error);
       throw error;
     }
   }

@@ -12,14 +12,24 @@ import stripeRoutes from "./routes/payment.route.js";
 import StripeRoutes from "./routes/stripe.routes.js"
 import orderRoutes from "./routes/order.route.js";
 import sellerDashboard from "./routes/sellerDashboard.routes.js"
+import addressRoutes from "./routes/address.routes.js";
+import safeErrors from "./middlewares/safeErrors.js";
 dotenv.config({ path: "./config/config.env" });
 
 const app = express();
 
 // Middlewares
+// Stripe webhooks need the exact raw body to verify their signature, so they
+// must be read before express.json (which then skips them). Paths are
+// case-insensitive, so this covers /api/Stripe/webhook too.
+app.use(
+  ["/api/stripe/webhook", "/api/orders/webhook/stripe"],
+  express.raw({ type: "application/json" })
+);
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(cors());
+app.use(safeErrors);
 
 // Routes
 app.use("/api/users", userRoutes);
@@ -28,11 +38,13 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/wishlist", wishlistRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/addresses", addressRoutes);
 app.use("/api/stripe", stripeRoutes);
 app.use("/api/Stripe", StripeRoutes)
 app.use("/api/sellerDashboard", sellerDashboard)
 //Admin routes
 import adminRoutes from "./routes/admin.router.js";
+import logger from './utils/logger.js';
 app.use("/api/admin", adminRoutes);
 
 // 404 handler
@@ -46,7 +58,7 @@ app.use((req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  logger.error(err.stack);
   res.status(500).json({
     success: false,
     error: "Server Error",
@@ -64,18 +76,18 @@ async function startServer() {
        
     // Use retry mechanism for database connection
     await connectWithRetry();
-    // console.log("[Server DEBUG] Database connected successfully");
+    // logger.debug("[Server DEBUG] Database connected successfully");
 
     // List users in database to check sync status
     const userCount = await prisma.user.count();
 
     app.listen(PORT, "0.0.0.0", () => {
-      // console.log(`Server running on port ${PORT}`);
+      // logger.debug(`Server running on port ${PORT}`);
     });
   } catch (err) {
-    // console.error("[Server DEBUG] Database connection error:", err);
-    // console.error("[Server DEBUG] Check if your Aiven database is running at:");
-    // console.error("  https://console.aiven.io - Database may be paused on free tier");
+    // logger.error("[Server DEBUG] Database connection error:", err);
+    // logger.error("[Server DEBUG] Check if your Aiven database is running at:");
+    // logger.error("  https://console.aiven.io - Database may be paused on free tier");
     process.exit(1);
   }
 }

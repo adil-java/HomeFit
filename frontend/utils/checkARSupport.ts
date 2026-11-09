@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
+import { logger } from '@/utils/logger';
 
 let cachedResult: boolean | null = null;
 
@@ -73,7 +74,7 @@ export async function checkARSupport(options: ARSupportOptions = {}): Promise<bo
         return true;
       } catch {
         // ViroReact native module not available → ARCore not supported
-        console.log('[AR Support] ViroReact not available on this device, falling back to 3D viewer');
+        logger.log('[AR Support] ViroReact not available on this device, falling back to 3D viewer');
         cachedResult = false;
         return false;
       }
@@ -84,7 +85,7 @@ export async function checkARSupport(options: ARSupportOptions = {}): Promise<bo
     return false;
   } catch (error) {
     // If anything unexpected happens, default to the safer fallback (3D viewer)
-    console.warn('[AR Support] Detection failed, defaulting to 3D viewer:', error);
+    logger.warn('[AR Support] Detection failed, defaulting to 3D viewer:', error);
     cachedResult = false;
     return false;
   }

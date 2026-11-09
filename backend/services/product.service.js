@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import slugify from 'slugify';
 import { uploadToCloudinary, deleteFromCloudinary } from '../utils/cloudinary.js';
 import { v4 as uuidv4 } from 'uuid';
+import logger from '../utils/logger.js';
 
 const prisma = new PrismaClient();
 
@@ -302,10 +303,10 @@ export const searchProducts = async (query, limit = 20) => {
 
 export const createProduct = async (productData, userId, files = []) => {
   try {
-    console.log('Starting product creation...');
-    console.log('Product data received:', JSON.stringify(productData, null, 2));
-    console.log('User ID:', userId);
-    console.log('Files received:', files?.length || 0);
+    logger.debug('Starting product creation...');
+    logger.debug('Product data received:', JSON.stringify(productData, null, 2));
+    logger.debug('User ID:', userId);
+    logger.debug('Files received:', files?.length || 0);
 
     const {
       name,
@@ -323,50 +324,50 @@ export const createProduct = async (productData, userId, files = []) => {
       generate3D = false,
     } = productData;
 
-    console.log('Extracted fields:');
-    console.log(' - Name:', name);
-    console.log(' - Description:', description);
-    console.log(' - Price:', price);
-    console.log(' - Category IDs:', categoryIds);
-    console.log(' - Variants:', variants?.length || 0);
-    console.log(' - Generate 3D:', generate3D);
+    logger.debug('Extracted fields:');
+    logger.debug(' - Name:', name);
+    logger.debug(' - Description:', description);
+    logger.debug(' - Price:', price);
+    logger.debug(' - Category IDs:', categoryIds);
+    logger.debug(' - Variants:', variants?.length || 0);
+    logger.debug(' - Generate 3D:', generate3D);
 
     if (!name || typeof name !== 'string') {
       throw new Error(`Product name validation failed: ${name} (type: ${typeof name})`);
     }
 
     const slug = generateSlug(name);
-    console.log('Generated slug:', slug);
+    logger.debug('Generated slug:', slug);
 
     let arModelUrl = null;
     let objModelUrl = null;
     if (generate3D && files.length > 0) {
-      console.log('Starting 3D model generation (before image upload)...');
+      logger.debug('Starting 3D model generation (before image upload)...');
       try {
         const { generate3DModel } = await import('./3dModel.service.js');
         const modelResult = await generate3DModel(files[0].path);
 
         arModelUrl = modelResult.glbUrl;
         objModelUrl = modelResult.objUrl;
-        console.log('3D models generated and uploaded to Cloudinary');
-        console.log('GLB Model URL:', arModelUrl);
-        console.log('OBJ Model URL:', objModelUrl);
+        logger.debug('3D models generated and uploaded to Cloudinary');
+        logger.debug('GLB Model URL:', arModelUrl);
+        logger.debug('OBJ Model URL:', objModelUrl);
       } catch (error) {
-        console.error('3D model generation failed:', error);
+        logger.error('3D model generation failed:', error);
 
       }
     }
 
 
-    console.log('Starting image uploads...');
+    logger.debug('Starting image uploads...');
     const imageUploads = files.map(file =>
       uploadToCloudinary(file.path, 'ecommerce/products')
     );
 
     const uploadedImages = await Promise.all(imageUploads);
-    console.log('Images uploaded:', uploadedImages.length);
+    logger.debug('Images uploaded:', uploadedImages.length);
 
-    console.log('Looking up user in database...');
+    logger.debug('Looking up user in database...');
     const user = await prisma.user.findUnique({
       where: { firebaseUid: userId }
     });
@@ -375,9 +376,9 @@ export const createProduct = async (productData, userId, files = []) => {
       throw new Error(`User not found with Firebase UID: ${userId}`);
     }
 
-    console.log('User found:', user.id);
+    logger.debug('User found:', user.id);
 
-    console.log('Processing categories...');
+    logger.debug('Processing categories...');
     const validCategoryIds = [];
     if (categoryIds && categoryIds.length > 0) {
       // Verify that the categories exist
@@ -388,10 +389,10 @@ export const createProduct = async (productData, userId, files = []) => {
       });
       
       validCategoryIds.push(...existingCategories.map(cat => cat.id));
-      console.log(`Found ${validCategoryIds.length} valid categories out of ${categoryIds.length} provided`);
+      logger.debug(`Found ${validCategoryIds.length} valid categories out of ${categoryIds.length} provided`);
     }
 
-    console.log('Building product data object...');
+    logger.debug('Building product data object...');
     // Generate unique SKU and barcode
     const [generatedSKU, generatedBarcode] = await Promise.all([
       sku || generateUniqueSKU(name),
@@ -416,13 +417,13 @@ export const createProduct = async (productData, userId, files = []) => {
       sellerId: user.id,
     };
 
-    console.log('Final product data:', JSON.stringify(productDataObj, null, 2));
+    logger.debug('Final product data:', JSON.stringify(productDataObj, null, 2));
 
     if (validCategoryIds.length > 0) {
       productDataObj.categories = {
         connect: validCategoryIds.map((id) => ({ id })),
       };
-      console.log('Adding categories to product');
+      logger.debug('Adding categories to product');
     }
 
     if (variants && variants.length > 0) {
@@ -445,10 +446,10 @@ export const createProduct = async (productData, userId, files = []) => {
           options: Array.from(group.options)
         }))
       };
-      console.log('Adding variants to product:', JSON.stringify(productDataObj.variants, null, 2));
+      logger.debug('Adding variants to product:', JSON.stringify(productDataObj.variants, null, 2));
     }
 
-    console.log('Creating product in database...');
+    logger.debug('Creating product in database...');
     const product = await prisma.product.create({
       data: productDataObj,
       include: {
@@ -457,14 +458,14 @@ export const createProduct = async (productData, userId, files = []) => {
       },
     });
 
-    console.log('Product created successfully:', product.id);
+    logger.debug('Product created successfully:', product.id);
     return {
       success: true,
       data: product,
     };
   } catch (error) {
-    console.error('Error creating product:', error);
-    console.error('Error stack:', error.stack);
+    logger.error('Error creating product:', error);
+    logger.error('Error stack:', error.stack);
     return {
       success: false,
       error: `Failed to create product: ${error.message}`,
@@ -554,19 +555,19 @@ export const deleteProductService = async (id, sellerId) => {
         await Promise.all(
           images.map(img => 
             img?.public_id && deleteFromCloudinary(img.public_id).catch(e => 
-              console.error('Error deleting image from cloud:', e)
+              logger.error('Error deleting image from cloud:', e)
             )
           )
         );
       } catch (error) {
-        console.error('Error cleaning up product images:', error);
+        logger.error('Error cleaning up product images:', error);
         // Don't fail the entire operation if image deletion fails
       }
     }
 
     return { success: true, message: 'Product and all related data deleted successfully' };
   } catch (error) {
-    console.error('Error deleting product:', error);
+    logger.error('Error deleting product:', error);
     return {
       success: false,
       error: `Failed to delete product: ${error.message}`,
@@ -671,7 +672,7 @@ export const updateProduct = async (id, productData, files = []) => {
       data: updatedProduct,
     };
   } catch (error) {
-    console.error('Error updating product:', error);
+    logger.error('Error updating product:', error);
     return {
       success: false,
       error: 'Failed to update product',
@@ -848,7 +849,7 @@ export const toggleProductStatus = async (id, field, value) => {
       data: product,
     };
   } catch (error) {
-    console.error('Error toggling product status:', error);
+    logger.error('Error toggling product status:', error);
     return {
       success: false,
       error: 'Failed to update product status',
@@ -896,7 +897,7 @@ export const getProductStats = async (sellerId = null) => {
       },
     };
   } catch (error) {
-    console.error('Error getting product stats:', error);
+    logger.error('Error getting product stats:', error);
     return {
       success: false,
       error: 'Failed to get product statistics',

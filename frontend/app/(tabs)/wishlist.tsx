@@ -94,7 +94,7 @@ export default function WishlistScreen() {
           </Text>
           <TouchableOpacity
             style={[styles.continueShoppingButton, { backgroundColor: theme.colors.primary }]}
-            onPress={() => router.push('/(tabs)/')}
+            onPress={() => router.navigate('/(tabs)')}
           >
             <Text style={styles.continueShoppingText}>Browse Products</Text>
           </TouchableOpacity>

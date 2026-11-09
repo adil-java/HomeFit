@@ -1,6 +1,7 @@
 import OrderService from '../services/order.service.js';
 import { validationResult } from 'express-validator';
 import { PrismaClient } from '@prisma/client';
+import logger from '../utils/logger.js';
 const prisma = new PrismaClient();
 
 // Helper function to handle validation errors
@@ -30,7 +31,6 @@ const canViewOrder = (order, user) =>
 // @access  Private
 export const createOrder = async (req, res) => {
   try {
-    console.log('Request body:', req.body); // Debug log
     
     const validationError = handleValidationErrors(req, res);
     if (validationError) return validationError;
@@ -48,7 +48,9 @@ export const createOrder = async (req, res) => {
       billingAddress: req.body.billingAddress,
       paymentMethod: req.body.paymentMethod,
       couponCode: req.body.couponCode,
-      notes: req.body.notes
+      notes: req.body.notes,
+      paymentIntentId: req.body.paymentIntentId,
+      addressId: req.body.addressId
     });
 
     // Clear the cart after successful order creation (outside of transaction)
@@ -58,7 +60,7 @@ export const createOrder = async (req, res) => {
           where: { cartId }
         });
       } catch (cartError) {
-        console.error('Error clearing cart:', cartError);
+        logger.error('Error clearing cart:', cartError);
         // Don't fail the request if cart clearing fails
       }
     }
@@ -68,7 +70,7 @@ export const createOrder = async (req, res) => {
       data: order
     });
   } catch (error) {
-    console.error('Create Order Error:', error);
+    logger.error('Create Order Error:', error);
     const statusCode = error.statusCode || 500;
     res.status(statusCode).json({
       success: false,
@@ -104,7 +106,7 @@ export const initiatePayment = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Payment Initiation Error:', error);
+    logger.error('Payment Initiation Error:', error);
     const statusCode = error.statusCode || 500;
     res.status(statusCode).json({
       success: false,
@@ -131,7 +133,7 @@ export const getOrder = async (req, res) => {
       data: order
     });
   } catch (error) {
-    console.error('Get Order Error:', error);
+    logger.error('Get Order Error:', error);
     const statusCode = error.statusCode || 404;
     res.status(statusCode).json({
       success: false,
@@ -162,7 +164,7 @@ export const listUserOrders = async (req, res) => {
       data: result.data
     });
   } catch (error) {
-    console.error('List User Orders Error:', error);
+    logger.error('List User Orders Error:', error);
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to fetch orders'
@@ -195,7 +197,7 @@ export const listSellersOrders = async (req, res) => {
       }))
     });
   } catch (error) {
-    console.error('List seller Orders Error:', error);
+    logger.error('List seller Orders Error:', error);
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to fetch seller orders',
@@ -233,7 +235,7 @@ export const updateOrderStatus = async (req, res) => {
       data: order
     });
   } catch (error) {
-    console.error('Update Status Error:', error);
+    logger.error('Update Status Error:', error);
     const statusCode = error.statusCode || 400;
     res.status(statusCode).json({
       success: false,
@@ -268,7 +270,7 @@ export const listAllOrders = async (req, res) => {
       data: result.data || []
     });
   } catch (error) {
-    console.error('List All Orders Error:', error);
+    logger.error('List All Orders Error:', error);
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to fetch orders'
@@ -300,7 +302,7 @@ export const addOrderNote = async (req, res) => {
       data: note
     });
   } catch (error) {
-    console.error('Add Note Error:', error);
+    logger.error('Add Note Error:', error);
     const statusCode = error.statusCode || 500;
     res.status(statusCode).json({
       success: false,
@@ -325,7 +327,7 @@ export const getOrderNotes = async (req, res) => {
       data: notes
     });
   } catch (error) {
-    console.error('Get Notes Error:', error);
+    logger.error('Get Notes Error:', error);
     const statusCode = error.statusCode || 500;
     res.status(statusCode).json({
       success: false,
@@ -364,12 +366,12 @@ export const handleStripeWebhook = async (req, res) => {
       }
       // Add more event types as needed
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        logger.debug(`Unhandled event type: ${event.type}`);
     }
     
     res.json({ received: true });
   } catch (error) {
-    console.error('Webhook handler error:', error);
+    logger.error('Webhook handler error:', error);
     res.status(400).json({
       success: false,
       error: `Webhook Error: ${error.message}`,

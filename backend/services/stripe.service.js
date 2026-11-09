@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import { PrismaClient } from "@prisma/client";
+import logger from '../utils/logger.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const prisma = new PrismaClient();
@@ -8,7 +9,7 @@ const prisma = new PrismaClient();
  * SELLER ONBOARDING SERVICE
  * Creates Stripe Express account and returns onboarding link
  */
-export async function createConnectAccount(userId, email, businessName) {
+export async function createConnectAccount(userId, email, businessName, { returnUrl, refreshUrl } = {}) {
   try {
     // Check if user already has a Stripe account
     const existingUser = await prisma.user.findUnique({
@@ -25,7 +26,9 @@ export async function createConnectAccount(userId, email, businessName) {
       // Create new Stripe account
       account = await stripe.accounts.create({
         type: "express",
-        country: "US",
+        // Stripe Connect is not available in every country — set
+        // STRIPE_CONNECT_COUNTRY to where your sellers' bank accounts are.
+        country: process.env.STRIPE_CONNECT_COUNTRY || "US",
         email,
         business_type: "individual",
         business_profile: {
@@ -48,11 +51,6 @@ export async function createConnectAccount(userId, email, businessName) {
       });
     }
 
-    // Use mobile return URL if in mobile app, otherwise use web URL
-    const baseReturnUrl = process.env.MOBILE_APP_URL || process.env.APP_URL;
-    const refreshUrl = `${baseReturnUrl}/seller/onboarding/refresh`;
-    const returnUrl = `${baseReturnUrl}/seller/onboarding/callback?userId=${userId}`;
-
     const accountLink = await stripe.accountLinks.create({
       account: account.id,
       refresh_url: refreshUrl,
@@ -65,7 +63,7 @@ export async function createConnectAccount(userId, email, businessName) {
       stripeConnectId: account.id,
     };
   } catch (error) {
-    console.error("Stripe account creation error:", error);
+    logger.error("Stripe account creation error:", error);
     throw error;
   }
 }
@@ -129,13 +127,33 @@ export async function getSellerAccountStatus(sellerId) {
 
   const account = await stripe.accounts.retrieve(seller.stripeConnectId);
 
+  // Keep our copy in sync (the webhook may not be configured). Used for the
+  // "Verified seller" badge and the onboarding check.
+  if (
+    seller.stripeOnboarded !== !!account.charges_enabled ||
+    seller.stripeDetailsSubmitted !== !!account.details_submitted
+  ) {
+    await prisma.user.update({
+      where: { id: sellerId },
+      data: {
+        stripeOnboarded: !!account.charges_enabled,
+        stripeDetailsSubmitted: !!account.details_submitted,
+      },
+    }).catch((e) => logger.error("Failed to sync Stripe status:", e));
+  }
+
   return {
     status: account.charges_enabled ? "ACTIVE" : "PENDING",
     onboarded: account.charges_enabled,
     detailsSubmitted: account.details_submitted,
     chargesEnabled: account.charges_enabled,
     payoutsEnabled: account.payouts_enabled,
-    requirements: account.requirements?.pending_verification || [],
+    // Human-readable list of what Stripe still needs from the seller
+    requirements: [
+      ...(account.requirements?.currently_due || []),
+      ...(account.requirements?.pending_verification || []),
+    ].map((r) => r.replace(/[._]/g, " ")),
+    currentDeadline: account.requirements?.current_deadline || undefined,
   };
 }
 

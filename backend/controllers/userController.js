@@ -1,5 +1,6 @@
 import prisma from '../config/db.js';
 import { Role } from '@prisma/client';
+import logger from '../utils/logger.js';
 
 // Helper function to create or update user in database
 const createOrUpdateUser = async (firebaseUser) => {
@@ -22,7 +23,7 @@ const createOrUpdateUser = async (firebaseUser) => {
           role: Role.CUSTOMER
         }
       });
-      console.log('New user created in database:', user.id);
+      logger.debug('New user created in database:', user.id);
     } else {
       // Update existing user
       user = await prisma.user.update({
@@ -34,12 +35,12 @@ const createOrUpdateUser = async (firebaseUser) => {
           photoURL: firebaseUser.photoURL || user.photoURL,
         }
       });
-      console.log('User updated in database:', user.id);
+      logger.debug('User updated in database:', user.id);
     }
 
     return user;
   } catch (error) {
-    console.error('Database user operation error:', error);
+    logger.error('Database user operation error:', error);
     throw error;
   }
 };
@@ -85,7 +86,7 @@ export const getProfile = async (req, res) => {
       user: user
     });
   } catch (error) {
-    console.error('Get profile error:', error);
+    logger.error('Get profile error:', error);
     res.status(500).json({
       success: false,
       error: "Failed to fetch user profile"
@@ -105,7 +106,7 @@ export const verifyToken = async (req, res) => {
       user: user
     });
   } catch (error) {
-    console.error('Token verification error:', error);
+    logger.error('Token verification error:', error);
     res.status(401).json({
       success: false,
       error: "Token verification failed"
@@ -123,7 +124,7 @@ export const login = async (req, res) => {
       user: user
     });
   } catch (error) {
-    console.error('Login error:', error);
+    logger.error('Login error:', error);
     res.status(500).json({
       success: false,
       error: "Login failed"
@@ -156,7 +157,7 @@ export const register = async (req, res) => {
       user: user
     });
   } catch (error) {
-    console.error('Registration error:', error);
+    logger.error('Registration error:', error);
     
     if (error.code === 'P2002') {
       // Unique constraint violation - user might already exist
@@ -173,7 +174,7 @@ export const register = async (req, res) => {
           });
         }
       } catch (findError) {
-        console.error('Error finding existing user:', findError);
+        logger.error('Error finding existing user:', findError);
       }
       
       return res.status(400).json({
@@ -219,7 +220,7 @@ export const getMe = async (req, res) => {
       data: user
     });
   } catch (error) {
-    console.error('Get me error:', error);
+    logger.error('Get me error:', error);
     res.status(500).json({
       success: false,
       error: "Failed to fetch user details"
@@ -297,7 +298,7 @@ export const applyForSeller = async (req, res) => {
       application,
     });
   } catch (error) {
-    console.error("Apply for seller error:", error);
+    logger.error("Apply for seller error:", error);
     res.status(500).json({
       success: false,
       error: "Failed to submit seller application",
@@ -359,7 +360,7 @@ export const getCurrentSellerApplication = async (req, res) => {
       message,
     });
   } catch (error) {
-    console.error("Get current seller application error:", error);
+    logger.error("Get current seller application error:", error);
     res.status(500).json({
       success: false,
       error: "Failed to fetch current seller application",
@@ -395,7 +396,7 @@ export const getAllSellerApplications = async (req, res) => {
       applications: applications
     });
   } catch (error) {
-    console.error('Get all seller applications error:', error);
+    logger.error('Get all seller applications error:', error);
     res.status(500).json({
       success: false,
       error: "Failed to fetch seller applications"
@@ -457,7 +458,7 @@ export const acceptSellerApplication = async (req, res) => {
       application: updatedApplication
     });
   } catch (error) {
-    console.error('Accept seller application error:', error);
+    logger.error('Accept seller application error:', error);
     res.status(500).json({
       success: false,
       error: "Failed to approve seller application"
@@ -514,7 +515,7 @@ export const rejectSellerApplication = async (req, res) => {
       application: updatedApplication
     });
   } catch (error) {
-    console.error('Reject seller application error:', error);
+    logger.error('Reject seller application error:', error);
     res.status(500).json({
       success: false,
       error: "Failed to reject seller application"

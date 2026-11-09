@@ -19,6 +19,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { generate3DModel } from '../services/3dModel.service.js';
 import prisma from '../config/db.js';
+import logger from '../utils/logger.js';
 
 // Returns an error response object if the current user may not modify the product,
 // or null if allowed. Admins may modify any product; sellers only their own.
@@ -112,7 +113,7 @@ const uploadFiles = (req, res) => {
 
 // Error handler utility
 const handleError = (res, error, statusCode = 500) => {
-  console.error(error);
+  logger.error(error);
   res.status(statusCode).json({
     success: false,
     error: error.message || 'Server Error',
@@ -140,7 +141,7 @@ export const generate3DModelEndpoint = async (req, res) => {
       model: result,
     });
   } catch (error) {
-    console.error('3D model generation error:', error);
+    logger.error('3D model generation error:', error);
     handleError(res, error);
   }
 };
@@ -229,14 +230,14 @@ export const createProduct = async (req, res) => {
     if (req.body.productData && typeof req.body.productData === 'string') {
       try {
         productData = JSON.parse(req.body.productData);
-        console.log('Parsed product data:', JSON.stringify(productData, null, 2));
+        logger.debug('Parsed product data:', JSON.stringify(productData, null, 2));
         
         // Log the variants being received
         if (productData.variants) {
-          console.log('Variants received:', JSON.stringify(productData.variants, null, 2));
+          logger.debug('Variants received:', JSON.stringify(productData.variants, null, 2));
         }
       } catch (error) {
-        console.error('Error parsing productData JSON:', error);
+        logger.error('Error parsing productData JSON:', error);
         return res.status(400).json({
           success: false,
           error: 'Invalid product data format',
@@ -261,7 +262,7 @@ export const createProduct = async (req, res) => {
 
     res.status(201).json(result);
   } catch (error) {
-    console.error('Error creating product:', error);
+    logger.error('Error creating product:', error);
     return res.status(500).json({
       success: false,
       error: 'Failed to create product',

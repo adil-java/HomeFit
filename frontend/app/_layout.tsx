@@ -15,6 +15,7 @@ import { StripeProvider } from '@stripe/stripe-react-native';
 import AnimatedSplashScreen from '@/components/AnimatedSplashScreen';
 import { stackScreenOptions, fadeScreenOptions } from '@/constants/navigation';
 import NavigationThemeBridge from '@/components/NavigationThemeBridge';
+import { logger } from '@/utils/logger';
 
 // Prevent the native splash from auto-hiding so we can transition smoothly
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -126,7 +127,7 @@ export default function RootLayout() {
         const { publishableKey } = await apiService.stripeGetKeys();
         if (mounted) setPublishableKey(publishableKey);
       } catch (e) {
-        console.warn('Failed to load Stripe publishable key', e);
+        logger.warn('Failed to load Stripe publishable key', e);
       } finally {
         if (mounted) {
           clearTimeout(startupFallbackTimer);

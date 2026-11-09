@@ -1,3 +1,4 @@
+import { friendlyError } from '@/utils/errorMessages';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -54,7 +55,8 @@ export default function LoginScreen() {
     try {
       await login(values.email, values.password);
     } catch (error) {
-      setLoginError('Invalid email or password');
+      // Already a readable message (wrong password, no internet, too many tries…)
+      setLoginError(friendlyError(error, 'Could not sign in. Please try again.'));
     } finally {
       setIsLoading(false);
     }

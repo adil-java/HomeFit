@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Heart, Star, ShoppingCart } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { formatPrice } from '@/constants/pricing';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/store/store';
@@ -18,6 +19,7 @@ import { addToWishlist, removeFromWishlist } from '@/store/slices/wishlistSlice'
 import { Product } from '@/store/slices/productsSlice';
 import Toast from 'react-native-toast-message';
 import { apiService } from '@/services/api';
+import { logger } from '@/utils/logger';
 
 interface ProductCardProps {
   product?: Product;
@@ -63,7 +65,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
       const avg2 = (product as any)?.averagerating;
       const displayRating = product?.rating ?? avg1 ?? avg2 ?? null;
       const modelUrl = product?.modelUrl ?? (product as any)?.ARModelUrl;
-      // console.log('[ProductCard][Product]', {
+      // logger.log('[ProductCard][Product]', {
       //   id: product.id,
       //   name: product.name,
       //   rating: product.rating,
@@ -113,7 +115,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
         setError(response.error || 'Failed to load product');
       }
     } catch (err) {
-      console.error('Error fetching product:', err);
+      logger.error('Error fetching product:', err);
       setError('Network error. Please try again.');
     } finally {
       setLoading(false);
@@ -129,8 +131,14 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
 
   if (loading) {
     return (
-      <View style={[styles.loadingContainer, { width: responsiveCardWidth, height: responsiveImageHeight + 96 }, style]}>
-        <ActivityIndicator size="small" color={theme.colors.primary} />
+      // Skeleton in the card's real shape, so the grid doesn't jump when data arrives
+      <View style={[styles.container, { width: responsiveCardWidth, borderColor: theme.colors.border, backgroundColor: theme.colors.surface }, style]}>
+        <View style={{ height: responsiveImageHeight, backgroundColor: theme.colors.border, opacity: 0.45 }} />
+        <View style={styles.content}>
+          <View style={[styles.skeletonLine, { backgroundColor: theme.colors.border, width: '85%' }]} />
+          <View style={[styles.skeletonLine, { backgroundColor: theme.colors.border, width: '55%' }]} />
+          <View style={[styles.skeletonLine, { backgroundColor: theme.colors.border, width: '40%', height: 14, marginTop: 10 }]} />
+        </View>
       </View>
     );
   }
@@ -219,20 +227,22 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
   const displayRating = (product as any)?.rating ?? (product as any)?.averageRating ?? (product as any)?.averagerating ?? 'N/A';
 
   return (
-    <View style={[styles.container, { borderColor: theme.colors.border, width: responsiveCardWidth }, style]}>
-      <TouchableOpacity onPress={handleProductPress}>
+    <View style={[styles.container, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface, width: responsiveCardWidth }, style]}>
+      <TouchableOpacity onPress={handleProductPress} activeOpacity={0.88}>
         <View style={[styles.imageContainer, { height: responsiveImageHeight }]}>
           <Image 
             source={{ uri: mainImage }} 
             style={styles.image} 
             resizeMode="cover"
             onError={(e) => {
-              // console.log('Failed to load image:', e.nativeEvent.error);
+              // logger.log('Failed to load image:', e.nativeEvent.error);
             }}
           />
           <TouchableOpacity
             onPress={handleWishlistPress}
-            style={[styles.wishlistButton, { backgroundColor: theme.colors.background }]}
+            style={[styles.wishlistButton, { backgroundColor: theme.colors.background + 'E6' }]}
+            hitSlop={8}
+            accessibilityLabel={isInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
           >
             <Heart
               size={18}
@@ -289,7 +299,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
           <View style={styles.priceContainer}>
             <View style={styles.priceInfo}>
               <Text style={[styles.price, { color: theme.colors.primary }]}>
-                Rs. {product.price?.toFixed(2) || '0.00'}
+                {formatPrice(product.price || 0)}
               </Text>
               <Text
                 style={[
@@ -299,7 +309,7 @@ const ProductCardComponent: React.FC<ProductCardProps> = ({
                 ]}
               >
                 {typeof (product as any)?.comparePrice === 'number' && (product as any).comparePrice > product.price
-                  ? `Rs. ${(product as any).comparePrice.toFixed(2)}`
+                  ? formatPrice((product as any).comparePrice)
                   : 'Rs. 0.00'}
               </Text>
             </View>
@@ -342,11 +352,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   container: {
-    borderRadius: 16,
-    borderWidth: 1,
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
     marginRight: 12,
     marginBottom: 16,
     overflow: 'hidden',
+  },
+  skeletonLine: {
+    height: 10,
+    borderRadius: 5,
+    marginBottom: 8,
+    opacity: 0.6,
   },
   fullWidth: {
     width: '100%',
@@ -361,11 +377,11 @@ const styles = StyleSheet.create({
   },
   wishlistButton: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    top: 10,
+    right: 10,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -379,11 +395,11 @@ const styles = StyleSheet.create({
   
   discountBadge: {
     position: 'absolute',
-    top: 8,
-    left: 8,
+    top: 10,
+    left: 10,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 999,
   },
   discountText: {
     fontSize: 10,
@@ -446,6 +462,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     fontFamily: 'Inter_700Bold',
+    letterSpacing: -0.2,
   },
   originalPrice: {
     fontSize: 12,

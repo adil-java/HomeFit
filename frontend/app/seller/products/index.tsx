@@ -1,3 +1,4 @@
+import { friendlyError } from '@/utils/errorMessages';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
@@ -40,6 +41,7 @@ import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 import { apiService } from '@/services/api';
 import { useScreenCache } from '@/hooks/useScreenCache';
 import { useAuth, User } from '@/contexts/AuthContext';
+import { logger } from '@/utils/logger';
 
 interface Product {
   id: string;
@@ -108,29 +110,29 @@ export default function ProductsScreen() {
   // background = automatic refresh behind cached data: on failure keep what's shown, no popup
   const fetchProducts = async (silent = false, background = false) => {
     if (!user?.uid) {
-      // console.log('No user UID found', user);
+      // logger.log('No user UID found', user);
       return;
     }
     
     try {
-      // console.log('Fetching products for user:', user.uid);
+      // logger.log('Fetching products for user:', user.uid);
       if (!silent) setLoading(true);
       const result = await apiService.getSellerProducts(user.uid);
-      // console.log('API Response:', result);
+      // logger.log('API Response:', result);
       
       if (result && result.success && Array.isArray(result.data)) {
-        // console.log(`Found ${result.data.length} products`);
+        // logger.log(`Found ${result.data.length} products`);
         setProducts(result.data);
         setFilteredProducts(result.data);
         saveCachedProducts(result.data);
       } else {
-        // console.log('No products found or invalid response format');
+        // logger.log('No products found or invalid response format');
         setProducts([]);
         setFilteredProducts([]);
       }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-      console.error('Failed to fetch products:', {
+      const errorMessage = friendlyError(error, 'An unknown error occurred');
+      logger.error('Failed to fetch products:', {
         error: errorMessage,
         stack: error instanceof Error ? error.stack : undefined
       });
@@ -244,10 +246,10 @@ export default function ProductsScreen() {
         setDeleteModalVisible(false);
         // You can add a toast or other success feedback here
       } else {
-        console.error('Delete failed:', result.error);
+        logger.error('Delete failed:', result.error);
       }
     } catch (error) {
-      console.error('Delete product error:', error);
+      logger.error('Delete product error:', error);
     } finally {
       setIsDeleting(false);
       setProductToDelete(null);

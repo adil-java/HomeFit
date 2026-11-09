@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import { friendlyError } from '@/utils/errorMessages';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  TextInput,
+  ActivityIndicator,
   useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,31 +16,23 @@ import {
   CreditCard, 
   Wallet,
   Plus,
-  Check
+  Check,
+  Lock
 } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store/store';
 import { clearCart } from '@/store/slices/cartSlice';
+import { fetchAddresses } from '@/store/slices/addressesSlice';
 import Toast from 'react-native-toast-message';
 import { useStripe } from '@stripe/stripe-react-native';
 import { apiService } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
-import OrderDetailScreen from '../orders/[id]';
 import HeaderBackButton from '@/components/Shared/HeaderBackButton';
+import { TAX_RATE, formatPKR } from '@/constants/pricing';
+import { logger } from '@/utils/logger';
 
-const mockAddresses = [
-  {
-    id: '1',
-    name: 'Azlan',
-    address: 'Block 5, Nazimabad',
-    city: 'Karachi',
-    zipCode: '1432',
-    country: 'Pakistan',
-    isDefault: true,
-  },
-];
 
 const paymentMethods = [
   // { id: 'wallet', name: 'Wallet', balance: 250.00, icon: Wallet },
@@ -54,56 +47,35 @@ export default function CheckoutScreen() {
   const { user } = useAuth();
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
   
-  const [selectedAddress, setSelectedAddress] = useState(mockAddresses[0].id);
-  const [selectedPayment, setSelectedPayment] = useState('wallet');
-  const [couponCode, setCouponCode] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
+  const { items: addresses, loaded: addressesLoaded, loading: addressesLoading, error: addressesError } =
+    useSelector((state: RootState) => state.addresses);
+  const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
+
+  // Load saved addresses (kept in Redux, so returning from "Add address" is instant)
+  useEffect(() => {
+    if (!addressesLoaded) dispatch(fetchAddresses() as any);
+  }, [addressesLoaded, dispatch]);
+
+  // Pick the default address, or keep the user's choice if it still exists
+  useEffect(() => {
+    if (selectedAddress && addresses.some(a => a.id === selectedAddress)) return;
+    const preferred = addresses.find(a => a.isDefault) || addresses[0];
+    setSelectedAddress(preferred ? preferred.id : null);
+  }, [addresses, selectedAddress]);
+
+  const goAddAddress = () => router.push({ pathname: '/profile/addresses', params: { add: '1' } });
+  const [selectedPayment, setSelectedPayment] = useState('card');
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentSheetInitialized, setPaymentSheetInitialized] = useState(false);
   const compact = screenWidth < 360;
   const horizontalPadding = compact ? 14 : 20;
 
+  // Same calculation the server charges (subtotal + tax + shipping).
+  // Coupons were mock-only (never applied to the charge), so they're hidden
+  // until the server supports them.
   const shippingCost = 0; // Free shipping
-  const discount = appliedCoupon?.discount || 0;
-  const finalTotal: number = Number(total - discount + shippingCost);
-
-  const applyCoupon = () => {
-    // Mock coupon validation
-    const validCoupons = {
-      'SAVE10': 10,
-      'WELCOME20': 20,
-      'FIRST50': 50,
-    };
-
-    if (validCoupons[couponCode.toUpperCase() as keyof typeof validCoupons]) {
-      setAppliedCoupon({
-        code: couponCode.toUpperCase(),
-        discount: validCoupons[couponCode.toUpperCase() as keyof typeof validCoupons],
-      });
-      Toast.show({
-        type: 'success',
-        text1: 'Coupon applied!',
-        text2: `You saved Rs. ${validCoupons[couponCode.toUpperCase() as keyof typeof validCoupons]}`,
-        position: 'top',
-      });
-    } else {
-      Toast.show({
-        type: 'error',
-        text1: 'Invalid coupon code',
-        position: 'top',
-      });
-    }
-    setCouponCode('');
-  };
-
-  const removeCoupon = () => {
-    setAppliedCoupon(null);
-    Toast.show({
-      type: 'info',
-      text1: 'Coupon removed',
-      position: 'top',
-    });
-  };
+  const taxAmount = total * TAX_RATE;
+  const finalTotal: number = Number(total + taxAmount + shippingCost);
 
   const placeOrder = async () => {
     if (items.length === 0) {
@@ -115,47 +87,40 @@ export default function CheckoutScreen() {
       return;
     }
 
-    if (selectedPayment === 'wallet' && finalTotal > 250) {
-      Toast.show({
-        type: 'error',
-        text1: 'Insufficient wallet balance',
-        text2: 'Please select another payment method',
-        position: 'top',
-      });
-      return;
-    }
-
     setIsProcessing(true);
 
     try {
-      const selectedAddr = mockAddresses.find(addr => addr.id === selectedAddress);
+      const selectedAddr = addresses.find(addr => addr.id === selectedAddress);
       const paymentMethod = paymentMethods.find(pm => pm.id === selectedPayment);
 
+      // Checked before taking any payment
       if (!selectedAddr) {
-        throw new Error('Please select a shipping address');
+        Toast.show({ type: 'info', text1: 'Add a delivery address', text2: 'We need to know where to deliver your order', position: 'top' });
+        goAddAddress();
+        return;
+      }
+      if (!selectedAddr.phone) {
+        Toast.show({ type: 'info', text1: 'Add a phone number', text2: 'Edit your address so the courier can reach you', position: 'top' });
+        router.push('/profile/addresses');
+        return;
       }
 
       if (!paymentMethod) {
         throw new Error('Please select a payment method');
       }
 
-      // Define address type with required fields
+      // The server re-reads this saved address by id; the copy is for display
       const address = {
-        name: user?.name || 'Customer', // Use user's name or default to 'Customer'
-        email: user?.email, // User's email is required
-        phone: user?.phone || '+923001234567', // Default phone number if not provided
-        street: selectedAddr.address,
+        name: user?.name || 'Customer',
+        email: user?.email,
+        phone: selectedAddr.phone,
+        street: selectedAddr.street,
         city: selectedAddr.city,
-        state: '', // State is not in the original type, default to empty string
-        postalCode: selectedAddr.zipCode,
+        state: selectedAddr.state || '',
+        postalCode: selectedAddr.postalCode,
         country: selectedAddr.country,
-        isDefault: selectedAddr.isDefault || false
+        isDefault: selectedAddr.isDefault,
       };
-
-      // Validate required fields
-      if (!address.phone) {
-        throw new Error('Phone number is required for shipping');
-      }
 
       // Prepare order data for the backend
       const orderData = {
@@ -166,84 +131,66 @@ export default function CheckoutScreen() {
     price: item.price,
     name: item.name
   })),
+  addressId: selectedAddr.id,
   shippingAddress: address,
   billingAddress: address, // Using same address for billing and shipping
   paymentMethod: selectedPayment,
-  couponCode: appliedCoupon?.code,
   notes: '',
   currency: 'PKR'
 };
 
-      // 1. First, create a payment intent for card payments
-      let paymentIntent;
-      let ephemeralKey;
-      let customer;
-      let publishableKey;
-      
+      // 1. Pay first (card). The server prices the cart itself, and checks
+      //    this payment again when the order is created.
+      let paymentIntentId: string | undefined;
+
       if (selectedPayment === 'card') {
-        try {
-          // Calculate total amount in PKR (convert to smallest unit - paisa)
-          const totalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-          
-          // Create payment intent
-          const paymentIntentResponse = await apiService.createPaymentIntentnew(totalAmount, 'PKR');
-          
-          // Extract payment details from response
-          paymentIntent = paymentIntentResponse.paymentIntent;
-          ephemeralKey = paymentIntentResponse.ephemeralKey;
-          customer = paymentIntentResponse.customer;
-          publishableKey = paymentIntentResponse.publishableKey;
-          
-          if (!paymentIntent) {
-            throw new Error('Failed to create payment intent: No client secret received');
-          }
-          
-          // Initialize PaymentSheet with the payment intent
-          const initRes = await initPaymentSheet({
-            merchantDisplayName: 'Your Store Name',
-            customerId: customer,
-            customerEphemeralKeySecret: ephemeralKey,
-            paymentIntentClientSecret: paymentIntent,
-            defaultBillingDetails: {
-              name: user?.name || '',
-              email: user?.email || '',
-              phone: user?.phone || '',
-            },
-            paymentIntentClientSecret: paymentIntent,
-            merchantDisplayName: 'HomeFit',
-            defaultBillingDetails: {
-              name: user?.name || user?.email || 'Customer',
-              email: user?.email,
-            },
-            allowsDelayedPaymentMethods: true,
-          });
+        const paymentIntentResponse = await apiService.createPaymentIntentnew(
+          items.map(item => ({ productId: item.id, quantity: item.quantity })),
+          'PKR'
+        );
+        const clientSecret = paymentIntentResponse.paymentIntent;
+        if (!clientSecret) {
+          throw new Error('Could not start the payment. Please try again.');
+        }
+        paymentIntentId = paymentIntentResponse.paymentIntentId || clientSecret.split('_secret_')[0];
 
-          if (initRes.error) {
-            throw new Error(initRes.error.message);
-          }
+        const initRes = await initPaymentSheet({
+          merchantDisplayName: 'HomeFit',
+          customerId: paymentIntentResponse.customer,
+          customerEphemeralKeySecret: paymentIntentResponse.ephemeralKey,
+          paymentIntentClientSecret: clientSecret,
+          defaultBillingDetails: {
+            name: user?.name || user?.email || 'Customer',
+            email: user?.email || undefined,
+          },
+          allowsDelayedPaymentMethods: true,
+        });
+        if (initRes.error) {
+          throw new Error(initRes.error.message);
+        }
 
-          // Present the payment sheet
-          const presentRes = await presentPaymentSheet();
-          if (presentRes.error) {
-            throw new Error(presentRes.error.message);
+        const presentRes = await presentPaymentSheet();
+        if (presentRes.error) {
+          if (presentRes.error.code === 'Canceled') {
+            // User closed the payment sheet — not an error, nothing was charged
+            Toast.show({ type: 'info', text1: 'Payment cancelled', text2: 'You have not been charged', position: 'top' });
+            return;
           }
-        } catch (error) {
-          console.error('Payment error:', error);
-          throw new Error(error.message || 'Payment processing failed');
+          throw new Error(presentRes.error.message);
         }
       }
 
       // 2. Create the order in the backend after successful payment
       const createOrderResponse = await apiService.createOrder({
         ...orderData,
-        paymentIntentId: paymentIntent?.id
+        paymentIntentId,
       });
       
       // Extract order from response - handle both nested and direct response formats
       const responseData = createOrderResponse.data || createOrderResponse;
       
       if (!responseData) {
-        console.error('No order data in response:', createOrderResponse);
+        logger.error('No order data in response:', createOrderResponse);
         throw new Error('Failed to create order: No order data received');
       }
 
@@ -251,14 +198,14 @@ export default function CheckoutScreen() {
       const createdOrder = responseData.order || responseData;
       
       if (!createdOrder) {
-        console.error('Invalid order data structure:', responseData);
+        logger.error('Invalid order data structure:', responseData);
         throw new Error('Failed to create order: Invalid order data structure');
       }
 
       // Ensure we have a valid order ID
       const orderId = createdOrder.id || responseData.id;
       if (!orderId) {
-        console.error('Invalid order ID in response:', { order: createdOrder, response: createOrderResponse });
+        logger.error('Invalid order ID in response:', { order: createdOrder, response: createOrderResponse });
         throw new Error('Failed to create order: Invalid order ID received');
       }
       
@@ -296,14 +243,14 @@ export default function CheckoutScreen() {
       dispatch(clearCart());
       
       // Navigate to order details with the order ID
-      // console.log('Navigating to order:', createdOrder.id);
+      // logger.log('Navigating to order:', createdOrder.id);
       router.replace(`/orders/${createdOrder.id}`);
     } catch (error) {
-      console.error('Order error:', error);
+      logger.error('Order error:', error);
       Toast.show({
         type: 'error',
         text1: 'Order failed',
-        text2: error instanceof Error ? error.message : 'Please try again',
+        text2: friendlyError(error, 'Please try again'),
         position: 'top',
       });
     } finally {
@@ -348,12 +295,26 @@ export default function CheckoutScreen() {
             <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
               Shipping Address
             </Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={goAddAddress} hitSlop={10} accessibilityLabel="Add address">
               <Plus size={20} color={theme.colors.primary} />
             </TouchableOpacity>
           </View>
-          
-          {mockAddresses.map((address) => (
+
+          {!addressesLoaded && addressesLoading ? (
+            <ActivityIndicator color={theme.colors.primary} style={{ paddingVertical: 20 }} />
+          ) : addresses.length === 0 ? (
+            <TouchableOpacity
+              onPress={addressesError ? () => dispatch(fetchAddresses() as any) : goAddAddress}
+              style={[styles.addressCard, styles.addAddressCard, { borderColor: theme.colors.primary, backgroundColor: theme.colors.primary + '0D' }]}
+            >
+              <MapPin size={18} color={theme.colors.primary} />
+              <Text style={[styles.addressName, { color: theme.colors.primary, flex: 1 }]}>
+                {addressesError ? `${addressesError}. Tap to retry.` : 'Add a delivery address'}
+              </Text>
+              {!addressesError && <Plus size={18} color={theme.colors.primary} />}
+            </TouchableOpacity>
+          ) : (
+            addresses.map((address) => (
             <TouchableOpacity
               key={address.id}
               onPress={() => setSelectedAddress(address.id)}
@@ -369,7 +330,7 @@ export default function CheckoutScreen() {
                 <View style={styles.addressHeader}>
                   <MapPin size={16} color={theme.colors.textSecondary} />
                   <Text style={[styles.addressName, { color: theme.colors.text }]}>
-                    {address.name}
+                    {address.type === 'work' ? 'Work' : address.type === 'other' ? 'Other' : 'Home'}
                   </Text>
                   {address.isDefault && (
                     <View style={[styles.defaultBadge, { backgroundColor: theme.colors.success }]}>
@@ -378,13 +339,13 @@ export default function CheckoutScreen() {
                   )}
                 </View>
                 <Text style={[styles.addressText, { color: theme.colors.textSecondary }]}>
-                  {address.address}
+                  {address.street}
                 </Text>
                 <Text style={[styles.addressText, { color: theme.colors.textSecondary }]}>
-                  {address.city}, {address.zipCode}
+                  {[address.city, address.state].filter(Boolean).join(', ')} {address.postalCode}
                 </Text>
                 <Text style={[styles.addressText, { color: theme.colors.textSecondary }]}>
-                  {address.country}
+                  {address.country}{address.phone ? ` · ${address.phone}` : ''}
                 </Text>
               </View>
               {selectedAddress === address.id && (
@@ -393,7 +354,8 @@ export default function CheckoutScreen() {
                 </View>
               )}
             </TouchableOpacity>
-          ))}
+          ))
+          )}
         </View>
 
         {/* Payment Method */}
@@ -434,54 +396,6 @@ export default function CheckoutScreen() {
           ))}
         </View>
 
-        {/* Coupon Code */}
-        <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}> 
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-            Coupon Code
-          </Text>
-          
-          {appliedCoupon ? (
-            <View style={[styles.appliedCoupon, { backgroundColor: theme.colors.success + '20', borderColor: theme.colors.success }]}>
-              <View>
-                <Text style={[styles.couponCode, { color: theme.colors.success }]}>
-                  {appliedCoupon.code}
-                </Text>
-                <Text style={[styles.couponDiscount, { color: theme.colors.textSecondary }]}>
-                  You saved Rs. {appliedCoupon.discount}
-                </Text>
-              </View>
-              <TouchableOpacity onPress={removeCoupon}>
-                <Text style={[styles.removeButton, { color: theme.colors.error }]}>Remove</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={[styles.couponInput, compact && styles.couponInputCompact]}>
-              <TextInput
-                style={[
-                  styles.couponField,
-                  compact && styles.couponFieldCompact,
-                  {
-                    backgroundColor: theme.colors.surface,
-                    borderColor: theme.colors.border,
-                    color: theme.colors.text,
-                  },
-                ]}
-                placeholder="Enter coupon code"
-                placeholderTextColor={theme.colors.textSecondary}
-                value={couponCode}
-                onChangeText={setCouponCode}
-              />
-              <TouchableOpacity
-                onPress={applyCoupon}
-                style={[styles.applyButton, compact && styles.applyButtonCompact, { backgroundColor: theme.colors.primary }]}
-                disabled={!couponCode.trim()}
-              >
-                <Text style={styles.applyButtonText}>Apply</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-
         {/* Order Summary */}
         <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}> 
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
@@ -494,7 +408,7 @@ export default function CheckoutScreen() {
                 Subtotal ({items.reduce((sum, item) => sum + item.quantity, 0)} items)
               </Text>
               <Text style={[styles.summaryValue, { color: theme.colors.text }]}>
-                Rs. {total.toFixed(2)}
+                {formatPKR(total)}
               </Text>
             </View>
             
@@ -507,23 +421,21 @@ export default function CheckoutScreen() {
               </Text>
             </View>
             
-            {appliedCoupon && (
-              <View style={styles.summaryRow}>
-                <Text style={[styles.summaryLabel, { color: theme.colors.success }]}>
-                  Discount ({appliedCoupon.code})
-                </Text>
-                <Text style={[styles.summaryValue, { color: theme.colors.success }]}>
-                  -Rs. {appliedCoupon.discount.toFixed(2)}
-                </Text>
-              </View>
-            )}
-            
+            <View style={styles.summaryRow}>
+              <Text style={[styles.summaryLabel, { color: theme.colors.textSecondary }]}>
+                Tax ({Math.round(TAX_RATE * 100)}%)
+              </Text>
+              <Text style={[styles.summaryValue, { color: theme.colors.text }]}>
+                {formatPKR(taxAmount)}
+              </Text>
+            </View>
+
             <View style={[styles.summaryRow, styles.totalRow]}>
               <Text style={[styles.totalLabel, { color: theme.colors.text }]}>
                 Total
               </Text>
               <Text style={[styles.totalValue, { color: theme.colors.text }]}>
-                Rs. {finalTotal.toFixed(2)}
+                {formatPKR(finalTotal)}
               </Text>
             </View>
           </View>
@@ -542,10 +454,21 @@ export default function CheckoutScreen() {
           ]}
           disabled={isProcessing}
         >
-          <Text style={styles.placeOrderText}>
-            {isProcessing ? 'Processing...' : `Place Order • Rs. ${Number(finalTotal).toFixed(2)}`}
-          </Text>
+          {isProcessing ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <>
+              <Lock size={16} color="#fff" />
+              <Text style={styles.placeOrderText}>{`Pay ${formatPKR(finalTotal)}`}</Text>
+            </>
+          )}
         </TouchableOpacity>
+        <View style={styles.secureNote}>
+          <Lock size={11} color={theme.colors.textSecondary} />
+          <Text style={[styles.secureNoteText, { color: theme.colors.textSecondary }]}>
+            Payments are processed securely by Stripe
+          </Text>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -604,9 +527,14 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_700Bold',
     marginBottom: 12,
   },
+  addAddressCard: {
+    alignItems: 'center',
+    gap: 10,
+    borderStyle: 'dashed',
+  },
   addressCard: {
-    borderWidth: 1,
-    borderRadius: 12,
+    borderWidth: 1.5,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 12,
     flexDirection: 'row',
@@ -650,8 +578,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   paymentCard: {
-    borderWidth: 1,
-    borderRadius: 12,
+    borderWidth: 1.5,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 12,
     flexDirection: 'row',
@@ -732,8 +660,8 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   summaryCard: {
-    borderWidth: 1,
-    borderRadius: 12,
+    borderWidth: 1.5,
+    borderRadius: 16,
     padding: 16,
   },
   summaryRow: {
@@ -768,13 +696,28 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_700Bold',
   },
   bottomSection: {
-    paddingVertical: 16,
-    borderTopWidth: 1,
+    paddingTop: 14,
+    paddingBottom: 14,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   placeOrderButton: {
-    paddingVertical: 16,
-    borderRadius: 12,
+    minHeight: 54,
+    borderRadius: 16,
     alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  secureNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    marginTop: 10,
+  },
+  secureNoteText: {
+    fontSize: 12,
+    fontFamily: 'Inter_400Regular',
   },
   placeOrderText: {
     fontSize: 16,

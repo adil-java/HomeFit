@@ -1,3 +1,4 @@
+import { friendlyError } from '@/utils/errorMessages';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -22,6 +23,7 @@ import { setOrders, setLoading } from '@/store/slices/ordersSlice';
 import { apiService } from '@/services/api';
 import { BackHandler } from 'react-native';
 import HeaderBackButton from '@/components/Shared/HeaderBackButton';
+import { logger } from '@/utils/logger';
 
 // Helper function to safely get status config with fallback
 const normalizeStatusKey = (status: string) => {
@@ -153,8 +155,8 @@ export default function OrdersScreen() {
       setHasMore(newOrders.length === limit);
       setError(null);
     } catch (err) {
-      console.error('Error fetching orders:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch orders');
+      logger.error('Error fetching orders:', err);
+      setError(friendlyError(err, 'Failed to fetch orders'));
     } finally {
       if (isRefreshing) {
         setRefreshing(false);
@@ -206,8 +208,8 @@ export default function OrdersScreen() {
       setHasMore(newOrders.length === limit);
       setError(null);
     } catch (err) {
-      console.error('Error refreshing orders:', err);
-      setError(err instanceof Error ? err.message : 'Failed to refresh orders');
+      logger.error('Error refreshing orders:', err);
+      setError(friendlyError(err, 'Failed to refresh orders'));
     } finally {
       setRefreshing(false);
     }
@@ -352,8 +354,8 @@ export default function OrdersScreen() {
       
       Alert.alert('Success', 'Order status updated successfully');
     } catch (error: any) {
-      console.error('Update status error:', error);
-      Alert.alert('Error', error?.message || 'Failed to update order status');
+      logger.error('Update status error:', error);
+      Alert.alert('Error', friendlyError(error, 'Failed to update order status'));
     } finally {
       setIsUpdating(false);
     }

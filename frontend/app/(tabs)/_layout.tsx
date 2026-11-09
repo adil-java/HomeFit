@@ -29,6 +29,31 @@ function TabBarBadge({ count }: { count: number }) {
   );
 }
 
+/** Tab icon with a soft pill behind it when the tab is active. */
+function TabIcon({ focused, children }: { focused: boolean; children: React.ReactNode }) {
+  const { theme } = useTheme();
+  return (
+    <View
+      style={[
+        tabIconStyles.pill,
+        focused && { backgroundColor: theme.colors.primary + (theme.dark ? '33' : '1A') },
+      ]}
+    >
+      {children}
+    </View>
+  );
+}
+
+const tabIconStyles = StyleSheet.create({
+  pill: {
+    width: 56,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
+
 export default function TabLayout() {
   const { theme } = useTheme();
   const { user, logout } = useAuth();
@@ -273,7 +298,7 @@ export default function TabLayout() {
           backgroundColor: theme.colors.background,
           elevation: 0,
           shadowOpacity: 0,
-          borderBottomWidth: 1,
+          borderBottomWidth: StyleSheet.hairlineWidth,
           borderBottomColor: theme.colors.border,
         },
         headerTitleStyle: {
@@ -283,12 +308,19 @@ export default function TabLayout() {
           fontSize: 20,
         },
         tabBarStyle: {
-          backgroundColor: theme.colors.surface,
-          borderTopWidth: 1,
+          backgroundColor: theme.colors.background,
+          borderTopWidth: StyleSheet.hairlineWidth,
           borderTopColor: theme.colors.border,
           // Grow by the bottom inset so labels aren't hidden under the gesture bar
-          height: 60 + insets.bottom,
+          height: 64 + insets.bottom,
+          paddingTop: 6,
           paddingBottom: 8 + insets.bottom,
+          elevation: 0,
+        },
+        tabBarLabelStyle: {
+          fontFamily: 'Inter_600SemiBold',
+          fontSize: 11,
+          marginTop: 2,
         },
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.textSecondary,
@@ -299,7 +331,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon focused={focused}><Home color={color} size={22} strokeWidth={focused ? 2.4 : 2} /></TabIcon>,
           headerTitle: () => (
             <View style={styles.header}>
               <View style={styles.headerLeft}>
@@ -329,7 +361,7 @@ export default function TabLayout() {
         name="search"
         options={{
           title: 'Search',
-          tabBarIcon: ({ color, size }) => <Search color={color} size={size} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon focused={focused}><Search color={color} size={22} strokeWidth={focused ? 2.4 : 2} /></TabIcon>,
           headerTitle: () => (
             <View style={styles.header}>
               <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
@@ -343,11 +375,13 @@ export default function TabLayout() {
         name="cart"
         options={{
           title: 'Cart',
-          tabBarIcon: ({ color, size }) => (
-            <View>
-              <ShoppingCart color={color} size={size} />
-              <TabBarBadge count={cartItemCount} />
-            </View>
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon focused={focused}>
+              <View>
+                <ShoppingCart color={color} size={22} strokeWidth={focused ? 2.4 : 2} />
+                <TabBarBadge count={cartItemCount} />
+              </View>
+            </TabIcon>
           ),
           headerTitle: () => (
             <View style={styles.header}>
@@ -362,11 +396,13 @@ export default function TabLayout() {
         name="wishlist"
         options={{
           title: 'Wishlist',
-          tabBarIcon: ({ color, size }) => (
-            <View>
-              <Heart color={color} size={size} />
-              <TabBarBadge count={wishlistItemCount} />
-            </View>
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon focused={focused}>
+              <View>
+                <Heart color={color} size={22} strokeWidth={focused ? 2.4 : 2} />
+                <TabBarBadge count={wishlistItemCount} />
+              </View>
+            </TabIcon>
           ),
           headerTitle: () => (
             <View style={styles.header}>
@@ -381,7 +417,7 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon focused={focused}><User color={color} size={22} strokeWidth={focused ? 2.4 : 2} /></TabIcon>,
           headerTitle: () => (
             <View style={styles.header}>
               <Text style={[styles.headerTitle, { color: theme.colors.text }]}>

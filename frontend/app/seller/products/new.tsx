@@ -1,3 +1,4 @@
+import { friendlyError } from '@/utils/errorMessages';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -32,6 +33,7 @@ import { Platform } from 'react-native';
 import { apiService } from '@/services/api';
 import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 import KeyboardAwareView from '@/components/Shared/KeyboardAwareView';
+import { logger } from '@/utils/logger';
 
 interface Category {
   id: string;
@@ -135,7 +137,7 @@ function ProductForm() {
         ? prev.colors.filter(c => c !== colorName)
         : [...prev.colors, colorName];
       
-      // console.log('Updated colors:', newColors); // Debug log
+      // logger.log('Updated colors:', newColors); // Debug log
       return {
         ...prev,
         colors: newColors
@@ -149,7 +151,7 @@ function ProductForm() {
         const response = await apiService.getCategories();
         setCategories(response.data || []);
       } catch (error) {
-        console.error('Error fetching categories:', error);
+        logger.error('Error fetching categories:', error);
         Alert.alert('Error', 'Failed to load categories');
       }
     };
@@ -202,7 +204,7 @@ function ProductForm() {
         }
       }
     } catch (error) {
-      console.error('Error picking images:', error);
+      logger.error('Error picking images:', error);
       Alert.alert('Error', 'Failed to pick images');
     }
   };
@@ -319,8 +321,8 @@ function ProductForm() {
         throw new Error(response.error || 'Failed to create product');
       }
     } catch (error: any) {
-      console.error('Error creating product:', error);
-      Alert.alert('Error', error.message || 'Failed to create product');
+      logger.error('Error creating product:', error);
+      Alert.alert('Error', friendlyError(error, 'Failed to create product'));
     } finally {
       setSaving(false);
     }
@@ -393,7 +395,7 @@ function ProductForm() {
                   source={{ uri: image.uri }}
                   style={styles.imagePreview}
                   resizeMode="cover"
-                  onError={(e) => console.log('Failed to load image:', e.nativeEvent.error)}
+                  onError={(e) => logger.log('Failed to load image:', e.nativeEvent.error)}
                 />
                 <TouchableOpacity
                   style={styles.removeImageButton}

@@ -10,6 +10,8 @@ export default defineConfig(({ mode }) => ({
     port: 3001,
   },
   plugins: [react()],
+  // Production builds ship without console output
+  esbuild: mode === 'production' ? { drop: ['console', 'debugger'] } : {},
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

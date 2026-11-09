@@ -1,3 +1,4 @@
+import { friendlyError } from '@/utils/errorMessages';
 import { StyleSheet, Text, TouchableOpacity, View, Image, Alert, ActivityIndicator } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
@@ -5,6 +6,7 @@ import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
 import { auth } from '../../firebaseConfig';
 import { useAuth } from '../../contexts/AuthContext';
 import { router } from 'expo-router';
+import { logger } from '@/utils/logger';
 
 const GoogleAuth = () => {
   const [loading, setLoading] = useState(false);
@@ -34,7 +36,7 @@ const GoogleAuth = () => {
 
       // Trigger Google Sign-In with account picker
       const userInfo = await GoogleSignin.signIn();
-      console.log('Google Sign-In Success:', userInfo);
+      logger.log('Google Sign-In Success:', userInfo);
 
       // Get ID token for Firebase authentication
       const idToken = userInfo.data?.idToken || (userInfo as any).idToken;
@@ -48,7 +50,7 @@ const GoogleAuth = () => {
 
       // Sign in to Firebase
       const firebaseUserCredential = await signInWithCredential(auth, credential);
-      console.log('Firebase Sign-In Success:', firebaseUserCredential.user.email);
+      logger.log('Firebase Sign-In Success:', firebaseUserCredential.user.email);
 
       Alert.alert(
         'Success',
@@ -61,7 +63,7 @@ const GoogleAuth = () => {
         ]
       );
     } catch (error: any) {
-      console.error('Google Sign-In Error:', error);
+      logger.error('Google Sign-In Error:', error);
 
       let errorMessage = 'Failed to sign in with Google';
 
@@ -72,7 +74,7 @@ const GoogleAuth = () => {
       } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
         errorMessage = 'Google Play Services not available';
       } else {
-        errorMessage = error.message || 'An error occurred during sign in';
+        errorMessage = friendlyError(error, 'An error occurred during sign in');
       }
 
       Alert.alert('Sign In Error', errorMessage);

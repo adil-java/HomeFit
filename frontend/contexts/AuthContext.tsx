@@ -8,7 +8,7 @@ let GoogleSignin: any = null;
 try {
   GoogleSignin = require('@react-native-google-signin/google-signin').GoogleSignin;
 } catch (e) {
-  console.warn('[Auth] Google Sign-In native module not available (expected in Expo Go)');
+  logger.warn('[Auth] Google Sign-In native module not available (expected in Expo Go)');
 }
 import { 
   signInWithEmailAndPassword, 
@@ -26,6 +26,8 @@ import { useAppDispatch } from '../store/hooks';
 import { resetUserData } from '../store/actions';
 import { NOTIFICATIONS_STORAGE_KEY } from '../store/slices/notificationsSlice';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { logger } from '@/utils/logger';
+import { friendlyError, FriendlyError } from '@/utils/errorMessages';
 
 interface User {
   id: string;
@@ -74,7 +76,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           forceCodeForRefreshToken: true,
         });
       } catch (e) {
-        console.warn('[Auth] Failed to configure Google Sign-In:', e);
+        logger.warn('[Auth] Failed to configure Google Sign-In:', e);
       }
     }
   }, []);
@@ -90,14 +92,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Try to verify token with backend but don't block if it fails
           try {
             const backendResponse = await apiService.verifyToken();
-            // console.log('Backend response:', backendResponse); // Debug log
+            // logger.log('Backend response:', backendResponse); // Debug log
 
             // Check if the response has the expected structure
             const userData = backendResponse.user || backendResponse; // Handle different response formats
             
             // Convert role to lowercase for consistency
-            const role = userData.role?.toLowerCase() || 
-                        (firebaseUser.email?.toLowerCase().includes('seller') ? 'seller' : 'customer');
+            const role = userData.role?.toLowerCase() || 'customer';
             
             const user: User = {
               id: firebaseUser.uid, // Use firebaseUser.uid as the source of truth
@@ -116,13 +117,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             await SecureStore.setItemAsync("user", JSON.stringify(user));
           } catch (backendError) {
             // Backend verification failed, use fallback logic
-            console.warn('Backend verification failed, using Firebase data:', backendError);
+            logger.warn('Backend verification failed, using Firebase data:', backendError);
             const user: User = {
               id: firebaseUser.uid,
               uid: firebaseUser.uid,
               email: firebaseUser.email || "",
               name: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "",
-              role: firebaseUser.email?.includes('seller') ? 'seller' : 'customer',
+              role: 'customer',
               photoURL: firebaseUser.photoURL || null,
             };
 
@@ -133,7 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             await SecureStore.setItemAsync("user", JSON.stringify(user));
           }
         } catch (error) {
-          console.error('Firebase authentication error:', error);
+          logger.error('Firebase authentication error:', error);
           setUser(null);
           setToken(null);
         }
@@ -162,11 +163,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // First try to get the user role from the backend
       try {
         const backendResponse = await apiService.login();
-        // console.log('Login backend response:', backendResponse);
+        // logger.log('Login backend response:', backendResponse);
         
         const userData = backendResponse.user || backendResponse; // Handle different response formats
         const role = userData.role?.toLowerCase() || 
-                    (userCredential.user.email?.toLowerCase().includes('seller') ? 'seller' : 'customer');
+                    'customer';
         
         const user: User = {
           id: userCredential.user.uid,
@@ -181,14 +182,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await SecureStore.setItemAsync('token', token);
         await SecureStore.setItemAsync('user', JSON.stringify(user));
       } catch (backendError) {
-        console.warn('Backend login verification failed, using fallback:', backendError);
+        logger.warn('Backend login verification failed, using fallback:', backendError);
         // Fallback to optimistic user if backend fails
         const optimisticUser: User = {
           id: userCredential.user.uid,
           uid: userCredential.user.uid,
           email: userCredential.user.email || '',
           name: userCredential.user.displayName || (userCredential.user.email?.split('@')[0] || ''),
-          role: userCredential.user.email?.includes('seller') ? 'seller' : 'customer',
+          role: 'customer',
           photoURL: userCredential.user.photoURL || null,
         };
         setUser(optimisticUser);
@@ -205,8 +206,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       router.replace('/(tabs)');
     } catch (error: any) {
-      console.error('Login error:', error);
-      throw new Error(error.message || 'Login failed');
+      logger.error('Login error:', error);
+      throw new FriendlyError(error, 'Could not sign in. Please try again.');
     }
   };
 
@@ -223,7 +224,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // First try to register with the backend to get the user role
       try {
         const backendResponse = await apiService.register();
-        // console.log('Registration backend response:', backendResponse);
+        // logger.log('Registration backend response:', backendResponse);
         
         const userData = backendResponse.user || backendResponse; // Handle different response formats
         const user: User = {
@@ -231,7 +232,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           uid: userData.id,
           email: userCredential.user.email || '',
           name: name || userCredential.user.displayName || (userCredential.user.email?.split('@')[0] || ''),
-          role: userData.role || (userCredential.user.email?.includes('seller') ? 'seller' : 'customer'),
+          role: userData.role || 'customer',
           photoURL: userCredential.user.photoURL || userData?.photoURL || userData?.avatar || userData?.profileImage || null,
         };
         
@@ -239,14 +240,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await SecureStore.setItemAsync('token', token);
         await SecureStore.setItemAsync('user', JSON.stringify(user));
       } catch (backendError) {
-        console.warn('Backend registration failed, using fallback:', backendError);
+        logger.warn('Backend registration failed, using fallback:', backendError);
         // Fallback to optimistic user if backend fails
         const optimisticUser: User = {
           id: userCredential.user.uid,
           uid: userCredential.user.uid,
           email: userCredential.user.email || '',
           name: name || userCredential.user.displayName || (userCredential.user.email?.split('@')[0] || ''),
-          role: userCredential.user.email?.includes('seller') ? 'seller' : 'customer',
+          role: 'customer',
           photoURL: userCredential.user.photoURL || null,
         };
         setUser(optimisticUser);
@@ -263,8 +264,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       router.replace('/(tabs)');
     } catch (error: any) {
-      console.error('Registration error:', error);
-      throw new Error(error.message || 'Registration failed');
+      logger.error('Registration error:', error);
+      throw new FriendlyError(error, 'Could not create your account. Please try again.');
     }
   };
 
@@ -292,12 +293,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const idToken = tokens.idToken;
 
       if (!idToken) {
-        Alert.alert(
-          'Sign-In Error',
-          'No ID token received from Google. Please check your Firebase configuration and SHA-1 certificate.',
-          [{ text: 'OK' }]
-        );
-        throw new Error('No ID token received from Google');
+        // Shown once by the catch below
+        throw Object.assign(new Error('No ID token received from Google'), { code: '-5' });
       }
 
       // Sign in to Firebase
@@ -312,11 +309,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         // First try login (existing user)
         const backendResponse = await apiService.login();
-        // console.log('Google login backend response:', backendResponse);
+        // logger.log('Google login backend response:', backendResponse);
         
         const userData = backendResponse.user || backendResponse;
         const role = userData.role?.toLowerCase() || 
-                    (result.user.email?.toLowerCase().includes('seller') ? 'seller' : 'customer');
+                    'customer';
         
         const user: User = {
           id: result.user.uid,
@@ -341,7 +338,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // If user doesn't exist, register them
         try {
           const backendResponse = await apiService.register();
-          // console.log('Google register backend response:', backendResponse);
+          // logger.log('Google register backend response:', backendResponse);
           
           const userData = backendResponse.user || backendResponse;
           const user: User = {
@@ -365,13 +362,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
         } catch (registerError: any) {
           // Fallback to Firebase-only user if backend fails
-          console.warn('Backend registration failed for Google user, using fallback:', registerError);
+          logger.warn('Backend registration failed for Google user, using fallback:', registerError);
           const fallbackUser: User = {
             id: result.user.uid,
             uid: result.user.uid,
             email: result.user.email || '',
             name: result.user.displayName || (result.user.email?.split('@')[0] || ''),
-            role: result.user.email?.includes('seller') ? 'seller' : 'customer',
+            role: 'customer',
             photoURL: result.user.photoURL || null,
           };
           
@@ -395,16 +392,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       
-      // Show detailed error based on error code
-      let errorTitle = 'Sign-In Failed';
-      let errorMessage = error.message || 'Unknown error occurred';
-      
-      if (error.code === '-5' || error.message?.includes('DEVELOPER_ERROR')) {
-        errorTitle = 'Configuration Error';
-        errorMessage = 'Google Sign-In is not properly configured. Please check:\n\n1. SHA-1 certificate is added to Firebase\n2. google-services.json is correct\n3. Web Client ID matches Firebase';
-      }
-      
-      Alert.alert(errorTitle, errorMessage, [{ text: 'OK' }]);
+      logger.error('Google sign-in error:', error);
+      // Setup problems (SHA-1 / client ID) are for developers, not users
+      const isConfigError = error?.code === '-5' || String(error?.message || '').includes('DEVELOPER_ERROR');
+      const errorMessage = isConfigError
+        ? 'Google sign-in is not available right now. Please sign in with your email and password.'
+        : friendlyError(error, 'Google sign-in failed. Please try again.');
+
+      Alert.alert('Sign-in failed', errorMessage, [{ text: 'OK' }]);
       throw error;
     }
   };
@@ -414,7 +409,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await signOut(auth);
       router.replace('/auth');
     } catch (error) {
-      console.error('Logout error:', error);
+      logger.error('Logout error:', error);
     }
   };
 

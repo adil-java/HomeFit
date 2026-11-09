@@ -5,6 +5,7 @@ import path from "path";
 import { Client } from "@gradio/client";
 import axios from "axios";
 import { uploadToCloudinary } from '../utils/cloudinary.js';
+import logger from '../utils/logger.js';
 
 const app = express();
 const upload = multer({ dest: "uploads/" });
@@ -20,8 +21,8 @@ const SPACE_URL = "https://frogleo-image-to-3d.hf.space";
 
 export const generate3DModel = async (imagePath) => {
   try {
-    console.log("Sending image to Hugging Face Space...");
-    console.log("Image path:", imagePath);
+    logger.debug("Sending image to Hugging Face Space...");
+    logger.debug("Image path:", imagePath);
 
 
     if (!fs.existsSync(imagePath)) {
@@ -31,7 +32,7 @@ export const generate3DModel = async (imagePath) => {
     const client = await Client.connect(SPACE_ID);
     const imageBlob = fs.readFileSync(imagePath);
 
-    console.log(" Uploading image to Hugging Face API...");
+    logger.debug(" Uploading image to Hugging Face API...");
 
 
     const result = await client.predict("/gen_shape", {
@@ -45,8 +46,8 @@ export const generate3DModel = async (imagePath) => {
       randomize_seed: true,
     });
 
-    console.log("Hugging Face API completed");
-    console.log("API Response:", JSON.stringify(result.data, null, 2));
+    logger.debug("Hugging Face API completed");
+    logger.debug("API Response:", JSON.stringify(result.data, null, 2));
 
     const [html, , glbPath, objPath] = result.data;
 
@@ -57,37 +58,37 @@ export const generate3DModel = async (imagePath) => {
     const glbUrl = `${SPACE_URL}${glbPath}`;
     const objUrl = `${SPACE_URL}${objPath}`;
 
-    console.log("Model URLs from Hugging Face:");
-    console.log("  - GLB:", glbUrl);
-    console.log("  - OBJ:", objUrl);
+    logger.debug("Model URLs from Hugging Face:");
+    logger.debug("  - GLB:", glbUrl);
+    logger.debug("  - OBJ:", objUrl);
 
    
     const glbFile = path.join(OUTPUT_DIR, `model_${Date.now()}.glb`);
     const objFile = path.join(OUTPUT_DIR, `model_${Date.now()}.obj`);
 
-    console.log("Downloading model files");
+    logger.debug("Downloading model files");
     await downloadFile(glbUrl, glbFile);
     await downloadFile(objUrl, objFile);
 
 
-    console.log(" Uploading models to Cloudinary");
+    logger.debug(" Uploading models to Cloudinary");
     const [glbUpload, objUpload] = await Promise.all([
       uploadToCloudinary(glbFile, 'ecommerce/3d-models'),
       uploadToCloudinary(objFile, 'ecommerce/3d-models')
     ]);
 
-    console.log("3D models uploaded to Cloudinary:");
-    console.log("  - GLB URL:", glbUpload.url);
-    console.log("  - OBJ URL:", objUpload.url);
+    logger.debug("3D models uploaded to Cloudinary:");
+    logger.debug("  - GLB URL:", glbUpload.url);
+    logger.debug("  - OBJ URL:", objUpload.url);
 
 
-    console.log("Cleaning up local model files");
+    logger.debug("Cleaning up local model files");
     try {
       fs.unlinkSync(glbFile);
       fs.unlinkSync(objFile);
-      console.log(" Local model files cleaned up");
+      logger.debug(" Local model files cleaned up");
     } catch (cleanupError) {
-      console.warn("Failed to cleanup model files:", cleanupError.message);
+      logger.warn("Failed to cleanup model files:", cleanupError.message);
     }
 
     return {
@@ -97,16 +98,16 @@ export const generate3DModel = async (imagePath) => {
       objPublicId: objUpload.public_id,
     };
   } catch (err) {
-    console.error("Error in 3D model generation:", err);
-    console.error("Error stack:", err.stack);
+    logger.error("Error in 3D model generation:", err);
+    logger.error("Error stack:", err.stack);
 
-    console.log(" Cleaning up local model files due to error...");
+    logger.debug(" Cleaning up local model files due to error...");
     try {
       if (fs.existsSync(glbFile)) fs.unlinkSync(glbFile);
       if (fs.existsSync(objFile)) fs.unlinkSync(objFile);
-      console.log("Local model files cleaned up after error");
+      logger.debug("Local model files cleaned up after error");
     } catch (cleanupError) {
-      console.warn("Failed to cleanup model files after error:", cleanupError.message);
+      logger.warn("Failed to cleanup model files after error:", cleanupError.message);
     }
 
     throw new Error(err.message || "Failed to generate 3D model");
@@ -117,7 +118,7 @@ export const generate3DModel = async (imagePath) => {
 async function downloadFile(url, filepath) {
   const response = await axios.get(url, { responseType: "arraybuffer" });
   fs.writeFileSync(filepath, response.data);
-  console.log(`Saved: ${filepath}`);
+  logger.debug(`Saved: ${filepath}`);
 }
 
 export const generate3DModelHandler = async (req, res) => {
@@ -137,7 +138,7 @@ export const generate3DModelHandler = async (req, res) => {
       model: result,
     });
   } catch (err) {
-    console.error("Error:", err);
+    logger.error("Error:", err);
     res.status(500).json({
       success: false,
       error: err.message || "Failed to generate 3D model",

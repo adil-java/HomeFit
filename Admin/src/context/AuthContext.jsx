@@ -39,7 +39,10 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('admin_user', JSON.stringify(adminUser));
       return true;
     } catch (e) {
-      return false;
+      // Wrong email/password → false; anything else (rate limit, server down)
+      // is passed on so the login page can show the real reason.
+      if (/invalid email or password/i.test(e?.message || '')) return false;
+      throw e;
     }
   };
 

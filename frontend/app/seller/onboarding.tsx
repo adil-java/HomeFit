@@ -1,776 +1,423 @@
-import { useState, useEffect, useCallback } from "react";
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ActivityIndicator, 
-  Alert, 
-  Linking, 
-  Platform, 
+import { friendlyError } from '@/utils/errorMessages';
+import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
+  Linking,
   TouchableOpacity,
   ScrollView,
-  useWindowDimensions
+  RefreshControl,
+  useWindowDimensions,
+  BackHandler,
 } from "react-native";
+import * as ExpoLinking from 'expo-linking';
 import { apiService } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { router, useFocusEffect } from "expo-router";
 import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
-import { BackHandler } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import HeaderBackButton from '@/components/Shared/HeaderBackButton';
+import { logger } from '@/utils/logger';
 
 type OnboardingStatus = {
-  isOnboarded: boolean;
-  chargesEnabled: boolean;
+  isOnboarded: boolean;      // details submitted to Stripe
+  chargesEnabled: boolean;   // can accept payments
   detailsSubmitted: boolean;
   payoutsEnabled: boolean;
-  requirements?: any[];
+  requirements?: string[];
   currentDeadline?: number;
   status?: string;
 };
 
-type OnboardingData = {
-  onboardingUrl?: string;
-  isMobile: boolean;
-  requiresOnboarding: boolean;
-  status?: OnboardingStatus;
-} | null;
+type Stage = 'not_started' | 'in_review' | 'active';
+
+const stageOf = (s: OnboardingStatus | null): Stage =>
+  s?.chargesEnabled ? 'active' : s?.detailsSubmitted ? 'in_review' : 'not_started';
 
 export default function OnboardingPage() {
   const { theme } = useTheme();
+  const c = theme.colors;
   const { width } = useWindowDimensions();
   const compact = width < 360;
   const horizontalPadding = compact ? 14 : 20;
   const { user } = useAuth();
   const sellerId = user?.id || '';
-  
-  const [loading, setLoading] = useState(true);
-  const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
-  const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus | null>(null);
 
-    // Handle hardware back button press — only while this screen is focused,
-    // so it doesn't hijack "back" on screens pushed on top of it.
-    useFocusEffect(
-      useCallback(() => {
-        const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-          router.dismissTo('/(tabs)');
-          return true;
-        });
-        return () => backHandler.remove();
-      }, [])
-    );
+  const [loading, setLoading] = useState(true);       // first status load
+  const [starting, setStarting] = useState(false);    // opening Stripe
+  const [refreshing, setRefreshing] = useState(false);
+  const [status, setStatus] = useState<OnboardingStatus | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const browserOpenRef = useRef(false);
 
-  const checkOnboardingStatus = async (): Promise<OnboardingStatus | null> => {
+  // Hardware back goes home — only while this screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+        router.dismissTo('/(tabs)');
+        return true;
+      });
+      return () => backHandler.remove();
+    }, [])
+  );
+
+  const checkStatus = useCallback(async (): Promise<OnboardingStatus | null> => {
     if (!sellerId) return null;
-    
     try {
-      const status = await apiService.getSellerStatus(sellerId);
-      setOnboardingStatus(status);
-      
-      setOnboardingData(prev => ({
-        ...(prev || {}),
-        isMobile: prev?.isMobile || false,
-        requiresOnboarding: !(status.isOnboarded && status.chargesEnabled),
-        status
-      }));
-      
-      return status;
-    } catch (error) {
-      console.error('Error checking onboarding status:', error);
+      const next = (await apiService.getSellerStatus(sellerId)) as OnboardingStatus;
+      setStatus(next);
+      setLoadError(null);
+      return next;
+    } catch (error: any) {
+      setLoadError(friendlyError(error, 'Could not load your payment status'));
       return null;
     }
-  };
-
-  useEffect(() => {
-    const handleDeepLink = async (event: { url: string }) => {
-      if (event.url.includes('onboarding=success')) {
-        const status = await checkOnboardingStatus();
-        if (status) {
-          setOnboardingStatus(status);
-        }
-      } else if (event.url.includes('error=callback_failed')) {
-        Alert.alert('Error', 'Failed to complete onboarding. Please try again.');
-      }
-    };
-
-    const subscription = Linking.addEventListener('url', handleDeepLink);
-
-    Linking.getInitialURL().then(url => {
-      if (url) {
-        handleDeepLink({ url });
-      }
-    });
-
-    const checkStatus = async () => {
-      setLoading(true);
-      try {
-        const status = await checkOnboardingStatus();
-        if (!status?.isOnboarded || !status.chargesEnabled) {
-          setOnboardingStatus(status);
-        }
-      } catch (error) {
-        console.error('Error checking status:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkStatus();
-
-    return () => {
-      subscription.remove();
-    };
   }, [sellerId]);
 
-  const startOnboardingProcess = async () => {
+  // Initial load
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      setLoading(true);
+      await checkStatus();
+      if (alive) setLoading(false);
+    })();
+    return () => { alive = false; };
+  }, [checkStatus]);
+
+  // Coming back to this screen (or back from Stripe's page) → refresh status
+  useFocusEffect(
+    useCallback(() => {
+      if (!loading && !browserOpenRef.current) checkStatus();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [checkStatus])
+  );
+
+  // Deep link from Stripe's "done" page (…/seller/onboarding?onboarding=done)
+  useEffect(() => {
+    const sub = Linking.addEventListener('url', ({ url }) => {
+      if (url.includes('onboarding=')) checkStatus();
+    });
+    return () => sub.remove();
+  }, [checkStatus]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await checkStatus();
+    setRefreshing(false);
+  }, [checkStatus]);
+
+  const startOnboarding = async () => {
     if (!user) {
-      Alert.alert("Error", "User not authenticated");
+      Alert.alert("Error", "Please sign in again.");
       return;
     }
 
-    setLoading(true);
+    setStarting(true);
     try {
-      // First check current status
-      const status = await checkOnboardingStatus();
-      
-      // If already onboarded, no need to start again
-      if (status?.isOnboarded && status.chargesEnabled) {
-        setLoading(false);
+      // Stripe's finish page redirects here, which closes the browser
+      // automatically (works in Expo Go and in builds).
+      const appReturnUrl = ExpoLinking.createURL('seller/onboarding');
+
+      const response = await apiService.startSellerOnboarding(
+        user.name || "My Store",
+        user.email || "",
+        appReturnUrl
+      );
+
+      if (response.isOnboarded && !response.onboardingUrl) {
+        setStatus(response);
         return;
       }
 
-      // Start onboarding process
-      const response = await apiService.startSellerOnboarding(
-        user.name || "My Store",
-        user.email || ""
-      );
-
-      if (response.onboardingUrl) {
-        const newData = {
-          onboardingUrl: response.onboardingUrl,
-          isMobile: response.isMobile || false,
-          requiresOnboarding: response.requiresOnboarding,
-          status: response.status || status
-        };
-        
-        setOnboardingData(newData);
-        setOnboardingStatus(response.status || status);
-
-        // Open in external browser for better UX on mobile
-        if (Platform.OS !== 'web') {
-          const supported = await Linking.canOpenURL(response.onboardingUrl);
-          if (supported) {
-            await WebBrowser.openBrowserAsync(response.onboardingUrl, {
-              toolbarColor: '#ffffff',
-              controlsColor: '#007AFF',
-              dismissButtonStyle: 'close',
-            });
-            // After returning from browser, check status
-            await checkOnboardingStatus();
-          }
-        }
-      } else if (response.isOnboarded) {
-        // Already onboarded
-        setOnboardingData({
-          isMobile: false,
-          requiresOnboarding: false,
-          status: response
-        });
-        setOnboardingStatus(response);
-      } else {
-        throw new Error("No onboarding URL received from server");
+      if (!response.onboardingUrl) {
+        throw new Error("No onboarding link received from the server");
       }
+
+      browserOpenRef.current = true;
+      try {
+        await WebBrowser.openAuthSessionAsync(response.onboardingUrl, appReturnUrl);
+      } finally {
+        browserOpenRef.current = false;
+      }
+      // Whether they finished or closed the browser, show the latest status
+      await checkStatus();
     } catch (error: any) {
-      console.error("Onboarding error:", error);
-      Alert.alert("Error", error.message || "Failed to start onboarding. Please try again.");
+      logger.error("Onboarding error:", error);
+      Alert.alert("Couldn't open setup", friendlyError(error, "Please try again."));
     } finally {
-      setLoading(false);
+      setStarting(false);
     }
   };
 
-  const renderOnboardingStatus = () => {
-    if (!onboardingStatus) return null;
-    // console.log('Onboarding Status:', onboardingStatus);
-    
-    // Determine the actual onboarding status based on all available flags
-    const isFullyOnboarded = onboardingStatus.isOnboarded && onboardingStatus.chargesEnabled;
-    const isPartiallyOnboarded = onboardingStatus.isOnboarded && !onboardingStatus.chargesEnabled;
-    const pendingRequirements = onboardingStatus.requirements ?? [];
-    
-    // Detailed status information
-    const statusDetails: Array<{ label: string; value: string; icon: string; status?: string }> = [
-      { 
-        label: 'Account Status', 
-        value: isFullyOnboarded ? 'Active' : 
-              isPartiallyOnboarded ? 'Pending Activation' : 'Inactive', 
-        icon: 'person' 
-      },
-      { 
-        label: 'Payments', 
-        value: onboardingStatus.chargesEnabled ? 'Enabled' : 'Disabled', 
-        icon: 'card',
-        status: onboardingStatus.chargesEnabled ? 'success' : 'warning'
-      },
-      { 
-        label: 'Payouts', 
-        value: onboardingStatus.payoutsEnabled ? 'Enabled' : 'Disabled', 
-        icon: 'cash',
-        status: onboardingStatus.payoutsEnabled ? 'success' : 'warning'
-      },
-      { 
-        label: 'Verification', 
-        value: onboardingStatus.detailsSubmitted ? 'Completed' : 'Pending', 
-        icon: 'document-text',
-        status: onboardingStatus.detailsSubmitted ? 'success' : 'warning'
-      },
-      ...(onboardingStatus.currentDeadline ? [
-        { 
-          label: 'Verification Deadline', 
-          value: new Date(onboardingStatus.currentDeadline * 1000).toLocaleDateString(), 
-          icon: 'calendar' 
-        }
-      ] : []),
-      ...(onboardingStatus.status ? [
-        { 
-          label: 'Status', 
-          value: onboardingStatus.status.replace(/_/g, ' '),
-          icon: 'information-circle'
-        }
-      ] : [])
-    ];
+  const stage = stageOf(status);
+  const requirements = status?.requirements ?? [];
 
-    if (isFullyOnboarded) {
-      return (
-        <View style={styles.statusContainer}>
-          <Ionicons name="checkmark-circle" size={64} color="#4CAF50" style={styles.statusIcon} />
-          <Text style={styles.statusTitle}>Onboarding Complete!</Text>
-          <Text style={styles.statusText}>
-            Your Stripe account is fully set up and ready to accept payments.
-          </Text>
-          
-          {/* Detailed Status */}
-          <View style={styles.detailsContainer}>
-            <Text style={styles.detailsTitle}>Account Details:</Text>
-            {statusDetails.map((detail, index) => (
-              <View key={index} style={styles.detailRow}>
-                <Ionicons name={detail.icon as keyof typeof Ionicons.glyphMap} size={20} color="#666" style={styles.detailIcon} />
-                <Text style={styles.detailLabel}>{detail.label}: </Text>
-                <Text style={[
-                  styles.detailValue,
-                  detail.value === 'Yes' || detail.value === 'Active' ? styles.positiveStatus : 
-                  detail.value === 'No' || detail.value === 'Inactive' ? styles.negativeStatus : {}
-                ]}>
-                  {detail.value}
-                </Text>
-              </View>
-            ))}
-          </View>
-          
-          <TouchableOpacity 
-            style={[styles.button, { marginTop: 16 }]}
-            onPress={() => router.push('/seller/dashboard')}
-          >
-            <Text style={styles.buttonText}>Go to Dashboard</Text>
-          </TouchableOpacity>
+  // ---------- UI pieces ----------
+
+  const StatusPill = ({ ok, okText, pendingText }: { ok: boolean; okText: string; pendingText: string }) => (
+    <View style={[styles.pill, { backgroundColor: (ok ? c.success : c.warning) + '22' }]}>
+      <View style={[styles.pillDot, { backgroundColor: ok ? c.success : c.warning }]} />
+      <Text style={[styles.pillText, { color: ok ? c.success : c.warning }]}>{ok ? okText : pendingText}</Text>
+    </View>
+  );
+
+  const heroByStage: Record<Stage, { icon: keyof typeof Ionicons.glyphMap; tint: string; title: string; text: string }> = {
+    not_started: {
+      icon: 'card-outline',
+      tint: c.primary,
+      title: 'Get paid for your sales',
+      text: 'Connect a bank account through Stripe to receive payouts. It takes about 10 minutes.',
+    },
+    in_review: {
+      icon: 'time-outline',
+      tint: c.warning,
+      title: requirements.length ? 'A few details needed' : 'Verification in progress',
+      text: requirements.length
+        ? 'Stripe needs a bit more information before you can accept payments.'
+        : 'Stripe is reviewing your details. This usually takes 1–2 business days.',
+    },
+    active: {
+      icon: 'checkmark-circle',
+      tint: c.success,
+      title: "You're all set",
+      text: 'Your account can accept payments and receive payouts.',
+    },
+  };
+  const hero = heroByStage[stage];
+
+  const primaryLabel = stage === 'not_started' ? 'Start Setup' : 'Continue Setup';
+
+  return (
+    <SafeAreaView style={[styles.screen, { backgroundColor: c.background }]}>
+      <View style={[styles.topBar, { borderBottomColor: c.border, backgroundColor: c.background, paddingHorizontal: compact ? 12 : 16 }]}>
+        <HeaderBackButton onPress={() => router.back()} style={styles.backButton} />
+        <Text style={[styles.topBarTitle, { color: c.text }]}>Payment Setup</Text>
+        <View style={styles.topBarSpacer} />
+      </View>
+
+      {loading ? (
+        <View style={styles.center}>
+          <ActivityIndicator color={c.primary} />
         </View>
-      );
-    }
+      ) : (
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={[styles.contentContainer, { paddingHorizontal: horizontalPadding }]}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} colors={[c.primary]} />}
+        >
+          {loadError && (
+            <TouchableOpacity
+              onPress={onRefresh}
+              style={[styles.errorBanner, { backgroundColor: c.error + '18', borderColor: c.error + '55' }]}
+            >
+              <Ionicons name="cloud-offline-outline" size={18} color={c.error} />
+              <Text style={[styles.errorText, { color: c.error }]}>{loadError}. Tap to retry.</Text>
+            </TouchableOpacity>
+          )}
 
-    if (isPartiallyOnboarded) {
-      return (
-        <View style={styles.statusContainer}>
-          <Ionicons name="time" size={64} color="#FFA000" style={styles.statusIcon} />
-          <Text style={styles.statusTitle}>Verification in Progress</Text>
-          <Text style={styles.statusText}>
-            {onboardingStatus.status === 'PENDING_VERIFICATION' 
-              ? 'Your account is being verified by our team. This usually takes 1-2 business days.'
-              : 'Your account needs additional verification to enable payments. Please complete the required steps.'
-            }
-          </Text>
-          
-          {/* Detailed Status */}
-          <View style={styles.detailsContainer}>
-            <Text style={styles.detailsTitle}>Current Status:</Text>
-            {statusDetails.map((detail, index) => (
-              <View key={index} style={styles.detailRow}>
-                <Ionicons name={detail.icon as keyof typeof Ionicons.glyphMap} size={20} color="#666" style={styles.detailIcon} />
-                <Text style={styles.detailLabel}>{detail.label}: </Text>
-                <Text style={[
-                  styles.detailValue,
-                  detail.value === 'Yes' || detail.value === 'Active' ? styles.positiveStatus : 
-                  detail.value === 'No' || detail.value === 'Inactive' ? styles.negativeStatus : {}
-                ]}>
-                  {detail.value}
-                </Text>
+          {/* Status hero */}
+          <View style={[styles.heroCard, { backgroundColor: c.surface, borderColor: c.border }]}>
+            <View style={[styles.heroIcon, { backgroundColor: hero.tint + '1F' }]}>
+              <Ionicons name={hero.icon} size={30} color={hero.tint} />
+            </View>
+            <Text style={[styles.heroTitle, compact && styles.heroTitleCompact, { color: c.text }]}>{hero.title}</Text>
+            <Text style={[styles.heroText, { color: c.textSecondary }]}>{hero.text}</Text>
+
+            {stage !== 'not_started' && (
+              <View style={[styles.checklist, { borderTopColor: c.border }]}>
+                {[
+                  { label: 'Details submitted', ok: !!status?.detailsSubmitted, okText: 'Done', pendingText: 'Pending' },
+                  { label: 'Accept payments', ok: !!status?.chargesEnabled, okText: 'Enabled', pendingText: 'Pending' },
+                  { label: 'Payouts to bank', ok: !!status?.payoutsEnabled, okText: 'Enabled', pendingText: 'Pending' },
+                ].map((row) => (
+                  <View key={row.label} style={styles.checkRow}>
+                    <Text style={[styles.checkLabel, { color: c.text }]}>{row.label}</Text>
+                    <StatusPill ok={row.ok} okText={row.okText} pendingText={row.pendingText} />
+                  </View>
+                ))}
+                {!!status?.currentDeadline && (
+                  <Text style={[styles.deadline, { color: c.textSecondary }]}>
+                    Complete by {new Date(status.currentDeadline * 1000).toLocaleDateString()}
+                  </Text>
+                )}
               </View>
-            ))}
+            )}
           </View>
-          
-          {pendingRequirements.length > 0 && (
-            <View style={styles.requirementsContainer}>
-              <Text style={styles.requirementsTitle}>Additional information needed:</Text>
-              {pendingRequirements.map((req, index) => (
-                <View key={index} style={styles.requirementItem}>
-                  <Ionicons name="alert-circle" size={16} color="#d97706" style={styles.requirementIcon} />
-                  <Text style={styles.requirementText}>{req}</Text>
+
+          {/* What Stripe still needs */}
+          {stage === 'in_review' && requirements.length > 0 && (
+            <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}>
+              <Text style={[styles.cardTitle, { color: c.text }]}>Still needed</Text>
+              {requirements.map((req, index) => (
+                <View key={`${req}-${index}`} style={styles.listRow}>
+                  <Ionicons name="alert-circle" size={16} color={c.warning} />
+                  <Text style={[styles.listText, { color: c.textSecondary }]}>
+                    {req.charAt(0).toUpperCase() + req.slice(1)}
+                  </Text>
                 </View>
               ))}
             </View>
           )}
-          
-          {/* <TouchableOpacity 
-            style={[styles.button, styles.outlineButton, { marginTop: 16 }]}
-            onPress={startOnboardingProcess}
-          >
-            <Text style={[styles.buttonText, { color: '#0066CC' }]}>
-              Update Information
+
+          {/* Intro content — only before setup */}
+          {stage === 'not_started' && (
+            <>
+              <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}>
+                <Text style={[styles.cardTitle, { color: c.text }]}>What you get</Text>
+                {[
+                  { icon: 'card-outline', text: 'Accept credit and debit cards' },
+                  { icon: 'flash-outline', text: 'Fast identity verification' },
+                  { icon: 'business-outline', text: 'Payouts straight to your bank' },
+                  { icon: 'receipt-outline', text: 'Clear fees, no hidden charges' },
+                ].map((b) => (
+                  <View key={b.text} style={styles.listRow}>
+                    <View style={[styles.listIcon, { backgroundColor: c.success + '1F' }]}>
+                      <Ionicons name={b.icon as keyof typeof Ionicons.glyphMap} size={15} color={c.success} />
+                    </View>
+                    <Text style={[styles.listText, { color: c.text }]}>{b.text}</Text>
+                  </View>
+                ))}
+              </View>
+
+              <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}>
+                <Text style={[styles.cardTitle, { color: c.text }]}>How it works</Text>
+                {[
+                  { step: '1', title: 'Verify your identity', time: '2–5 min' },
+                  { step: '2', title: 'Connect your bank account', time: '3–5 min' },
+                  { step: '3', title: 'Add business details', time: '2–3 min' },
+                ].map((s, i, arr) => (
+                  <View key={s.step} style={styles.stepRow}>
+                    <View style={styles.stepRail}>
+                      <View style={[styles.stepDot, { backgroundColor: c.primary }]}>
+                        <Text style={styles.stepNum}>{s.step}</Text>
+                      </View>
+                      {i < arr.length - 1 && <View style={[styles.stepLine, { backgroundColor: c.border }]} />}
+                    </View>
+                    <View style={styles.stepBody}>
+                      <Text style={[styles.stepTitle, { color: c.text }]}>{s.title}</Text>
+                      <Text style={[styles.stepTime, { color: c.textSecondary }]}>{s.time}</Text>
+                    </View>
+                  </View>
+                ))}
+                <Text style={[styles.needs, { color: c.textSecondary }]}>
+                  Have ready: a government ID, your bank account details and tax information.
+                </Text>
+              </View>
+            </>
+          )}
+
+          {/* Actions */}
+          {stage === 'active' ? (
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: c.primary }]}
+              onPress={() => router.navigate('/seller/dashboard')}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.primaryButtonText}>Go to Dashboard</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={[styles.buttonContainer, compact && styles.buttonContainerCompact]}>
+              <TouchableOpacity
+                style={[styles.button, styles.flexButton, styles.secondaryButton, { borderColor: c.border }]}
+                onPress={() => router.dismissTo('/(tabs)')}
+                disabled={starting}
+              >
+                <Text style={[styles.secondaryButtonText, { color: c.text }]}>Maybe Later</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, styles.flexButton, { backgroundColor: c.primary }, starting && styles.disabledButton]}
+                onPress={startOnboarding}
+                disabled={starting}
+                activeOpacity={0.85}
+              >
+                {starting ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>{primaryLabel}</Text>}
+              </TouchableOpacity>
+            </View>
+          )}
+
+          <View style={styles.secureRow}>
+            <Ionicons name="lock-closed" size={13} color={c.textSecondary} />
+            <Text style={[styles.secureText, { color: c.textSecondary }]}>
+              Secured by Stripe. HomeFit never sees your bank or ID details.
             </Text>
-          </TouchableOpacity> */}
-        </View>
-      );
-    }
-
-    return null;
-  };
-
-  const handleStartOnboarding = async () => {
-    try {
-      setLoading(true);
-      await startOnboardingProcess();
-    } catch (error) {
-      console.error('Error starting onboarding:', error);
-      Alert.alert('Error', 'Failed to start onboarding. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <SafeAreaView style={[styles.screen, { backgroundColor: theme.colors.background }]}>
-      <View style={[styles.topBar, { borderBottomColor: theme.colors.border, backgroundColor: theme.colors.background, paddingHorizontal: compact ? 12 : 16 }]}> 
-        <HeaderBackButton onPress={() => router.back()} style={styles.backButton} />
-        <Text style={[styles.topBarTitle, { color: theme.colors.text }]}>Payment Setup</Text>
-        <View style={styles.topBarSpacer} />
-      </View>
-
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={[styles.contentContainer, { paddingHorizontal: horizontalPadding }]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.header}>
-          <Text style={[styles.title, compact && styles.titleCompact, { color: theme.colors.text }]}>Connect Your Bank Account</Text>
-          <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}> 
-            Get paid directly to your bank account. Complete verification to start accepting payments.
-          </Text>
-        </View>
-
-        <View style={[styles.benefitsCard, { backgroundColor: theme.dark ? '#17352A' : '#ECFDF3', borderLeftColor: theme.colors.success }]}> 
-          <Text style={[styles.benefitsTitle, { color: theme.dark ? '#86EFAC' : '#15803D' }]}>What you get</Text>
-          <View style={styles.benefitItem}>
-            <Text style={[styles.checkmark, { color: theme.colors.success }]}>✓</Text>
-            <Text style={[styles.benefitText, { color: theme.dark ? '#D1FAE5' : '#166534' }]}>Accept credit and debit cards</Text>
           </View>
-          <View style={styles.benefitItem}>
-            <Text style={[styles.checkmark, { color: theme.colors.success }]}>✓</Text>
-            <Text style={[styles.benefitText, { color: theme.dark ? '#D1FAE5' : '#166534' }]}>Instant verification with identity check</Text>
-          </View>
-          <View style={styles.benefitItem}>
-            <Text style={[styles.checkmark, { color: theme.colors.success }]}>✓</Text>
-            <Text style={[styles.benefitText, { color: theme.dark ? '#D1FAE5' : '#166534' }]}>Get paid directly to your bank</Text>
-          </View>
-          <View style={styles.benefitItem}>
-            <Text style={[styles.checkmark, { color: theme.colors.success }]}>✓</Text>
-            <Text style={[styles.benefitText, { color: theme.dark ? '#D1FAE5' : '#166534' }]}>Transparent fees with no hidden charges</Text>
-          </View>
-        </View>
-
-        <View style={[styles.requirementsCard, { backgroundColor: theme.colors.surface }]}> 
-          <Text style={[styles.requirementsCardTitle, { color: theme.colors.text }]}>You'll need</Text>
-          <View style={styles.requirementItem}>
-            <Text style={[styles.bullet, { color: theme.colors.textSecondary }]}>•</Text>
-            <Text style={[styles.requirementsCardText, { color: theme.colors.textSecondary }]}>Valid government ID</Text>
-          </View>
-          <View style={styles.requirementItem}>
-            <Text style={[styles.bullet, { color: theme.colors.textSecondary }]}>•</Text>
-            <Text style={[styles.requirementsCardText, { color: theme.colors.textSecondary }]}>Business bank account details</Text>
-          </View>
-          <View style={styles.requirementItem}>
-            <Text style={[styles.bullet, { color: theme.colors.textSecondary }]}>•</Text>
-            <Text style={[styles.requirementsCardText, { color: theme.colors.textSecondary }]}>Business tax information</Text>
-          </View>
-        </View>
-
-        <View style={[styles.timelineCard, { backgroundColor: theme.colors.surface }]}> 
-          <Text style={[styles.timelineTitle, { color: theme.colors.text }]}>Estimated timeline</Text>
-          <View style={styles.timelineItem}>
-            <View style={[styles.timelineDot, { backgroundColor: theme.colors.primary }]} />
-            <View style={styles.timelineContent}>
-              <Text style={[styles.timelineStep, { color: theme.colors.text }]}>Step 1: Identity Verification</Text>
-              <Text style={[styles.timelineDuration, { color: theme.colors.textSecondary }]}>~2-5 minutes</Text>
-            </View>
-          </View>
-          <View style={[styles.timelineItem, { opacity: 0.7 }]}>
-            <View style={[styles.timelineDot, { backgroundColor: theme.colors.primary }]} />
-            <View style={styles.timelineContent}>
-              <Text style={[styles.timelineStep, { color: theme.colors.text }]}>Step 2: Bank Connection</Text>
-              <Text style={[styles.timelineDuration, { color: theme.colors.textSecondary }]}>~3-5 minutes</Text>
-            </View>
-          </View>
-          <View style={[styles.timelineItem, { opacity: 0.7 }]}>
-            <View style={[styles.timelineDot, { backgroundColor: theme.colors.primary }]} />
-            <View style={styles.timelineContent}>
-              <Text style={[styles.timelineStep, { color: theme.colors.text }]}>Step 3: Business Setup</Text>
-              <Text style={[styles.timelineDuration, { color: theme.colors.textSecondary }]}>~2-3 minutes</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={[styles.infoAlert, { backgroundColor: theme.dark ? '#1A2B3A' : '#EFF6FF', borderLeftColor: theme.colors.primary }]}> 
-          <Text style={[styles.infoBullet, { color: theme.colors.primary }]}>ℹ</Text>
-          <Text style={[styles.infoText, { color: theme.dark ? '#BFDBFE' : '#0C4A6E' }]}> 
-            Your data is encrypted and secured with bank-level security. Stripe is trusted by millions of businesses worldwide.
-          </Text>
-        </View>
-
-        {renderOnboardingStatus()}
-
-        {(!onboardingStatus?.isOnboarded || !onboardingStatus?.chargesEnabled) && (
-          <View style={[styles.buttonContainer, compact && styles.buttonContainerCompact]}>
-            <TouchableOpacity
-              style={[styles.button, styles.secondaryButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
-              onPress={() => router.dismissTo('/(tabs)')}
-              disabled={loading}
-            >
-              <Text style={[styles.secondaryButtonText, { color: theme.colors.primary }]}>Maybe Later</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.button, styles.primaryButton, loading && styles.disabledButton]}
-              onPress={handleStartOnboarding}
-              disabled={loading}
-              activeOpacity={0.8}
-            >
-              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>Start Verification</Text>}
-            </TouchableOpacity>
-          </View>
-        )}
-
-        <View style={[styles.securityInfo, { backgroundColor: theme.colors.surface, borderLeftColor: theme.colors.primary }]}> 
-          <Text style={[styles.securityText, { color: theme.colors.textSecondary }]}> 
-            🔒 Your information is secured with bank-level encryption. We use Stripe to handle all payments securely.
-          </Text>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-  },
+  screen: { flex: 1 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+  backButton: { marginRight: 8 },
+  topBarTitle: { fontSize: 18, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  topBarSpacer: { width: 40 },
+  container: { flex: 1 },
+  contentContainer: { paddingTop: 20, paddingBottom: 40, width: '100%', maxWidth: 640, alignSelf: 'center' },
+
+  errorBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    padding: 12, borderRadius: 12, borderWidth: 1, marginBottom: 16,
   },
-  topBarTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+  errorText: { flex: 1, fontSize: 13, fontFamily: 'Inter_500Medium' },
+
+  heroCard: {
+    borderRadius: 20, borderWidth: StyleSheet.hairlineWidth,
+    padding: 22, alignItems: 'center', marginBottom: 16,
   },
-  topBarSpacer: {
-    width: 40,
-  },
-  container: {
-    flex: 1,
-  },
-  contentContainer: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  header: {
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    fontFamily: 'Inter_700Bold',
-    marginBottom: 10,
-  },
-  titleCompact: {
-    fontSize: 24,
-  },
-  subtitle: {
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  benefitsCard: {
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 14,
-    borderLeftWidth: 3,
-  },
-  benefitsTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    fontFamily: 'Inter_600SemiBold',
-    marginBottom: 14,
-  },
-  benefitItem: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: 12,
-  },
-  checkmark: {
-    fontSize: 16,
-    marginRight: 10,
-    fontWeight: "600",
-    fontFamily: 'Inter_600SemiBold',
-  },
-  benefitText: {
-    fontSize: 14,
-    flex: 1,
-    lineHeight: 20,
-  },
-  requirementsCard: {
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 14,
-  },
-  requirementsCardTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    fontFamily: 'Inter_600SemiBold',
-    marginBottom: 12,
-  },
-  requirementItem: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: 10,
-  },
-  bullet: {
-    fontSize: 14,
-    marginRight: 10,
-    fontWeight: "600",
-    fontFamily: 'Inter_600SemiBold',
-    marginTop: 2,
-  },
-  requirementsCardText: {
-    fontSize: 14,
-    flex: 1,
-    lineHeight: 20,
-  },
-  timelineCard: {
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 14,
-  },
-  timelineTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    fontFamily: 'Inter_600SemiBold',
-    marginBottom: 16,
-  },
-  timelineItem: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: 16,
-  },
-  timelineDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: "#007AFF",
-    marginTop: 6,
-    marginRight: 12,
-  },
-  timelineContent: {
-    flex: 1,
-  },
-  timelineStep: {
-    fontSize: 14,
-    fontWeight: "500",
-    fontFamily: 'Inter_500Medium',
-    marginBottom: 4,
-  },
-  timelineDuration: {
-    fontSize: 12,
-  },
-  infoAlert: {
-    flexDirection: "row",
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 24,
-    borderLeftWidth: 3,
-  },
-  infoBullet: {
-    fontSize: 16,
-    marginRight: 10,
-    fontWeight: "600",
-    fontFamily: 'Inter_600SemiBold',
-  },
-  infoText: {
-    fontSize: 13,
-    flex: 1,
-    lineHeight: 20,
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  buttonContainerCompact: {
-    flexDirection: 'column',
-  },
-  button: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  primaryButton: {
-    backgroundColor: "#007AFF",
-  },
-  primaryButtonText: {
-    color: "#fff",
-    fontSize: 15,
-    fontWeight: "600",
-    fontFamily: 'Inter_600SemiBold',
-  },
-  secondaryButton: {
-    borderWidth: 1,
-  },
-  secondaryButtonText: {
-    fontSize: 15,
-    fontWeight: "600",
-    fontFamily: 'Inter_600SemiBold',
-  },
-  disabledButton: {
-    opacity: 0.6,
-  },
-  securityInfo: {
-    marginTop: 24,
-    padding: 16,
-    borderRadius: 12,
-    borderLeftWidth: 3,
-  },
-  securityText: {
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  statusContainer: {
-    width: '100%',
-    marginTop: 8,
-    alignItems: 'flex-start',
-    paddingVertical: 8,
-  },
-  statusIcon: {
-    marginBottom: 16,
-    alignSelf: 'center',
-  },
-  statusTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
-    marginBottom: 12,
-    textAlign: 'left',
-  },
-  statusText: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'left',
-    marginBottom: 24,
-    lineHeight: 24,
-  },
-  requirementsContainer: {
-    width: '100%',
-    backgroundColor: '#f9f9f9',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 24,
-  },
-  requirementsTitle: {
-    fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
-    marginBottom: 8,
-  },
-   detailsContainer: {
-    width: '100%',
-    backgroundColor: '#f9fafb',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  detailsTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
-    color: '#111827',
-    marginBottom: 12,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-    flexWrap: 'wrap',
-  },
-  detailIcon: {
-    marginRight: 8,
-    color: '#6b7280',
-  },
-  detailLabel: {
-    fontSize: 14,
-    color: '#374151',
-    fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
-  },
-  detailValue: {
-    fontSize: 14,
-    color: '#111827',
-    fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
-  },
-  positiveStatus: {
-    color: '#16a34a', // green
-  },
-  negativeStatus: {
-    color: '#dc2626', // red
-  },
-  outlineButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#007AFF',
-  },
-  requirementIcon: {
-    marginRight: 8,
-  },
-  requirementText: {
-    fontSize: 13,
-    color: '#92400e',
-    flex: 1,
-    lineHeight: 20,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
-  },
+  heroIcon: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
+  heroTitle: { fontSize: 22, fontFamily: 'Inter_700Bold', fontWeight: '700', textAlign: 'center', marginBottom: 6 },
+  heroTitleCompact: { fontSize: 19 },
+  heroText: { fontSize: 14, lineHeight: 20, textAlign: 'center', fontFamily: 'Inter_400Regular' },
+
+  checklist: { alignSelf: 'stretch', marginTop: 18, paddingTop: 14, borderTopWidth: StyleSheet.hairlineWidth, gap: 12 },
+  checkRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  checkLabel: { flex: 1, fontSize: 14, fontFamily: 'Inter_500Medium' },
+  pill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
+  pillDot: { width: 6, height: 6, borderRadius: 3 },
+  pillText: { fontSize: 12, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
+  deadline: { fontSize: 12, marginTop: 2, fontFamily: 'Inter_400Regular' },
+
+  card: { borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, padding: 18, marginBottom: 16 },
+  cardTitle: { fontSize: 16, fontFamily: 'Inter_700Bold', fontWeight: '700', marginBottom: 12 },
+  listRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
+  listIcon: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  listText: { flex: 1, fontSize: 14, lineHeight: 20, fontFamily: 'Inter_400Regular' },
+
+  stepRow: { flexDirection: 'row', gap: 12 },
+  stepRail: { alignItems: 'center', width: 26 },
+  stepDot: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  stepNum: { color: '#fff', fontSize: 12, fontFamily: 'Inter_700Bold', fontWeight: '700' },
+  stepLine: { width: 2, flex: 1, minHeight: 14, marginVertical: 3 },
+  stepBody: { flex: 1, paddingBottom: 14 },
+  stepTitle: { fontSize: 14, fontFamily: 'Inter_600SemiBold', fontWeight: '600', marginTop: 3 },
+  stepTime: { fontSize: 12, marginTop: 2, fontFamily: 'Inter_400Regular' },
+  needs: { fontSize: 13, lineHeight: 19, marginTop: 4, fontFamily: 'Inter_400Regular' },
+
+  buttonContainer: { flexDirection: 'row', gap: 12, marginTop: 4 },
+  buttonContainerCompact: { flexDirection: 'column-reverse' },
+  button: { minHeight: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18 },
+  flexButton: { flex: 1 },
+  secondaryButton: { borderWidth: 1, backgroundColor: 'transparent' },
+  disabledButton: { opacity: 0.7 },
+  primaryButtonText: { color: '#fff', fontSize: 16, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
+  secondaryButtonText: { fontSize: 16, fontFamily: 'Inter_600SemiBold', fontWeight: '600' },
+
+  secureRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 20, paddingHorizontal: 8 },
+  secureText: { fontSize: 12, textAlign: 'center', fontFamily: 'Inter_400Regular' },
 });

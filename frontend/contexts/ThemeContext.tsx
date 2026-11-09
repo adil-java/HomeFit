@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { typography, FONT_FAMILIES, FONT_WEIGHTS } from '@/utils/typography';
+import { logger } from '@/utils/logger';
 
 // Typography configuration - same for both light and dark modes
 const sharedTypography = {
@@ -105,7 +106,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setIsDark(savedTheme === 'dark');
       }
     } catch (error) {
-      console.error('Error loading theme:', error);
+      logger.error('Error loading theme:', error);
     }
   };
 
@@ -115,7 +116,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setIsDark(newTheme);
       await AsyncStorage.setItem('theme', newTheme ? 'dark' : 'light');
     } catch (error) {
-      console.error('Error saving theme:', error);
+      logger.error('Error saving theme:', error);
     }
   };
 

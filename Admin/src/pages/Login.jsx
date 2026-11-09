@@ -25,10 +25,15 @@ const Login = () => {
         toast.success('Login successful!');
         navigate('/dashboard');
       } else {
-        toast.error('Invalid credentials.');
+        toast.error('Invalid email or password.');
       }
     } catch (error) {
-      toast.error('An error occurred during login');
+      const msg = error?.message || '';
+      toast.error(
+        /fetch|network/i.test(msg)
+          ? 'Cannot reach the server. Check your connection and try again.'
+          : msg.length > 0 && msg.length < 120 ? msg : 'Could not sign in. Please try again.'
+      );
     } finally {
       setIsLoading(false);
     }

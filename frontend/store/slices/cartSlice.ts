@@ -1,3 +1,4 @@
+import { friendlyError } from '@/utils/errorMessages';
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { apiService } from '@/services/api';
 
@@ -87,7 +88,7 @@ export const fetchCart = createAsyncThunk(
       const itemCount = items.reduce((s, i) => s + i.quantity, 0);
       return { items, total, itemCount, timestamp: Date.now() };
     } catch (e: any) {
-      return rejectWithValue(e.message || 'Failed to fetch cart');
+      return rejectWithValue(friendlyError(e, 'Failed to fetch cart'));
     }
   }
 );
@@ -171,7 +172,7 @@ export const addToCart = createAsyncThunk(
           dispatch(cartSlice.actions.removeItemOptimistic(rowKey));
         }
       }
-      return rejectWithValue(e.message || 'Failed to add to cart');
+      return rejectWithValue(friendlyError(e, 'Failed to add to cart'));
     } finally {
       dispatch(cartSlice.actions.clearPendingAction(actionId));
     }
@@ -201,7 +202,7 @@ export const updateQuantity = createAsyncThunk(
       if (prev) {
         dispatch(cartSlice.actions.updateQuantityOptimistic({ id: rowKey, quantity: prev.quantity }));
       }
-      return rejectWithValue(e.message || 'Failed to update cart item');
+      return rejectWithValue(friendlyError(e, 'Failed to update cart item'));
     } finally {
       dispatch(cartSlice.actions.clearPendingAction(actionId));
     }
@@ -270,7 +271,7 @@ dispatch(cartSlice.actions.removeItemOptimistic(removeKey));
       if (prev) {
         dispatch(cartSlice.actions.addItemOptimistic(prev));
       }
-      return rejectWithValue(e.message || 'Failed to remove cart item');
+      return rejectWithValue(friendlyError(e, 'Failed to remove cart item'));
     } finally {
       dispatch(cartSlice.actions.clearPendingAction(actionId));
     }
@@ -292,7 +293,7 @@ export const clearCart = createAsyncThunk(
     } catch (e: any) {
       // rollback
       snapshot.forEach(item => dispatch(cartSlice.actions.addItemOptimistic(item)));
-      return rejectWithValue(e.message || 'Failed to clear cart');
+      return rejectWithValue(friendlyError(e, 'Failed to clear cart'));
     } finally {
       dispatch(cartSlice.actions.clearPendingAction(actionId));
     }

@@ -1,4 +1,5 @@
 import { PrismaClient, OrderStatus, Prisma } from '@prisma/client';
+import logger from '../utils/logger.js';
 const prisma = new PrismaClient();
 
 // Helper function to format currency
@@ -118,7 +119,7 @@ export const getDashboardStats = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching dashboard stats:', error);
+    logger.error('Error fetching dashboard stats:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching dashboard statistics',
@@ -226,7 +227,7 @@ export const getRevenueByCategory = async (req, res) => {
       data: result,
     });
   } catch (error) {
-    console.error('Error fetching revenue by category:', error);
+    logger.error('Error fetching revenue by category:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching revenue by category',
@@ -296,7 +297,7 @@ export const getMonthlyRevenue = async (req, res) => {
       data: monthlyRevenue,
     });
   } catch (error) {
-    console.error('Error fetching monthly revenue:', error);
+    logger.error('Error fetching monthly revenue:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching monthly revenue data',
@@ -364,7 +365,7 @@ export const getTopProducts = async (req, res) => {
       data: formattedProducts,
     });
   } catch (error) {
-    console.error('Error fetching top products:', error);
+    logger.error('Error fetching top products:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching top products',

@@ -1,3 +1,4 @@
+import { friendlyError } from '@/utils/errorMessages';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -61,7 +62,7 @@ export default function RegisterScreen() {
     try {
       await register(values.email, values.password, values.name);
     } catch (error) {
-      setRegisterError('Unable to create account. Account already exists.');
+      setRegisterError(friendlyError(error, 'Could not create your account. Please try again.'));
     } finally {
       setIsLoading(false);
     }

@@ -1,5 +1,6 @@
 import { v2 as cloudinary } from 'cloudinary';
 import fs from 'fs';
+import logger from './logger.js';
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -24,7 +25,7 @@ export const uploadToCloudinary = async (filePath, folder = 'ecommerce') => {
       public_id: result.public_id,
     };
   } catch (error) {
-    console.error('Error uploading to Cloudinary:', error);
+    logger.error('Error uploading to Cloudinary:', error);
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }
@@ -37,7 +38,7 @@ export const deleteFromCloudinary = async (publicId) => {
     if (!publicId) return;
     await cloudinary.uploader.destroy(publicId);
   } catch (error) {
-    console.error('Error deleting from Cloudinary:', error);
+    logger.error('Error deleting from Cloudinary:', error);
     throw error;
   }
 };

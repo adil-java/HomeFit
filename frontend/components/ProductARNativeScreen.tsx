@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import FloatingBackButton from '@/components/Shared/FloatingBackButton';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import { logger } from '@/utils/logger';
 
 type Viro3DPoint = [number, number, number];
 
@@ -119,7 +120,7 @@ function ProductARScene({
           }}
           onLoadEnd={() => setIsLoading(false)}
           onError={(error) => {
-            console.error('[AR] 3D model failed to load:', error);
+            logger.error('[AR] 3D model failed to load:', error);
             setIsLoading(false);
             setHasModelError(true);
           }}

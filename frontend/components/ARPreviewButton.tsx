@@ -5,6 +5,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { router } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import Constants from 'expo-constants';
+import { logger } from '@/utils/logger';
 
 interface ARPreviewButtonProps {
 	modelUrl?: string | null;
@@ -53,7 +54,7 @@ export const ARPreviewButton = ({ modelUrl }: ARPreviewButtonProps) => {
 			// That route performs strict checks and safely falls back to 3D viewer.
 			router.push(`/product/ar?modelUrl=${encodeURIComponent(modelUrl)}`);
 		} catch (error) {
-			console.error('Error checking AR support:', error);
+			logger.error('Error checking AR support:', error);
 			// On any error, default to the safer 3D viewer fallback
 			Toast.show({
 				type: 'error',

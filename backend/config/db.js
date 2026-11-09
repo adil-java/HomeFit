@@ -1,4 +1,5 @@
 import pkg from '@prisma/client';
+import logger from '../utils/logger.js';
 const { PrismaClient } = pkg;
 
 // Configure Prisma with connection retry and logging
@@ -17,22 +18,22 @@ async function connectWithRetry(retries = MAX_RETRIES, delay = INITIAL_DELAY) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       await basePrisma.$connect();
-      // console.log('[DB] Connected to database successfully');
+      // logger.debug('[DB] Connected to database successfully');
       return true;
     } catch (error) {
-      // console.error(`[DB] Connection attempt ${attempt}/${retries} failed:`, error.message);
+      // logger.error(`[DB] Connection attempt ${attempt}/${retries} failed:`, error.message);
       
       if (attempt === retries) {
-        // console.error('[DB] All connection attempts failed. Possible causes:');
-        // console.error('  1. Database server is down or paused (check Aiven console)');
-        // console.error('  2. Network/firewall blocking port 26899');
-        // console.error('  3. Invalid credentials in DATABASE_URL');
-        // console.error('  4. SSL certificate issues');
+        // logger.error('[DB] All connection attempts failed. Possible causes:');
+        // logger.error('  1. Database server is down or paused (check Aiven console)');
+        // logger.error('  2. Network/firewall blocking port 26899');
+        // logger.error('  3. Invalid credentials in DATABASE_URL');
+        // logger.error('  4. SSL certificate issues');
         throw error;
       }
       
       const nextDelay = delay * Math.pow(2, attempt - 1); // Exponential backoff
-      // console.log(`[DB] Retrying in ${nextDelay}ms...`);
+      // logger.debug(`[DB] Retrying in ${nextDelay}ms...`);
       await new Promise(resolve => setTimeout(resolve, nextDelay));
     }
   }
@@ -55,12 +56,12 @@ const prisma = basePrisma.$extends({
           if (!(error.code && RETRYABLE_ERRORS.includes(error.code)) || attempt === MAX_QUERY_RETRIES) {
             throw error;
           }
-          console.warn(`[DB] Query failed with ${error.code}, retry ${attempt}/${MAX_QUERY_RETRIES}`);
+          logger.warn(`[DB] Query failed with ${error.code}, retry ${attempt}/${MAX_QUERY_RETRIES}`);
           try {
             await basePrisma.$disconnect();
             await basePrisma.$connect();
           } catch (reconnectError) {
-            console.error('[DB] Reconnection failed:', reconnectError.message);
+            logger.error('[DB] Reconnection failed:', reconnectError.message);
           }
           await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
         }

@@ -1,5 +1,6 @@
 import asyncHandler from 'express-async-handler';
 import WishlistService from '../services/wishlist.service.js';
+import logger from '../utils/logger.js';
 
 export const getWishlist = asyncHandler(async (req, res) => {
   const wishlist = await WishlistService.getWishlist(req.user.id);
@@ -45,7 +46,7 @@ export const removeItemFromWishlist = asyncHandler(async (req, res) => {
       message: 'Item removed from wishlist'
     });
   } catch (error) {
-    console.error('Error removing item from wishlist:', error);
+    logger.error('Error removing item from wishlist:', error);
     
     if (error.message === 'Item not found in wishlist') {
       return res.status(404).json({
