@@ -106,7 +106,8 @@
       "expo-font",
       "expo-web-browser",
       "expo-secure-store",
-      "@reactvision/react-viro"
+      "@reactvision/react-viro",
+      "./plugins/withoutTapAndPay"
     ],
     "experiments": {
       "typedRoutes": true
