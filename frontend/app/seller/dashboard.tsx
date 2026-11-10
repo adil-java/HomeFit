@@ -13,14 +13,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LineChart, PieChart } from 'react-native-chart-kit';
-import { Users, ShoppingBag, Wallet, Package, ArrowUpRight, ArrowDownRight, UserCheck } from 'lucide-react-native';
+import { Users, ShoppingBag, Wallet, Package, ArrowUpRight, ArrowDownRight, Truck, ChevronRight, AlertCircle } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 import { apiService } from '@/services/api';
 import { useScreenCache } from '@/hooks/useScreenCache';
-import { formatPrice } from '@/constants/pricing';
+import { formatPrice, formatPKR } from '@/constants/pricing';
 import { logger } from '@/utils/logger';
 
 // Calm, related colours for chart slices (brand navy, oak, sage, clay, slate)
@@ -30,10 +30,15 @@ const CATEGORY_COLORS = ['#2F3C7E', '#B8925F', '#5B8C85', '#C08A7E', '#7D8597'];
 type DashboardStats = {
   totalUsers: number;
   activeUsers: number;
-  totalRevenue: number;
+  totalRevenue: number; // value of your items sold (paid, not cancelled)
   totalOrders: number;
   monthlyGrowth: number;
+  pendingOrders: number; // paid, still to ship
+  earnings: { paid: number; onHold: number; feePercent: number };
 };
+
+// Payment setup state for the banner
+type PayState = 'unknown' | 'not_set_up' | 'payouts_pending' | 'ready';
 
 type RevenueByCategory = Array<{
   name: string;
@@ -69,6 +74,8 @@ const defaultStats: DashboardStats = {
   totalRevenue: 0,
   totalOrders: 0,
   monthlyGrowth: 0,
+  pendingOrders: 0,
+  earnings: { paid: 0, onHold: 0, feePercent: 8 },
 };
 
 const defaultRevenueByCategory: RevenueByCategory = [];
@@ -103,6 +110,12 @@ function buildDashboardState(raw: DashboardRaw, isDark: boolean) {
     totalRevenue: statsData?.totalRevenue || 0,
     totalOrders: statsData?.totalOrders || 0,
     monthlyGrowth: statsData?.monthlyGrowth || 0,
+    pendingOrders: statsData?.pendingOrders || 0,
+    earnings: {
+      paid: statsData?.earnings?.paid || 0,
+      onHold: statsData?.earnings?.onHold || 0,
+      feePercent: statsData?.earnings?.feePercent ?? 8,
+    },
   };
 
   // Format revenue by category for the chart
@@ -156,6 +169,17 @@ export default function DashboardScreen() {
   );
   const [topProducts, setTopProducts] = useState<TopProduct[]>(() => initial?.topProducts ?? defaultTopProducts);
   const [error, setError] = useState<string | null>(null);
+  const [payState, setPayState] = useState<PayState>('unknown');
+
+  const loadPayState = async () => {
+    if (!user?.uid) return;
+    try {
+      const st: any = await apiService.getSellerStatus(user.uid);
+      setPayState(!st?.chargesEnabled ? 'not_set_up' : st?.payoutsEnabled ? 'ready' : 'payouts_pending');
+    } catch {
+      // Banner just stays hidden
+    }
+  };
 
   // background = refresh behind data already on screen: no spinner, and on
   // failure keep showing that data instead of the error screen.
@@ -171,6 +195,7 @@ export default function DashboardScreen() {
         apiService.getTopProducts(),
       ]);
 
+      loadPayState(); // banner, not awaited
       const raw: DashboardRaw = { statsData, revenueData, monthlyData, productsData };
       const next = buildDashboardState(raw, isDark);
       setStats(next.stats);
@@ -275,12 +300,19 @@ export default function DashboardScreen() {
   }));
 
   const growth = stats.monthlyGrowth;
-  const tiles: { label: string; value: string; icon: any; growth?: number }[] = [
-    { label: 'Revenue', value: formatPrice(stats.totalRevenue), icon: Wallet, growth },
-    { label: 'Orders', value: stats.totalOrders.toLocaleString(), icon: ShoppingBag },
+  const tiles: { label: string; value: string; icon: any; growth?: number; onPress?: () => void }[] = [
+    { label: 'Total sales', value: formatPrice(stats.totalRevenue), icon: Wallet, growth },
+    { label: 'Paid orders', value: stats.totalOrders.toLocaleString(), icon: ShoppingBag, onPress: () => router.navigate('/seller/orders') },
+    { label: 'To ship', value: stats.pendingOrders.toLocaleString(), icon: Truck, onPress: () => router.navigate('/seller/orders') },
     { label: 'Customers', value: stats.totalUsers.toLocaleString(), icon: Users },
-    { label: 'Active customers', value: stats.activeUsers.toLocaleString(), icon: UserCheck },
   ];
+  const { earnings } = stats;
+  const banner =
+    payState === 'not_set_up'
+      ? { title: 'Set up payments to get paid', text: 'Your earnings are kept on hold until you connect a bank account.' }
+      : payState === 'payouts_pending'
+        ? { title: 'One more step for bank payouts', text: 'Stripe needs a few details before it can send money to your bank.' }
+        : null;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]} edges={['top']}>
@@ -294,10 +326,66 @@ export default function DashboardScreen() {
           {user?.name ? `Hi ${user.name.split(' ')[0]}, here's how your store is doing.` : "Here's how your store is doing."}
         </Text>
 
+        {/* Payment setup reminder */}
+        {banner && (
+          <TouchableOpacity
+            style={[styles.banner, { backgroundColor: c.warning + '18', borderColor: c.warning + '55' }]}
+            onPress={() => router.navigate('/seller/onboarding')}
+            activeOpacity={0.7}
+          >
+            <AlertCircle size={18} color={c.warning} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.bannerTitle, { color: c.text }]}>{banner.title}</Text>
+              <Text style={[styles.bannerText, { color: c.textSecondary }]}>{banner.text}</Text>
+            </View>
+            <ChevronRight size={18} color={c.textSecondary} />
+          </TouchableOpacity>
+        )}
+
+        {/* Earnings */}
+        <TouchableOpacity
+          style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}
+          onPress={() => router.navigate('/seller/sellerBalance')}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+        >
+          <View style={styles.earnHeader}>
+            <Text style={[styles.cardTitle, { color: c.text, marginBottom: 0 }]}>Your earnings</Text>
+            <View style={styles.earnLink}>
+              <Text style={[styles.earnLinkText, { color: c.primary }]}>Details</Text>
+              <ChevronRight size={16} color={c.primary} />
+            </View>
+          </View>
+          <View style={styles.earnRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.earnLabel, { color: c.textSecondary }]}>Paid to you</Text>
+              <Text style={[styles.earnValue, { color: c.text }]} numberOfLines={1} adjustsFontSizeToFit>
+                {formatPKR(earnings.paid)}
+              </Text>
+            </View>
+            <View style={[styles.earnDivider, { backgroundColor: c.border }]} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.earnLabel, { color: c.textSecondary }]}>On hold</Text>
+              <Text style={[styles.earnValue, { color: earnings.onHold > 0 ? c.warning : c.text }]} numberOfLines={1} adjustsFontSizeToFit>
+                {formatPKR(earnings.onHold)}
+              </Text>
+            </View>
+          </View>
+          <Text style={[styles.earnNote, { color: c.textSecondary }]}>
+            You keep {100 - earnings.feePercent}% of every sale. Your share is sent automatically when a buyer pays.
+          </Text>
+        </TouchableOpacity>
+
         {/* Key numbers */}
         <View style={styles.tiles}>
-          {tiles.map(({ label, value, icon: Icon, growth: g }) => (
-            <View key={label} style={[styles.tile, { width: tileWidth, backgroundColor: c.surface, borderColor: c.border }]}>
+          {tiles.map(({ label, value, icon: Icon, growth: g, onPress }) => (
+            <TouchableOpacity
+              key={label}
+              disabled={!onPress}
+              onPress={onPress}
+              activeOpacity={0.7}
+              style={[styles.tile, { width: tileWidth, backgroundColor: c.surface, borderColor: c.border }]}
+            >
               <View style={styles.tileTop}>
                 <Icon size={18} color={c.textSecondary} strokeWidth={1.8} />
                 {typeof g === 'number' && g !== 0 && (
@@ -311,13 +399,13 @@ export default function DashboardScreen() {
                 {value}
               </Text>
               <Text style={[styles.tileLabel, { color: c.textSecondary }]}>{label}</Text>
-            </View>
+            </TouchableOpacity>
           ))}
         </View>
 
         {/* Monthly revenue */}
         <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}>
-          <Text style={[styles.cardTitle, { color: c.text }]}>Monthly revenue</Text>
+          <Text style={[styles.cardTitle, { color: c.text }]}>Sales by month</Text>
           {monthlyRevenue.labels.length > 0 ? (
             <LineChart
               data={lineData}
@@ -330,13 +418,13 @@ export default function DashboardScreen() {
               style={styles.chart}
             />
           ) : (
-            <Text style={[styles.empty, { color: c.textSecondary }]}>No sales yet. Revenue will show here once orders come in.</Text>
+            <Text style={[styles.empty, { color: c.textSecondary }]}>No sales yet. Paid orders will show here.</Text>
           )}
         </View>
 
         {/* Revenue by category */}
         <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}>
-          <Text style={[styles.cardTitle, { color: c.text }]}>Revenue by category</Text>
+          <Text style={[styles.cardTitle, { color: c.text }]}>Sales by category</Text>
           {pieData.length > 0 ? (
             <PieChart
               data={pieData}
@@ -427,6 +515,27 @@ const styles = StyleSheet.create({
   productName: { fontSize: 14, fontFamily: 'Manrope_600SemiBold' },
   productMeta: { fontSize: 12, fontFamily: 'Manrope_400Regular', marginTop: 2 },
   productRevenue: { fontSize: 14, fontFamily: 'Manrope_700Bold' },
+
+  banner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 16,
+  },
+  bannerTitle: { fontSize: 14, fontFamily: 'Manrope_700Bold' },
+  bannerText: { fontSize: 13, fontFamily: 'Manrope_400Regular', marginTop: 2, lineHeight: 18 },
+
+  earnHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
+  earnLink: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  earnLinkText: { fontSize: 13, fontFamily: 'Manrope_700Bold' },
+  earnRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  earnDivider: { width: StyleSheet.hairlineWidth, alignSelf: 'stretch' },
+  earnLabel: { fontSize: 12, fontFamily: 'Manrope_600SemiBold' },
+  earnValue: { fontSize: 22, fontFamily: 'Manrope_800ExtraBold', letterSpacing: -0.5, marginTop: 2 },
+  earnNote: { fontSize: 12, lineHeight: 17, fontFamily: 'Manrope_400Regular', marginTop: 12 },
 
   errorText: { fontSize: 15, textAlign: 'center', marginBottom: 16, fontFamily: 'Manrope_500Medium' },
   retryButton: { paddingHorizontal: 22, paddingVertical: 12, borderRadius: 12 },

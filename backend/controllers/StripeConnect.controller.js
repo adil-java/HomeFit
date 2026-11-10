@@ -7,6 +7,7 @@ import {
   verifyWebhookSignature,
 } from "../services/stripe.service.js";
 import logger from '../utils/logger.js';
+import { settleOrderByPaymentIntent, releaseHeldPayouts, getSellerEarnings } from '../services/payout.service.js';
 
 const prisma = new PrismaClient();
 
@@ -40,9 +41,10 @@ export const onboardSeller = async (req, res) => {
       });
     }
 
-    // If the Stripe account is already fully active, nothing to do
+    // Fully set up (can sell AND be paid to the bank, nothing missing) → nothing to do.
+    // Otherwise send them back to Stripe to finish (e.g. upload an ID for payouts).
     const current = await getSellerAccountStatus(userId);
-    if (current.chargesEnabled) {
+    if (current.chargesEnabled && current.payoutsEnabled && !(current.requirements || []).length) {
       return res.json({
         success: true,
         data: {
@@ -128,11 +130,13 @@ export const createPayment = async (req, res) => {
  */
 export const getConnectStatus = async (req, res) => {
   try {
-    const { sellerId } = req.params;
+    // "me" = the signed-in seller (avoids mixing up app and database ids)
+    const sellerId = req.params.sellerId === "me" ? req.user.id : req.params.sellerId;
     if (sellerId !== req.user.id && req.user.role !== "ADMIN") {
       return res.status(403).json({ success: false, error: "Not allowed" });
     }
     const status = await getSellerAccountStatus(sellerId);
+    if (status.chargesEnabled) releaseHeldPayouts(sellerId); // background
 
     res.json({ success: true, data: status });
   } catch (error) {
@@ -176,16 +180,23 @@ ${target ? `<meta http-equiv="refresh" content="0;url=${escapeHtml(target)}">` :
 <style>body{font-family:-apple-system,system-ui,sans-serif;background:#0f172a;color:#f8fafc;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0;text-align:center;padding:24px}
 a{display:inline-block;margin-top:20px;background:#f8fafc;color:#0f172a;padding:14px 24px;border-radius:12px;text-decoration:none;font-weight:600}</style></head>
 <body><div><h2>${escapeHtml(title)}</h2><p>${escapeHtml(message)}</p>
-${target ? `<a href="${escapeHtml(target)}">Return to HomeFit</a>` : "<p>You can close this window and return to the app.</p>"}</div></body></html>`);
+${target ? `<a id="back" href="${escapeHtml(target)}">Return to HomeFit</a>` : "<p>You can close this window and return to the app.</p>"}</div>
+${target ? `<script>
+// Android browsers open apps more reliably from an intent:// link
+(function(){var a=document.getElementById("back");var t=a.getAttribute("href");
+var i=t.indexOf("://");
+if(navigator.userAgent.indexOf("Android")>-1&&i>0){a.href="intent://"+t.slice(i+3)+"#Intent;scheme="+t.slice(0,i)+";end";}
+setTimeout(function(){window.location.href=a.href;},300);})();
+</script>` : ""}</body></html>`);
 };
 
 export const connectReturn = connectLandingPage(
   "Setup saved",
-  "Your payment details were submitted. Return to the app to see your status."
+  "Your details were sent to Stripe. Tap the button below, or close this page, to go back to HomeFit."
 );
 export const connectRefresh = connectLandingPage(
   "Link expired",
-  "This setup link has expired. Return to the app and tap Continue Setup to get a new one."
+  "This setup link has expired. Close this page and tap Continue setup in HomeFit to get a new one."
 );
 
 /**
@@ -242,6 +253,8 @@ export const stripeWebhook = async (req, res) => {
           where: { stripePaymentIntent: paymentIntent.id, paymentStatus: { not: "PAID" } },
           data: { paymentStatus: "PAID", paymentConfirmedAt: new Date() },
         });
+        // Pay the sellers their share (no-op if already done)
+        await settleOrderByPaymentIntent(paymentIntent.id);
         break;
       }
 
@@ -263,6 +276,11 @@ export const stripeWebhook = async (req, res) => {
             stripeDetailsSubmitted: !!account.details_submitted,
           },
         });
+        // Seller can now receive money: send anything that was on hold
+        if (account.capabilities?.transfers === "active") {
+          const seller = await prisma.user.findFirst({ where: { stripeConnectId: account.id }, select: { id: true } });
+          if (seller) await releaseHeldPayouts(seller.id);
+        }
         break;
       }
     }
@@ -273,5 +291,20 @@ export const stripeWebhook = async (req, res) => {
     res.status(400).json({
       error: error.message || "Webhook failed",
     });
+  }
+};
+
+/**
+ * GET /api/Stripe/earnings
+ * The seller's share of their sales: paid out and on hold (in Rs.).
+ */
+export const getEarnings = async (req, res) => {
+  try {
+    await releaseHeldPayouts(req.user.id); // send anything that can go now
+    const earnings = await getSellerEarnings(req.user.id);
+    res.json({ success: true, data: earnings });
+  } catch (error) {
+    logger.error("Earnings error:", error);
+    res.status(500).json({ success: false, error: "Could not load your earnings" });
   }
 };

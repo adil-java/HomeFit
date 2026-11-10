@@ -12,6 +12,7 @@ import {
   RefreshControl,
   useWindowDimensions,
   BackHandler,
+  AppState,
 } from "react-native";
 import * as ExpoLinking from 'expo-linking';
 import { apiService } from "@/services/api";
@@ -34,10 +35,35 @@ type OnboardingStatus = {
   status?: string;
 };
 
-type Stage = 'not_started' | 'in_review' | 'active';
+type Stage = 'not_started' | 'in_review' | 'payouts_pending' | 'active';
 
-const stageOf = (s: OnboardingStatus | null): Stage =>
-  s?.chargesEnabled ? 'active' : s?.detailsSubmitted ? 'in_review' : 'not_started';
+const stageOf = (s: OnboardingStatus | null): Stage => {
+  if (s?.chargesEnabled) return s.payoutsEnabled ? 'active' : 'payouts_pending';
+  return s?.detailsSubmitted ? 'in_review' : 'not_started';
+};
+
+// Stripe's requirement codes ("individual verification document") → plain words
+const REQUIREMENT_LABELS: [RegExp, string][] = [
+  [/verification document|verification additional document/, 'A photo of your ID'],
+  [/external account/, 'Your bank account'],
+  [/dob/, 'Date of birth'],
+  [/address/, 'Home address'],
+  [/id number|ssn/, 'ID number'],
+  [/tos acceptance/, "Accept Stripe's terms"],
+  [/business profile|mcc|url/, 'Business details'],
+  [/phone/, 'Phone number'],
+  [/first name|last name/, 'Your name'],
+  [/email/, 'Email address'],
+];
+const friendlyRequirements = (list: string[]) => {
+  const out: string[] = [];
+  for (const raw of list) {
+    const r = raw.toLowerCase();
+    const label = REQUIREMENT_LABELS.find(([re]) => re.test(r))?.[1] ?? raw.charAt(0).toUpperCase() + raw.slice(1);
+    if (!out.includes(label)) out.push(label);
+  }
+  return out;
+};
 
 export default function OnboardingPage() {
   const { theme } = useTheme();
@@ -46,7 +72,8 @@ export default function OnboardingPage() {
   const compact = width < 360;
   const horizontalPadding = compact ? 14 : 20;
   const { user } = useAuth();
-  const sellerId = user?.id || '';
+  // Database user id (user.id is the sign-in id; the server checks the database id)
+  const sellerId = user?.uid || user?.id || '';
 
   const [loading, setLoading] = useState(true);       // first status load
   const [starting, setStarting] = useState(false);    // opening Stripe
@@ -98,6 +125,14 @@ export default function OnboardingPage() {
     }, [checkStatus])
   );
 
+  // Back in the app after Stripe (even if the browser was closed by hand) → refresh
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active' && !browserOpenRef.current) checkStatus();
+    });
+    return () => sub.remove();
+  }, [checkStatus]);
+
   // Deep link from Stripe's "done" page (…/seller/onboarding?onboarding=done)
   useEffect(() => {
     const sub = Linking.addEventListener('url', ({ url }) => {
@@ -131,7 +166,8 @@ export default function OnboardingPage() {
       );
 
       if (response.isOnboarded && !response.onboardingUrl) {
-        setStatus(response);
+        // Already fully set up — show the real status
+        await checkStatus();
         return;
       }
 
@@ -156,7 +192,7 @@ export default function OnboardingPage() {
   };
 
   const stage = stageOf(status);
-  const requirements = status?.requirements ?? [];
+  const requirements = friendlyRequirements(status?.requirements ?? []);
 
   // ---------- UI pieces ----------
 
@@ -182,16 +218,24 @@ export default function OnboardingPage() {
         ? 'Stripe needs a bit more information before you can accept payments.'
         : 'Stripe is reviewing your details. This usually takes 1–2 business days.',
     },
+    payouts_pending: {
+      icon: 'shield-checkmark-outline',
+      tint: c.warning,
+      title: 'One more step',
+      text: requirements.length
+        ? "You can already sell and earn. Stripe needs a little more before it can send money to your bank."
+        : 'You can already sell and earn. Stripe is checking your details before sending money to your bank.',
+    },
     active: {
       icon: 'checkmark-circle',
       tint: c.success,
       title: "You're all set",
-      text: 'Your account can accept payments and receive payouts.',
+      text: 'Buyers can pay you, and your earnings are sent to your bank automatically.',
     },
   };
   const hero = heroByStage[stage];
 
-  const primaryLabel = stage === 'not_started' ? 'Start Setup' : 'Continue Setup';
+  const primaryLabel = stage === 'not_started' ? 'Start setup' : stage === 'payouts_pending' ? 'Finish in Stripe' : 'Continue setup';
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: c.background }]}>
@@ -212,7 +256,7 @@ export default function OnboardingPage() {
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} colors={[c.primary]} />}
         >
-          {loadError && (
+          {loadError && !status && (
             <TouchableOpacity
               onPress={onRefresh}
               style={[styles.errorBanner, { backgroundColor: c.error + '18', borderColor: c.error + '55' }]}
@@ -252,7 +296,7 @@ export default function OnboardingPage() {
           </View>
 
           {/* What Stripe still needs */}
-          {stage === 'in_review' && requirements.length > 0 && (
+          {(stage === 'in_review' || stage === 'payouts_pending') && requirements.length > 0 && (
             <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}>
               <Text style={[styles.cardTitle, { color: c.text }]}>Still needed</Text>
               {requirements.map((req, index) => (
@@ -314,14 +358,42 @@ export default function OnboardingPage() {
           )}
 
           {/* Actions */}
-          {stage === 'active' ? (
-            <TouchableOpacity
-              style={[styles.button, { backgroundColor: c.primary }]}
-              onPress={() => router.navigate('/seller/dashboard')}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.primaryButtonText}>Go to Dashboard</Text>
-            </TouchableOpacity>
+          {stage === 'active' || stage === 'payouts_pending' ? (
+            <View style={styles.actionStack}>
+              {stage === 'payouts_pending' && requirements.length > 0 && (
+                <TouchableOpacity
+                  style={[styles.button, { backgroundColor: c.primary }, starting && styles.disabledButton]}
+                  onPress={startOnboarding}
+                  disabled={starting}
+                  activeOpacity={0.85}
+                >
+                  {starting ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>{primaryLabel}</Text>}
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  stage === 'payouts_pending' && requirements.length > 0
+                    ? [styles.secondaryButton, { borderColor: c.border }]
+                    : { backgroundColor: c.primary },
+                ]}
+                onPress={() => router.navigate('/seller/sellerBalance')}
+                activeOpacity={0.85}
+              >
+                <Text
+                  style={
+                    stage === 'payouts_pending' && requirements.length > 0
+                      ? [styles.secondaryButtonText, { color: c.text }]
+                      : styles.primaryButtonText
+                  }
+                >
+                  View earnings
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => router.navigate('/seller/dashboard')} style={styles.linkButton} hitSlop={8}>
+                <Text style={[styles.linkText, { color: c.primary }]}>Go to dashboard</Text>
+              </TouchableOpacity>
+            </View>
           ) : (
             <View style={[styles.buttonContainer, compact && styles.buttonContainerCompact]}>
               <TouchableOpacity
@@ -329,7 +401,7 @@ export default function OnboardingPage() {
                 onPress={() => router.dismissTo('/(tabs)')}
                 disabled={starting}
               >
-                <Text style={[styles.secondaryButtonText, { color: c.text }]}>Maybe Later</Text>
+                <Text style={[styles.secondaryButtonText, { color: c.text }]}>Maybe later</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.button, styles.flexButton, { backgroundColor: c.primary }, starting && styles.disabledButton]}
@@ -417,6 +489,9 @@ const styles = StyleSheet.create({
   disabledButton: { opacity: 0.7 },
   primaryButtonText: { color: '#fff', fontSize: 16, fontFamily: 'Manrope_600SemiBold', fontWeight: '600' },
   secondaryButtonText: { fontSize: 16, fontFamily: 'Manrope_600SemiBold', fontWeight: '600' },
+  actionStack: { gap: 12, marginTop: 4 },
+  linkButton: { alignSelf: 'center', paddingVertical: 6 },
+  linkText: { fontSize: 15, fontFamily: 'Manrope_700Bold' },
 
   secureRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 20, paddingHorizontal: 8 },
   secureText: { fontSize: 12, textAlign: 'center', fontFamily: 'Manrope_400Regular' },

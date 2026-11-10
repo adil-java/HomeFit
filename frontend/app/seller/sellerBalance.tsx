@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   RefreshControl,
   useWindowDimensions,
 } from "react-native"
@@ -28,28 +27,30 @@ const formatMoney = (amount: number, currency?: string) =>
 
 interface SellerBalanceScreenProps {
   sellerId: string
-  onRequestPayout: () => void
 }
+
+type Earnings = Awaited<ReturnType<typeof apiService.getSellerEarnings>>
 
 interface BalanceData {
-  currentBalance: number
-  pendingPayout: number
-  pendingAmount: number
-  lastPayoutDate: string
-  nextPayoutDate: string
+  earnings: Earnings
+  // Seller's own Stripe account (in Stripe's currency, minor units)
+  stripeAvailable: number
+  stripePending: number
+  stripeCurrency?: string
   chargesEnabled: boolean
   isVerified: boolean
-  currency?: string
 }
 
-export const SellerBalanceScreen: React.FC<SellerBalanceScreenProps> = ({ sellerId, onRequestPayout }) => {
+const EMPTY_EARNINGS: Earnings = { currency: "pkr", feePercent: 8, paid: 0, onHold: 0, recent: [] }
+
+export const SellerBalanceScreen: React.FC<SellerBalanceScreenProps> = ({ sellerId }) => {
   const { width } = useWindowDimensions()
   const { theme } = useTheme()
   const c = theme.colors
   const compact = width < 360
   const pad = compact ? 14 : 20
   // Last loaded balance (kept in Redux while the app is open) → instant on revisit
-  const [cachedBalance, saveCachedBalance] = useScreenCache<BalanceData>(sellerId ? `sellerBalance:${sellerId}` : null)
+  const [cachedBalance, saveCachedBalance] = useScreenCache<BalanceData>(sellerId ? `sellerBalance:v2:${sellerId}` : null)
   const [balance, setBalance] = useState<BalanceData | null>(() => cachedBalance ?? null)
   const [loading, setLoading] = useState(() => !cachedBalance)
   const [refreshing, setRefreshing] = useState(false)
@@ -61,40 +62,27 @@ export const SellerBalanceScreen: React.FC<SellerBalanceScreenProps> = ({ seller
   const fetchBalance = async () => {
     try {
       if (!sellerId) {
-        setBalance({
-          currentBalance: 0,
-          pendingPayout: 0,
-          pendingAmount: 0,
-          lastPayoutDate: "N/A",
-          nextPayoutDate: "N/A",
-          chargesEnabled: false,
-          isVerified: false,
-        })
+        setBalance({ earnings: EMPTY_EARNINGS, stripeAvailable: 0, stripePending: 0, chargesEnabled: false, isVerified: false })
         return
       }
-
-      // Previously this called a relative URL (no server address, no auth token),
-      // so it always failed. Use the shared API client instead.
-      // Balance fails with "not connected to Stripe" until onboarding is done → show zeros.
-      const [balanceRes, status] = await Promise.all([
+      // Stripe balance fails with "not connected" until setup is done → zeros
+      const [earnings, balanceRes, status] = await Promise.all([
+        apiService.getSellerEarnings(),
         apiService.getSellerBalance().catch(() => null),
         apiService.getSellerStatus(sellerId).catch(() => null),
       ])
       const amounts = balanceRes?.data || {}
       const next: BalanceData = {
-        currentBalance: amounts.available || 0,
-        pendingAmount: amounts.pending || 0,
-        pendingPayout: 0,
-        lastPayoutDate: "N/A",
-        nextPayoutDate: "N/A",
+        earnings,
+        stripeAvailable: amounts.available || 0,
+        stripePending: amounts.pending || 0,
+        stripeCurrency: amounts.currency,
         chargesEnabled: !!status?.chargesEnabled,
         isVerified: !!(status?.detailsSubmitted ?? status?.isOnboarded),
-        currency: amounts.currency,
       }
       setBalance(next)
       saveCachedBalance(next)
     } catch (error: any) {
-      // Keep showing cached data if we have it
       // Keeps cached data; the screen shows a retry hint when there is none
     } finally {
       setLoading(false)
@@ -110,7 +98,7 @@ export const SellerBalanceScreen: React.FC<SellerBalanceScreenProps> = ({ seller
   const header = (
     <View style={[styles.header, { paddingHorizontal: pad, borderBottomColor: c.border }]}>
       <HeaderBackButton onPress={() => (router.canGoBack() ? router.back() : router.dismissTo("/(tabs)"))} />
-      <Text style={[styles.headerTitle, { color: c.text }]}>Balance</Text>
+      <Text style={[styles.headerTitle, { color: c.text }]}>Earnings</Text>
       <View style={{ width: 40 }} />
     </View>
   )
@@ -123,7 +111,7 @@ export const SellerBalanceScreen: React.FC<SellerBalanceScreenProps> = ({ seller
           {loading ? (
             <ActivityIndicator color={c.primary} />
           ) : (
-            <Text style={[styles.muted, { color: c.textSecondary }]}>Could not load your balance. Pull down to try again.</Text>
+            <Text style={[styles.muted, { color: c.textSecondary }]}>Could not load your earnings. Pull down to try again.</Text>
           )}
         </View>
       </SafeAreaView>
@@ -131,7 +119,13 @@ export const SellerBalanceScreen: React.FC<SellerBalanceScreenProps> = ({ seller
   }
 
   const isPayoutReady = balance.chargesEnabled && balance.isVerified
-  const money = (minor: number) => formatMoney(minor / 100, balance.currency)
+  const { earnings } = balance
+  const stripeMoney = (minor: number) => formatMoney(minor / 100, balance.stripeCurrency)
+  const statusStyle = {
+    paid: { label: "Paid", color: c.success },
+    on_hold: { label: "On hold", color: c.warning },
+    cancelled: { label: "Cancelled", color: c.textSecondary },
+  } as const
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]} edges={["top"]}>
@@ -141,25 +135,21 @@ export const SellerBalanceScreen: React.FC<SellerBalanceScreenProps> = ({ seller
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} colors={[c.primary]} />}
         showsVerticalScrollIndicator={false}
       >
-        {/* Available balance */}
+        {/* Earnings */}
         <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}>
-          <Text style={[styles.label, { color: c.textSecondary }]}>Available to withdraw</Text>
+          <Text style={[styles.label, { color: c.textSecondary }]}>Paid to you</Text>
           <Text style={[styles.amount, compact && styles.amountCompact, { color: c.text }]} numberOfLines={1} adjustsFontSizeToFit>
-            {money(balance.currentBalance)}
+            {formatPKR(earnings.paid)}
           </Text>
           <View style={styles.statusRow}>
             <View style={[styles.dot, { backgroundColor: isPayoutReady ? c.success : c.warning }]} />
             <Text style={[styles.statusText, { color: c.textSecondary }]}>
-              {isPayoutReady ? "Payouts are active" : "Finish payment setup to receive payouts"}
+              {isPayoutReady
+                ? "Your share is sent automatically when a buyer pays"
+                : "Finish payment setup to receive your earnings"}
             </Text>
           </View>
-          {isPayoutReady ? (
-            balance.currentBalance > 0 && (
-              <TouchableOpacity style={[styles.primaryButton, { backgroundColor: c.primary }]} onPress={onRequestPayout} activeOpacity={0.85}>
-                <Text style={styles.primaryButtonText}>Request payout</Text>
-              </TouchableOpacity>
-            )
-          ) : (
+          {!isPayoutReady && (
             <TouchableOpacity
               style={[styles.primaryButton, { backgroundColor: c.primary }]}
               onPress={() => router.navigate("/seller/onboarding")}
@@ -170,48 +160,92 @@ export const SellerBalanceScreen: React.FC<SellerBalanceScreenProps> = ({ seller
           )}
         </View>
 
-        {/* Pending */}
-        <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}>
-          <View style={styles.rowBetween}>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.label, { color: c.textSecondary }]}>On the way</Text>
-              <Text style={[styles.amountSmall, { color: c.text }]}>{money(balance.pendingAmount)}</Text>
+        {/* On hold */}
+        {earnings.onHold > 0 && (
+          <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}>
+            <View style={styles.rowBetween}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.label, { color: c.textSecondary }]}>On hold</Text>
+                <Text style={[styles.amountSmall, { color: c.text }]}>{formatPKR(earnings.onHold)}</Text>
+              </View>
+              <View style={[styles.pill, { backgroundColor: c.warning + "22" }]}>
+                <Text style={[styles.pillText, { color: c.warning }]}>Waiting</Text>
+              </View>
             </View>
-            <View style={[styles.pill, { backgroundColor: c.warning + "22" }]}>
-              <Text style={[styles.pillText, { color: c.warning }]}>Processing</Text>
-            </View>
+            <Text style={[styles.note, { color: c.textSecondary }]}>
+              {isPayoutReady
+                ? "Being sent to your account now. Pull down to refresh."
+                : "Kept safe for you. It's sent automatically as soon as your payment setup is complete."}
+            </Text>
           </View>
-          <Text style={[styles.note, { color: c.textSecondary }]}>Recent sales become available in 1–2 business days.</Text>
+        )}
+
+        {/* Recent sales */}
+        <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>RECENT SALES</Text>
+        <View style={[styles.card, styles.listCard, { backgroundColor: c.surface, borderColor: c.border }]}>
+          {earnings.recent.length === 0 ? (
+            <Text style={[styles.note, { color: c.textSecondary, padding: 16, marginTop: 0 }]}>
+              Your earnings from paid orders will appear here.
+            </Text>
+          ) : (
+            earnings.recent.map((row, i, arr) => {
+              const st = statusStyle[row.status]
+              return (
+                <View
+                  key={row.id}
+                  style={[styles.listRow, i < arr.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border }]}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.listValue, { color: c.text }]} numberOfLines={1}>
+                      {row.orderNumber ? `Order ${row.orderNumber}` : "Order"}
+                    </Text>
+                    <Text style={[styles.listSub, { color: c.textSecondary }]}>
+                      {new Date(row.date).toLocaleDateString()} · <Text style={{ color: st.color }}>{st.label}</Text>
+                    </Text>
+                  </View>
+                  <Text style={[styles.listValue, { color: row.status === "cancelled" ? c.textSecondary : c.text }]}>
+                    {formatPKR(row.amount)}
+                  </Text>
+                </View>
+              )
+            })
+          )}
         </View>
 
-        {/* Payouts */}
-        <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>PAYOUTS</Text>
-        <View style={[styles.card, styles.listCard, { backgroundColor: c.surface, borderColor: c.border }]}>
-          {[
-            { label: "Last payout", value: balance.lastPayoutDate },
-            { label: "Next payout", value: balance.nextPayoutDate },
-            { label: "Method", value: "Bank transfer" },
-          ].map((row, i, arr) => (
-            <View
-              key={row.label}
-              style={[styles.listRow, i < arr.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border }]}
-            >
-              <Text style={[styles.listLabel, { color: c.textSecondary }]}>{row.label}</Text>
-              <Text style={[styles.listValue, { color: c.text }]}>{row.value}</Text>
+        {/* Stripe account */}
+        {isPayoutReady && (
+          <>
+            <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>IN YOUR STRIPE ACCOUNT</Text>
+            <View style={[styles.card, styles.listCard, { backgroundColor: c.surface, borderColor: c.border }]}>
+              {[
+                { label: "Available", value: stripeMoney(balance.stripeAvailable) },
+                { label: "Arriving soon", value: stripeMoney(balance.stripePending) },
+              ].map((row, i, arr) => (
+                <View
+                  key={row.label}
+                  style={[styles.listRow, i < arr.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border }]}
+                >
+                  <Text style={[styles.listLabel, { color: c.textSecondary }]}>{row.label}</Text>
+                  <Text style={[styles.listValue, { color: c.text }]}>{row.value}</Text>
+                </View>
+              ))}
+              <Text style={[styles.note, { color: c.textSecondary, paddingHorizontal: 16, paddingBottom: 14 }]}>
+                Stripe pays this out to your bank account automatically. Amounts are shown in your Stripe account's currency.
+              </Text>
             </View>
-          ))}
-        </View>
+          </>
+        )}
 
         {/* Fees */}
         <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>FEES</Text>
         <View style={[styles.card, styles.listCard, { backgroundColor: c.surface, borderColor: c.border }]}>
           <Text style={[styles.note, { color: c.textSecondary, paddingHorizontal: 16, paddingTop: 14, marginTop: 0 }]}>
-            You keep 92% of every sale. HomeFit keeps 8% as a platform fee.
+            You keep {100 - earnings.feePercent}% of the price of your items. HomeFit keeps {earnings.feePercent}% as a platform fee.
           </Text>
           {[
-            { label: "Customer pays", value: formatPKR(10000) },
-            { label: "Platform fee (8%)", value: `−${formatPKR(800)}`, tone: c.error },
-            { label: "You earn", value: formatPKR(9200), tone: c.success, bold: true },
+            { label: "Your items sell for", value: formatPKR(10000) },
+            { label: `Platform fee (${earnings.feePercent}%)`, value: `−${formatPKR(earnings.feePercent * 100)}`, tone: c.error },
+            { label: "You earn", value: formatPKR(10000 - earnings.feePercent * 100), tone: c.success, bold: true },
           ].map((row, i, arr) => (
             <View
               key={row.label}
@@ -233,10 +267,7 @@ export default function SellerBalanceRoute() {
   const { user } = useAuth()
 
   return (
-    <SellerBalanceScreen
-      sellerId={user?.uid || user?.id || ""}
-      onRequestPayout={() => Alert.alert("Coming soon", "Payout requests will be available soon.")}
-    />
+    <SellerBalanceScreen sellerId={user?.uid || user?.id || ""} />
   )
 }
 
@@ -273,4 +304,5 @@ const styles = StyleSheet.create({
   listRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 14, gap: 12 },
   listLabel: { fontSize: 14, fontFamily: "Manrope_500Medium" },
   listValue: { fontSize: 14, fontFamily: "Manrope_700Bold" },
+  listSub: { fontSize: 12, fontFamily: "Manrope_500Medium", marginTop: 2 },
 })

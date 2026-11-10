@@ -57,7 +57,7 @@ export default function SellerLayout() {
           name="sellerBalance"
           options={{
             headerShown: false,
-            title: 'Seller Balance',
+            title: 'Earnings',
           }}
         />
       </SellerDrawer>

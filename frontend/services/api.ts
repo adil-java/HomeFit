@@ -829,6 +829,23 @@ class ApiService {
     }
   }
 
+  /** Seller's share of their sales (Rs.): paid out, on hold, recent orders. */
+  async getSellerEarnings(): Promise<{
+    currency: string;
+    feePercent: number;
+    paid: number;
+    onHold: number;
+    recent: { id: string; orderNumber?: string; date: string; amount: number; itemsValue: number | null; status: 'paid' | 'on_hold' | 'cancelled' }[];
+  }> {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}/Stripe/earnings`, { headers });
+    const json = await response.json().catch(() => ({}));
+    if (!response.ok || !json?.success) {
+      throw new Error(json?.error || 'Could not load your earnings');
+    }
+    return json.data;
+  }
+
   async getSellerBalance() {
     try {
       const headers = await this.getAuthHeaders();

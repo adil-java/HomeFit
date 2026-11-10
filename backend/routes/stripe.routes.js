@@ -7,6 +7,7 @@ import {
   stripeWebhook,
   connectReturn,
   connectRefresh,
+  getEarnings,
 } from "../controllers/StripeConnect.controller.js";
 import { checkSeller, protect } from "../middlewares/authMiddleware.js";
 
@@ -27,6 +28,9 @@ router.get("/connect/status/:sellerId", protect, getConnectStatus);
 
 // Seller Balance
 router.get("/balance", protect, getBalance);
+
+// Seller earnings (their share of sales: paid out / on hold)
+router.get("/earnings", protect, getEarnings);
 
 // Stripe Webhook
 // (raw body is kept for signature checks in server.js, before express.json)

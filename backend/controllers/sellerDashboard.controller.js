@@ -1,5 +1,6 @@
 import { PrismaClient, OrderStatus, Prisma } from '@prisma/client';
 import logger from '../utils/logger.js';
+import { getSellerEarnings } from '../services/payout.service.js';
 const prisma = new PrismaClient();
 
 // Helper function to format currency
@@ -20,111 +21,86 @@ const getCurrentMonthDates = () => {
   return { firstDay, lastDay };
 };
 
+/**
+ * All of this seller's sold items: their own products, in orders that were
+ * paid and not cancelled. (Orders can contain several sellers' products, so
+ * sales are counted per item, never from the whole order total.)
+ */
+const getSellerSoldItems = (sellerId, since) =>
+  prisma.orderItem.findMany({
+    where: {
+      product: { sellerId },
+      order: {
+        paymentStatus: 'PAID',
+        status: { not: OrderStatus.CANCELLED },
+        ...(since && { createdAt: { gte: since } }),
+      },
+    },
+    select: {
+      productId: true,
+      price: true,
+      quantity: true,
+      orderId: true,
+      order: { select: { userId: true, createdAt: true } },
+    },
+  });
+
+const itemValue = (item) => Number(item.price) * Number(item.quantity);
+const round2 = (n) => Math.round(n * 100) / 100;
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 // @desc    Get seller dashboard statistics
 // @route   GET /api/seller/dashboard/stats
 // @access  Private/Seller
 export const getDashboardStats = async (req, res) => {
   try {
     const sellerId = req.user.id;
-    const { firstDay, lastDay } = getCurrentMonthDates();
-    const lastMonth = new Date();
-    lastMonth.setMonth(lastMonth.getMonth() - 1);
+    const items = await getSellerSoldItems(sellerId);
 
-    // Get total users who have ordered from this seller
-    const uniqueUsers = await prisma.order.groupBy({
-      by: ['userId'],
-      where: {
-        sellerId,
-        status: { not: OrderStatus.CANCELLED }
-      }
-    });
-    const totalUsers = uniqueUsers.length;
+    const now = new Date();
+    const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    // Get active users (users who ordered in the last 30 days)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
-    const recentUniqueUsers = await prisma.order.groupBy({
-      by: ['userId'],
-      where: {
-        sellerId,
-        status: { not: OrderStatus.CANCELLED },
-        createdAt: { gte: thirtyDaysAgo }
-      }
-    });
-    const activeUsers = recentUniqueUsers.length;
+    const totalRevenue = round2(items.reduce((sum, i) => sum + itemValue(i), 0));
+    const totalOrders = new Set(items.map((i) => i.orderId)).size;
+    const totalUsers = new Set(items.map((i) => i.order.userId)).size;
+    const activeUsers = new Set(items.filter((i) => i.order.createdAt >= thirtyDaysAgo).map((i) => i.order.userId)).size;
 
-    // Get total revenue (sum of sellerAmount for all completed orders)
-    const totalRevenueResult = await prisma.order.aggregate({
+    const monthSales = (from, to) =>
+      items.filter((i) => i.order.createdAt >= from && (!to || i.order.createdAt < to)).reduce((s, i) => s + itemValue(i), 0);
+    const currentMonthTotal = monthSales(thisMonth);
+    const lastMonthTotal = monthSales(lastMonth, thisMonth);
+    const monthlyGrowth = lastMonthTotal > 0 ? ((currentMonthTotal - lastMonthTotal) / lastMonthTotal) * 100 : 0;
+
+    // What the seller has been paid / has waiting (see payout.service)
+    const earnings = await getSellerEarnings(sellerId).catch(() => null);
+    const pendingOrders = await prisma.order.count({
       where: {
-        sellerId,
-        paymentMethod:'card',
+        paymentStatus: 'PAID',
+        status: { in: [OrderStatus.PENDING, OrderStatus.PROCESSING] },
+        items: { some: { product: { sellerId } } },
       },
-      _sum: {
-        total: true
-      }
     });
-
-    const totalRevenue = totalRevenueResult._sum.total || 0;
-
-    // Get total orders
-    const totalOrders = await prisma.order.count({
-      where: { sellerId }
-    });
-
-    // Calculate monthly growth
-    const currentMonthRevenue = await prisma.order.aggregate({
-      where: {
-        sellerId,
-        paymentMethod:'card',
-        createdAt: {
-          gte: firstDay,
-          lte: lastDay
-        }
-      },
-      _sum: {
-        total: true
-      }
-    });
-
-    const lastMonthRevenue = await prisma.order.aggregate({
-      where: {
-        sellerId,
-        paymentMethod:'card',
-        createdAt: {
-          gte: new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 1),
-          lt: firstDay
-        }
-      },
-      _sum: {
-        total: true
-      }
-    });
-
-    const currentMonthTotal = currentMonthRevenue._sum.total || 0;
-    const lastMonthTotal = lastMonthRevenue._sum.total || 0;
-    
-    const monthlyGrowth = lastMonthTotal > 0 
-      ? ((currentMonthTotal - lastMonthTotal) / lastMonthTotal) * 100 
-      : 0;
 
     res.status(200).json({
       success: true,
       data: {
         totalUsers,
         activeUsers,
-        totalRevenue,
+        totalRevenue, // value of the seller's items sold (before the platform fee)
         totalOrders,
-        monthlyGrowth: parseFloat(monthlyGrowth.toFixed(2))
+        monthlyGrowth: parseFloat(monthlyGrowth.toFixed(2)),
+        thisMonthRevenue: round2(currentMonthTotal),
+        pendingOrders, // paid orders still to be shipped
+        earnings: earnings
+          ? { paid: earnings.paid, onHold: earnings.onHold, feePercent: earnings.feePercent }
+          : { paid: 0, onHold: 0, feePercent: 8 },
       },
     });
   } catch (error) {
     logger.error('Error fetching dashboard stats:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching dashboard statistics',
-      error: error.message,
-    });
+    res.status(500).json({ success: false, message: 'Error fetching dashboard statistics' });
   }
 };
 
@@ -134,242 +110,122 @@ export const getDashboardStats = async (req, res) => {
 export const getRevenueByCategory = async (req, res) => {
   try {
     const sellerId = req.user.id;
+    const items = await getSellerSoldItems(sellerId);
 
-    // First, get all categories with their products and order items
-    const categories = await prisma.category.findMany({
-      include: {
-        products: {
-          where: { 
-            sellerId,
-            // Only include products that have order items
-            orderItems: {
-              some: {
-                order: {
-                  paymentMethod: 'card',
-                }
-              }
-            }
-          },
-          include: {
-            orderItems: {
-              where: {
-                order: {
-                  paymentMethod: 'card',
-
-                }
-              },
-              include: {
-                order: {
-                  select: {
-                    id: true,
-                    paymentMethod: true,
-                    status: true,
-                    paymentStatus: true
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+    const products = await prisma.product.findMany({
+      where: { id: { in: [...new Set(items.map((i) => i.productId))] } },
+      select: { id: true, categories: { select: { name: true } } },
     });
+    const categoryOf = Object.fromEntries(products.map((p) => [p.id, p.categories[0]?.name || 'Other']));
 
-    // Calculate revenue by category
-    const revenueByCategory = categories
-      .map(category => {
-        const totalRevenue = category.products.reduce((sum, product) => {
-          const productRevenue = product.orderItems.reduce((productSum, item) => {
-            // Only include valid, completed card payments
-            if (item.order && 
-                item.order.paymentMethod === 'card') {
-              return productSum + (Number(item.price) * Number(item.quantity));
-            }
-            return productSum;
-          }, 0);
-          return sum + productRevenue;
-        }, 0);
+    const totals = {};
+    for (const item of items) {
+      const name = categoryOf[item.productId] || 'Other';
+      totals[name] = (totals[name] || 0) + itemValue(item);
+    }
+    const sorted = Object.entries(totals)
+      .map(([name, revenue]) => ({ name, revenue: round2(revenue) }))
+      .filter((c) => c.revenue > 0)
+      .sort((a, b) => b.revenue - a.revenue);
 
-        return {
-          name: category.name,
-          revenue: parseFloat(totalRevenue.toFixed(2)), // Ensure we have 2 decimal places
-          color: `#${Math.floor(Math.random()*16777215).toString(16)}`,
-          legendFontColor: '#7F7F7F',
-          legendFontSize: 12
-        };
-      })
-      .filter(cat => cat.revenue > 0) // Only include categories with revenue
-      .sort((a, b) => b.revenue - a.revenue); // Sort by revenue descending
-
-    // Group into top 4 + "Other" category
-    const topCategories = revenueByCategory.slice(0, 4);
-    const otherCategories = revenueByCategory.slice(4);
-    const otherRevenue = parseFloat(otherCategories.reduce((sum, cat) => sum + cat.revenue, 0).toFixed(2));
-
-    if (otherRevenue > 0) {
-      topCategories.push({
-        name: 'Other',
-        revenue: otherRevenue,
-        color: '#CCCCCC',
-        legendFontColor: '#7F7F7F',
-        legendFontSize: 12
-      });
+    // Top 4 + "Other"
+    const top = sorted.slice(0, 4);
+    const rest = round2(sorted.slice(4).reduce((s, c) => s + c.revenue, 0));
+    if (rest > 0) {
+      const other = top.find((c) => c.name === 'Other');
+      if (other) other.revenue = round2(other.revenue + rest);
+      else top.push({ name: 'Other', revenue: rest });
     }
 
-    // Calculate percentages
-    const totalRevenue = parseFloat(topCategories.reduce((sum, cat) => sum + cat.revenue, 0).toFixed(2));
-    const result = topCategories.map(cat => ({
-      ...cat,
-      population: totalRevenue > 0 ? Math.round((cat.revenue / totalRevenue) * 100) : 0
+    const total = top.reduce((s, c) => s + c.revenue, 0);
+    const result = top.map((c) => ({
+      ...c,
+      color: '#CCCCCC', // the app picks its own colours
+      legendFontColor: '#7F7F7F',
+      legendFontSize: 12,
+      population: total > 0 ? Math.round((c.revenue / total) * 100) : 0,
     }));
 
-    res.status(200).json({
-      success: true,
-      data: result,
-    });
+    res.status(200).json({ success: true, data: result });
   } catch (error) {
     logger.error('Error fetching revenue by category:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching revenue by category',
-      error: error.message,
-    });
+    res.status(500).json({ success: false, message: 'Error fetching revenue by category' });
   }
 };
 
-// @desc    Get monthly revenue data
+// @desc    Get monthly revenue data (last 6 months)
 // @route   GET /api/seller/dashboard/monthly-revenue
 // @access  Private/Seller
 export const getMonthlyRevenue = async (req, res) => {
   try {
     const sellerId = req.user.id;
+    const now = new Date();
+    const first = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+    const items = await getSellerSoldItems(sellerId, first);
+
     const months = [];
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    
-    // Get data for the last 6 months
     for (let i = 5; i >= 0; i--) {
-      const date = new Date();
-      date.setMonth(date.getMonth() - i);
-      months.push({
-        name: monthNames[date.getMonth()],
-        year: date.getFullYear(),
-        month: date.getMonth() + 1
-      });
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({ key: `${d.getFullYear()}-${d.getMonth()}`, name: MONTH_NAMES[d.getMonth()], revenue: 0 });
     }
-
-    // Get revenue for each month
-    const monthlyData = await Promise.all(months.map(async ({ year, month, name }) => {
-      const startDate = new Date(year, month - 1, 1);
-      const endDate = new Date(year, month, 0);
-      
-      const result = await prisma.order.aggregate({
-        where: {
-          sellerId,
-          paymentMethod:'card',
-          createdAt: {
-            gte: startDate,
-            lte: endDate
-          }
-        },
-        _sum: {
-          total: true
-        }
-      });
-
-      return {
-        month: name,
-        revenue: result._sum.total || 0
-      };
-    }));
-
-    const monthlyRevenue = {
-      labels: monthlyData.map(data => data.month),
-      datasets: [
-        {
-          data: monthlyData.map(data => data.revenue),
-          color: (opacity = 1) => `rgba(134, 65, 244, ${opacity})`,
-          strokeWidth: 2
-        }
-      ]
-    };
+    const byKey = Object.fromEntries(months.map((m) => [m.key, m]));
+    for (const item of items) {
+      const d = item.order.createdAt;
+      const m = byKey[`${d.getFullYear()}-${d.getMonth()}`];
+      if (m) m.revenue += itemValue(item);
+    }
 
     res.status(200).json({
       success: true,
-      data: monthlyRevenue,
+      data: {
+        labels: months.map((m) => m.name),
+        datasets: [{ data: months.map((m) => round2(m.revenue)), strokeWidth: 2 }],
+      },
     });
   } catch (error) {
     logger.error('Error fetching monthly revenue:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching monthly revenue data',
-      error: error.message,
-    });
+    res.status(500).json({ success: false, message: 'Error fetching monthly revenue data' });
   }
 };
 
-// @desc    Get top products
+// @desc    Get top products (by items sold in paid orders)
 // @route   GET /api/seller/dashboard/top-products
 // @access  Private/Seller
 export const getTopProducts = async (req, res) => {
   try {
     const sellerId = req.user.id;
-    
-    // First get all products for the seller with their order items
-    const products = await prisma.product.findMany({
-      where: { sellerId },
-      include: {
-        orderItems: {
-          include: {
-            order: true
-          }
-        }
-      }
-    });
+    const [products, items] = await Promise.all([
+      prisma.product.findMany({
+        where: { sellerId },
+        select: { id: true, name: true, images: true, quantity: true },
+      }),
+      getSellerSoldItems(sellerId),
+    ]);
 
-    // Process and filter products
-    const processedProducts = products.map(product => {
-      // Filter order items to only include those with card payments
-      const validOrderItems = product.orderItems.filter(item => 
-        item.order && item.order.paymentMethod === 'card'
-      );
+    const sales = {};
+    for (const item of items) {
+      const s = (sales[item.productId] ||= { revenue: 0, orders: new Set(), units: 0 });
+      s.revenue += itemValue(item);
+      s.orders.add(item.orderId);
+      s.units += Number(item.quantity);
+    }
 
-      // Calculate total revenue and order count for valid orders
-      const totalRevenue = validOrderItems.reduce((sum, item) => 
-        sum + (item.price * item.quantity), 0
-      );
-
-      return {
-        ...product,
-        orderItems: validOrderItems,
-        totalRevenue,
-        orderCount: validOrderItems.length
-      };
-    });
-
-    // Sort by order count and take top 5
-    const topProducts = processedProducts
-      .sort((a, b) => b.orderCount - a.orderCount)
+    const formatted = products
+      .map((p) => ({
+        id: p.id,
+        name: p.name,
+        image: Array.isArray(p.images) ? p.images[0] : undefined,
+        revenue: round2(sales[p.id]?.revenue || 0),
+        orders: sales[p.id]?.orders.size || 0,
+        unitsSold: sales[p.id]?.units || 0,
+        stock: p.quantity,
+      }))
+      .sort((a, b) => b.revenue - a.revenue || b.orders - a.orders)
       .slice(0, 5);
 
-    // Format the response
-    const formattedProducts = topProducts.map(product => ({
-      id: product.id,
-      name: product.name,
-      image: product?.images[0],  // Adding product image to the response
-      revenue: parseFloat(product.totalRevenue.toFixed(2)),
-      orders: product.orderCount,
-      stock: product.quantity
-    }));
-
-    res.status(200).json({
-      success: true,
-      data: formattedProducts,
-    });
+    res.status(200).json({ success: true, data: formatted });
   } catch (error) {
     logger.error('Error fetching top products:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching top products',
-      error: error.message,
-    });
+    res.status(500).json({ success: false, message: 'Error fetching top products' });
   }
 };

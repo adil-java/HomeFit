@@ -44,16 +44,16 @@ const DrawerContent = (props: any) => {
       path: '/seller/orders',
       roles: ['seller']
     },
-    { 
-      label: 'Payment Setup', 
-      icon: CreditCard, 
-      path: '/seller/onboarding',
-      roles: ['seller']
-    },
     {
-      label: 'Balance',
+      label: 'Earnings',
       icon: DollarSign,
       path: '/seller/sellerBalance',
+      roles: ['seller']
+    },
+    { 
+      label: 'Payment setup', 
+      icon: CreditCard, 
+      path: '/seller/onboarding',
       roles: ['seller']
     },
     {

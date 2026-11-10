@@ -2,6 +2,7 @@ import OrderService from '../services/order.service.js';
 import { validationResult } from 'express-validator';
 import { PrismaClient } from '@prisma/client';
 import logger from '../utils/logger.js';
+import { settleOrder } from '../services/payout.service.js';
 const prisma = new PrismaClient();
 
 // Helper function to handle validation errors
@@ -63,6 +64,11 @@ export const createOrder = async (req, res) => {
         logger.error('Error clearing cart:', cartError);
         // Don't fail the request if cart clearing fails
       }
+    }
+
+    // Paid by card: record each seller's share and send it (in the background)
+    if (order.paymentStatus === 'PAID') {
+      settleOrder(order.id);
     }
 
     res.status(201).json({
