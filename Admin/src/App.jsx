@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
+import { ConfirmProvider } from "./components/ConfirmDialog";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminLayout from "./components/AdminLayout";
 import Login from "./pages/Login";
@@ -26,8 +27,9 @@ const App = () => (
     <ThemeProvider>
       <AuthProvider>
         <TooltipProvider>
+          <ConfirmProvider>
           <Toaster />
-          <Sonner />
+          <Sonner richColors closeButton position="top-right" />
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Login />} />
@@ -126,6 +128,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
+          </ConfirmProvider>
         </TooltipProvider>
       </AuthProvider>
     </ThemeProvider>

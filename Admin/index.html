@@ -3,19 +3,30 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Admin Panel - Furniture Marketplace</title>
-    <meta name="description" content="Comprehensive admin panel for managing furniture marketplace operations, sellers, users, and products" />
-    <meta name="author" content="Furniture Marketplace" />
+    <title>HomeFit Admin</title>
+    <meta name="description" content="HomeFit admin panel: sellers, products, orders and payments" />
+    <meta name="author" content="HomeFit" />
 
-    <meta property="og:title" content="Admin Panel - Furniture Marketplace" />
-    <meta property="og:description" content="Comprehensive admin panel for managing furniture marketplace operations" />
+    <meta property="og:title" content="HomeFit Admin" />
+    <meta property="og:description" content="HomeFit admin panel" />
     <meta property="og:type" content="website" />
     
 
-    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <meta name="theme-color" content="#2F3C7E" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script>
+      // Apply the saved (or system) theme before first paint, so there is no flash
+      (function () {
+        try {
+          var saved = localStorage.getItem('theme');
+          var dark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (dark) document.documentElement.classList.add('dark');
+        } catch (e) {}
+      })();
+    </script>
   </head>
 
   <body>

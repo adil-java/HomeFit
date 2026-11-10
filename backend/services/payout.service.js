@@ -101,6 +101,10 @@ async function sendShare(share) {
   const amount = Math.floor(settled.amount * proportion);
   if (amount <= 0) return share;
 
+  // A refund may have cancelled this share while we were checking the account
+  const fresh = await prisma.transaction.findUnique({ where: { id: share.id } });
+  if (!fresh || fresh.status !== "PENDING") return fresh || share;
+
   try {
     const transfer = await stripe.transfers.create(
       {
@@ -235,4 +239,118 @@ export async function getSellerEarnings(sellerId) {
       status: s.status === "COMPLETED" ? "paid" : s.status === "PENDING" ? "on_hold" : "cancelled",
     })),
   };
+}
+
+const httpError = (statusCode, message) => Object.assign(new Error(message), { statusCode });
+
+const STRIPE_REFUND_REASON = {
+  DUPLICATE: "duplicate",
+  FRAUD: "fraudulent",
+};
+
+/**
+ * Fully refund a paid card order (admin action).
+ *
+ * 1. Takes back every seller share already sent (Stripe transfer reversal),
+ *    and cancels shares still on hold, so the platform isn't left paying
+ *    the seller for goods the customer got their money back for.
+ * 2. Refunds the customer's whole payment.
+ * 3. Marks the order REFUNDED and records the refund.
+ *
+ * Safe to retry: reversals and the refund use idempotency keys, and shares
+ * already reversed are skipped. Throws an error with .statusCode on failure.
+ */
+export async function refundOrder(orderId, { reason = "CUSTOMER_REQUEST", notes = null } = {}) {
+  // Let any payout that is being sent right now finish first
+  if (settling.has(orderId)) await settling.get(orderId).catch(() => {});
+
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  if (!order) throw httpError(404, "Order not found");
+  if (order.paymentStatus === "REFUNDED") throw httpError(409, "This order has already been refunded");
+  if (order.paymentStatus !== "PAID" || !order.stripePaymentIntent) {
+    throw httpError(400, "Only orders paid by card can be refunded");
+  }
+
+  const shares = await prisma.transaction.findMany({ where: { orderId, type: "TRANSFER" } });
+
+  // 1. Take back seller payouts
+  for (const share of shares) {
+    const meta = share.metadata || {};
+    if (share.status === "COMPLETED" && share.stripeTransferId && !meta.reversedAt) {
+      try {
+        await stripe.transfers.createReversal(
+          share.stripeTransferId,
+          { metadata: { orderId, reason: "order_refunded" } },
+          { idempotencyKey: `refund-reversal-${share.id}` }
+        );
+      } catch (error) {
+        logger.error(`[Refund] Could not reverse payout for order ${order.orderNumber}:`, error);
+        throw httpError(
+          409,
+          `Could not take back the seller's payout (${error.message}). The customer has not been refunded yet, so you can try again.`
+        );
+      }
+      await prisma.transaction.update({
+        where: { id: share.id },
+        data: {
+          status: "CANCELLED",
+          description: `Reversed: order ${order.orderNumber} was refunded`,
+          metadata: { ...meta, reversedAt: new Date().toISOString() },
+        },
+      });
+    } else if (share.status === "PENDING") {
+      await prisma.transaction.update({
+        where: { id: share.id },
+        data: { status: "CANCELLED", description: `Order ${order.orderNumber} refunded before payout` },
+      });
+    }
+  }
+
+  // 2. Refund the customer
+  let refund;
+  try {
+    refund = await stripe.refunds.create(
+      {
+        payment_intent: order.stripePaymentIntent,
+        reason: STRIPE_REFUND_REASON[reason] || "requested_by_customer",
+        metadata: { orderId, orderNumber: order.orderNumber },
+      },
+      { idempotencyKey: `order-refund-${order.id}` }
+    );
+  } catch (error) {
+    logger.error(`[Refund] Stripe refund failed for order ${order.orderNumber}:`, error);
+    throw httpError(502, `Stripe could not refund the payment: ${error.message}`);
+  }
+
+  // 3. Record it
+  const now = new Date();
+  await prisma.$transaction([
+    prisma.order.update({ where: { id: orderId }, data: { paymentStatus: "REFUNDED", status: "REFUNDED" } }),
+    prisma.orderStatusHistory.create({ data: { orderId, status: "REFUNDED" } }),
+    prisma.refund.create({
+      data: {
+        orderId,
+        amount: order.total,
+        reason,
+        status: refund.status === "succeeded" ? "COMPLETED" : "PENDING",
+        stripeRefundId: refund.id,
+        notes,
+        requestedAt: now,
+        processedAt: now,
+      },
+    }),
+    prisma.transaction.create({
+      data: {
+        orderId,
+        type: "REFUND",
+        amount: order.total,
+        currency: "pkr",
+        status: "COMPLETED",
+        description: `Refunded order ${order.orderNumber}`,
+        metadata: { stripeRefundId: refund.id, reason },
+      },
+    }),
+  ]);
+
+  return { orderId, refundId: refund.id, amount: order.total, status: refund.status };
 }

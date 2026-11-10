@@ -2,107 +2,124 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* HomeFit admin design tokens (HSL), matching the mobile app's theme. */
 
 @layer base {
   :root {
-    --background: 210 31% 98%; /* soft off-white */
-    --foreground: 222 47% 11%;
+    /* Same palette as the mobile app (frontend/contexts/ThemeContext.tsx) */
+    --background: 45 18% 96%;      /* #F6F5F2 */
+    --foreground: 40 6% 10%;       /* #1C1B19 */
 
-  --card: 210 100% 100%; /* card base (white-ish) */
-    --card-foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 40 6% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 40 6% 10%;
 
-    --primary: 239 84% 67%;
+    --primary: 230 46% 34%;        /* brand navy #2F3C7E */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 43 18% 92%;
+    --secondary-foreground: 40 6% 10%;
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 43 18% 93%;
+    --muted-foreground: 40 4% 40%; /* #6B6862 */
 
-    --accent: 158 64% 52%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 43 18% 92%;
+    --accent-foreground: 40 6% 10%;
 
-    --destructive: 0 84% 60%;
+    --brand: 34 39% 55%;           /* warm oak #B8925F */
+    --brand-foreground: 0 0% 100%;
+
+    --destructive: 0 61% 48%;      /* #C53030 */
     --destructive-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;
+    --success: 150 48% 35%;        /* #2F855A */
+    --success-foreground: 0 0% 100%;
+
+    --warning: 39 84% 43%;         /* #C98A12 */
     --warning-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 239 84% 67%;
+    --info: 219 39% 45%;
+    --info-foreground: 0 0% 100%;
 
-    --radius: 0.5rem;
+    --border: 40 15% 88%;          /* #E6E3DD */
+    --input: 40 15% 85%;
+    --ring: 230 46% 34%;
 
-    --sidebar-background: 222 47% 11%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 239 84% 67%;
+    --radius: 0.625rem;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 40 4% 32%;
+    --sidebar-primary: 230 46% 34%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 47% 16%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 222 47% 16%;
-    --sidebar-ring: 239 84% 67%;
+    --sidebar-accent: 230 46% 34% / 0.08;
+    --sidebar-accent-foreground: 230 46% 30%;
+    --sidebar-border: 40 15% 88%;
+    --sidebar-ring: 230 46% 34%;
 
-    --chart-1: 239 84% 67%;
-    --chart-2: 158 64% 52%;
-    --chart-3: 38 92% 50%;
-    --chart-4: 280 87% 65%;
-    --chart-5: 340 82% 52%;
+    --chart-1: 230 46% 34%;
+    --chart-2: 34 39% 55%;
+    --chart-3: 219 39% 52%;
+    --chart-4: 150 48% 35%;
+    --chart-5: 40 4% 55%;
   }
 
   .dark {
-    --background: 224 71% 6%;
-    --foreground: 210 40% 98%;
+    --background: 60 3% 8%;        /* #141413 */
+    --foreground: 45 15% 95%;      /* #F4F3F0 */
 
-    --card: 224 71% 6%;
-    --card-foreground: 210 40% 98%;
+    --card: 60 3% 11%;             /* #1E1E1C */
+    --card-foreground: 45 15% 95%;
 
-    --popover: 224 71% 6%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 60 3% 12%;
+    --popover-foreground: 45 15% 95%;
 
-    --primary: 239 84% 67%;
+    --primary: 219 39% 52%;        /* navy lifted for dark #5576B5 */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 222 47% 11%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 60 3% 15%;
+    --secondary-foreground: 45 15% 95%;
 
-    --muted: 222 47% 11%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 60 3% 15%;
+    --muted-foreground: 40 5% 62%; /* #A3A09A */
 
-    --accent: 158 64% 52%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 60 3% 16%;
+    --accent-foreground: 45 15% 95%;
 
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
+    --brand: 34 51% 63%;           /* #D1A872 */
+    --brand-foreground: 60 3% 8%;
 
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
+    --destructive: 4 72% 64%;      /* #E5675F */
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 222 47% 16%;
-    --input: 222 47% 16%;
-    --ring: 239 84% 67%;
+    --success: 147 38% 50%;        /* #4FB07A */
+    --success-foreground: 60 3% 8%;
 
-    --sidebar-background: 222 47% 11%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 239 84% 67%;
+    --warning: 40 73% 55%;         /* #E0A93B */
+    --warning-foreground: 60 3% 8%;
+
+    --info: 219 46% 66%;
+    --info-foreground: 60 3% 8%;
+
+    --border: 45 5% 17%;           /* #2E2D2A */
+    --input: 45 5% 21%;
+    --ring: 219 39% 52%;
+
+    --sidebar-background: 60 3% 10%;
+    --sidebar-foreground: 40 5% 70%;
+    --sidebar-primary: 219 39% 52%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 47% 16%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 222 47% 16%;
-    --sidebar-ring: 239 84% 67%;
+    --sidebar-accent: 219 39% 52% / 0.16;
+    --sidebar-accent-foreground: 219 60% 80%;
+    --sidebar-border: 45 5% 17%;
+    --sidebar-ring: 219 39% 52%;
 
-    --chart-1: 239 84% 67%;
-    --chart-2: 158 64% 52%;
-    --chart-3: 38 92% 50%;
-    --chart-4: 280 87% 65%;
-    --chart-5: 340 82% 52%;
+    --chart-1: 219 39% 58%;
+    --chart-2: 34 51% 63%;
+    --chart-3: 219 46% 72%;
+    --chart-4: 147 38% 50%;
+    --chart-5: 40 5% 55%;
   }
 }
 
@@ -111,17 +128,30 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
-  body {
-    @apply bg-background text-foreground;
-    /* subtle radial accent in the background */
-    background-image: radial-gradient( circle at 10% 10%, rgba(239,68,68,0.03), transparent 10%), radial-gradient( circle at 90% 80%, rgba(59,130,246,0.03), transparent 12% );
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
   }
 
-  /* make container cards stand out */
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: 'tnum' 1;
+  }
+
   .app-container-card {
     background-color: hsl(var(--card));
-    border-radius: calc(var(--radius) + 0.25rem);
-    box-shadow: 0 6px 18px rgba(16,24,40,0.06);
+    border-radius: var(--radius);
     border: 1px solid hsl(var(--border));
   }
+}
+
+/* Recharts text follows the theme */
+.recharts-cartesian-axis-tick-value {
+  fill: hsl(var(--muted-foreground));
+  font-size: 12px;
+}
+.recharts-cartesian-grid line {
+  stroke: hsl(var(--border));
 }

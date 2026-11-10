@@ -1,189 +1,230 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import PageHeader from '@/components/PageHeader';
-import StatusBadge from '@/components/StatusBadge';
+import EmptyState from '@/components/EmptyState';
+import Pill from '@/components/Pill';
+import { useConfirm } from '@/components/ConfirmDialog';
 import { Button } from '@/components/ui/button';
-import { Check, X, FileText } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Check, X, FileText, UserCheck, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminApi } from '@/services/adminApi';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { formatDate, formatDateTime } from '@/lib/format';
 
-// Seller request shape is handled dynamically in JS
+const STATUS = {
+  PENDING: { label: 'Pending', tone: 'warning' },
+  APPROVED: { label: 'Approved', tone: 'success' },
+  REJECTED: { label: 'Rejected', tone: 'danger' },
+};
+
+const Field = ({ label, value, link }) => (
+  <div>
+    <p className="text-xs font-medium text-muted-foreground">{label}</p>
+    {value ? (
+      link ? (
+        <a href={/^https?:\/\//.test(value) ? value : `https://${value}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 break-all text-sm text-primary hover:underline">
+          {value}
+          <ExternalLink className="h-3 w-3" />
+        </a>
+      ) : (
+        <p className="whitespace-pre-line break-words text-sm">{value}</p>
+      )
+    ) : (
+      <p className="text-sm text-muted-foreground">—</p>
+    )}
+  </div>
+);
 
 const SellerRequests = () => {
-  const [requestData, setRequestData] = useState([]);
-  const [rawRequests, setRawRequests] = useState([]);
-  const [selectedRequest, setSelectedRequest] = useState(null);
-  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState('PENDING');
+  const [selected, setSelected] = useState(null);
+  const [busyId, setBusyId] = useState(null);
+  const confirm = useConfirm();
 
   useEffect(() => {
     (async () => {
       try {
         const res = await adminApi.listSellerRequests();
-        const apps = res?.data || [];
-        setRawRequests(apps);
-        const rows = apps.map((r) => ({
-          id: r.id,
-          name: r.businessName || r.user?.name || r.user?.email || 'Unknown',
-          email: r.user?.email || '',
-          phone: r.user?.phoneNumber || '',
-          status: (r.status || 'PENDING').toLowerCase(),
-          requestDate: r.submittedAt ? new Date(r.submittedAt).toISOString().slice(0,10) : '',
-          businessDoc: r.businessLicense || '-',
-        }));
-        setRequestData(rows);
+        setRequests(res?.data || []);
       } catch (e) {
         toast.error(e?.message || 'Failed to load seller requests');
+      } finally {
+        setLoading(false);
       }
     })();
   }, []);
 
-  const handleApprove = async (id) => {
+  const counts = useMemo(() => {
+    const c = { PENDING: 0, APPROVED: 0, REJECTED: 0, all: requests.length };
+    requests.forEach((r) => (c[r.status] = (c[r.status] || 0) + 1));
+    return c;
+  }, [requests]);
+
+  const visible = tab === 'all' ? requests : requests.filter((r) => r.status === tab);
+
+  const update = (id, patch) => {
+    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+    setSelected((s) => (s?.id === id ? { ...s, ...patch } : s));
+  };
+
+  const handleApprove = async (r) => {
+    const ok = await confirm({
+      title: `Approve ${r.businessName}?`,
+      description: (
+        <>
+          <p>{r.user?.name || r.user?.email} becomes a seller and can list products right away.</p>
+          <p>They'll need to finish payout setup in the app before they can receive money.</p>
+        </>
+      ),
+      confirmText: 'Approve seller',
+    });
+    if (!ok) return;
+    setBusyId(r.id);
     try {
-      await adminApi.approveSellerRequest(id);
-      setRequestData(prev => prev.map(req => req.id === id ? { ...req, status: 'approved' } : req));
-      setRawRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'APPROVED', reviewedAt: new Date().toISOString() } : r));
-      toast.success('Seller request approved');
+      await adminApi.approveSellerRequest(r.id);
+      update(r.id, { status: 'APPROVED', reviewedAt: new Date().toISOString() });
+      toast.success(`${r.businessName} approved`);
     } catch (e) {
       toast.error(e?.message || 'Failed to approve request');
+    } finally {
+      setBusyId(null);
     }
   };
 
-  const handleReject = async (id) => {
+  const handleReject = async (r) => {
+    const notes = await confirm({
+      title: `Reject ${r.businessName}?`,
+      description: <p>The applicant stays a customer. You can add a short reason for your records.</p>,
+      input: { label: 'Reason (optional)', placeholder: 'e.g. Business details could not be verified' },
+      confirmText: 'Reject request',
+      destructive: true,
+    });
+    if (notes === false) return;
+    setBusyId(r.id);
     try {
-      await adminApi.rejectSellerRequest(id);
-      setRequestData(prev => prev.map(req => req.id === id ? { ...req, status: 'rejected' } : req));
-      setRawRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'REJECTED', reviewedAt: new Date().toISOString() } : r));
-      toast.error('Seller request rejected');
+      await adminApi.rejectSellerRequest(r.id, notes || undefined);
+      update(r.id, { status: 'REJECTED', reviewedAt: new Date().toISOString(), ...(notes ? { adminNotes: notes } : {}) });
+      toast.success('Request rejected');
     } catch (e) {
       toast.error(e?.message || 'Failed to reject request');
+    } finally {
+      setBusyId(null);
     }
   };
 
-  const openDetails = (id) => {
-    const app = rawRequests.find(r => r.id === id);
-    if (app) {
-      setSelectedRequest(app);
-      setDetailsOpen(true);
-    } else {
-      toast.error('Details not found');
-    }
-  };
+  const Actions = ({ r, size = 'sm' }) =>
+    r.status === 'PENDING' ? (
+      <div className="flex gap-2">
+        <Button size={size} variant="outline" disabled={busyId === r.id} onClick={() => handleReject(r)}>
+          <X className="mr-1 h-4 w-4" />
+          Reject
+        </Button>
+        <Button size={size} disabled={busyId === r.id} onClick={() => handleApprove(r)}>
+          <Check className="mr-1 h-4 w-4" />
+          Approve
+        </Button>
+      </div>
+    ) : null;
 
   return (
     <div>
-      <PageHeader
-        title="Seller Requests"
-        description="Review and approve new seller applications"
-      />
+      <PageHeader title="Seller requests" description="People who applied to sell on HomeFit. Approving a request turns their account into a seller account." />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {requestData.length === 0 ? (
-          <div className="col-span-full text-center text-muted-foreground">No seller requests</div>
-        ) : (
-          requestData.map((r) => (
-            <div key={r.id} className="app-container-card p-4 flex flex-col justify-between">
-              <div>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h4 className="text-sm font-semibold">{r.name}</h4>
-                    <p className="text-xs text-muted-foreground">{r.email}</p>
-                    <p className="text-xs text-muted-foreground">{r.phone}</p>
+      <Tabs value={tab} onValueChange={setTab} className="mb-4">
+        <TabsList>
+          <TabsTrigger value="PENDING">Pending ({counts.PENDING})</TabsTrigger>
+          <TabsTrigger value="APPROVED">Approved ({counts.APPROVED})</TabsTrigger>
+          <TabsTrigger value="REJECTED">Rejected ({counts.REJECTED})</TabsTrigger>
+          <TabsTrigger value="all">All</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {loading ? (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {[...Array(3)].map((_, i) => (
+            <Card key={i} className="h-44 animate-pulse bg-muted/40 shadow-none" />
+          ))}
+        </div>
+      ) : visible.length === 0 ? (
+        <EmptyState icon={UserCheck} title={tab === 'PENDING' ? 'No requests waiting' : 'Nothing here'} description={tab === 'PENDING' ? 'New seller applications from the app will show up here.' : undefined} />
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {visible.map((r) => (
+            <Card key={r.id} className="shadow-none">
+              <CardContent className="flex h-full flex-col gap-4 p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold">{r.businessName}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {r.user?.name ? `${r.user.name} · ` : ''}
+                      {r.user?.email}
+                    </p>
                   </div>
-                  <div>
-                    <StatusBadge status={r.status} />
-                    <div className="text-xs text-muted-foreground mt-1">{r.requestDate}</div>
+                  <Pill tone={STATUS[r.status]?.tone}>{STATUS[r.status]?.label || r.status}</Pill>
+                </div>
+                <div className="space-y-1 text-sm">
+                  <p>
+                    <span className="text-muted-foreground">Type: </span>
+                    {r.businessType || '—'}
+                  </p>
+                  <p className="line-clamp-2 text-muted-foreground">{r.description}</p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Applied {formatDate(r.submittedAt)}
+                  {r.reviewedAt && r.status !== 'PENDING' ? ` · reviewed ${formatDate(r.reviewedAt)}` : ''}
+                </p>
+                <div className="mt-auto flex items-center justify-between gap-2 border-t pt-4">
+                  <Button variant="ghost" size="sm" onClick={() => setSelected(r)}>
+                    <FileText className="mr-1.5 h-4 w-4" />
+                    Details
+                  </Button>
+                  <Actions r={r} />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
+        <DialogContent className="max-w-2xl">
+          {selected && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-3">
+                  {selected.businessName}
+                  <Pill tone={STATUS[selected.status]?.tone}>{STATUS[selected.status]?.label}</Pill>
+                </DialogTitle>
+                <DialogDescription>Applied {formatDateTime(selected.submittedAt)}</DialogDescription>
+              </DialogHeader>
+              <div className="grid max-h-[60vh] gap-4 overflow-y-auto sm:grid-cols-2">
+                <Field label="Business type" value={selected.businessType} />
+                <Field label="Applicant" value={[selected.user?.name, selected.user?.email].filter(Boolean).join(' · ')} />
+                <Field label="Business phone" value={selected.phone || selected.user?.phoneNumber} />
+                <Field label="Website" value={selected.website} link />
+                <Field label="Address" value={selected.address} />
+                <Field label="Tax ID" value={selected.taxId} />
+                <Field label="Business licence" value={selected.businessLicense} link={/^https?:\/\//.test(selected.businessLicense || '')} />
+                <div className="sm:col-span-2">
+                  <Field label="About the business" value={selected.description} />
+                </div>
+                {selected.adminNotes && (
+                  <div className="sm:col-span-2">
+                    <Field label="Admin note" value={selected.adminNotes} />
                   </div>
-                </div>
-
-                <div className="mt-3 text-sm text-muted-foreground">Document: {r.businessDoc || 'N/A'}</div>
+                )}
               </div>
-
-              <div className="mt-4 flex items-center justify-between">
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" className="gap-2" onClick={() => openDetails(r.id)}>
-                    <FileText className="h-4 w-4" />
-                    View
-                  </Button>
-                </div>
-
-                <div className="flex gap-2">
-                  {r.status === 'pending' && (
-                    <>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => handleApprove(r.id)}
-                        className="bg-accent hover:bg-accent/90"
-                      >
-                        <Check className="h-4 w-4 mr-1" />
-                        Approve
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleReject(r.id)}
-                      >
-                        <X className="h-4 w-4 mr-1" />
-                        Reject
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
-      {/* Details dialog */}
-      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Seller application details</DialogTitle>
-            <DialogDescription>
-              {selectedRequest ? selectedRequest.businessName : 'No application selected'}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {selectedRequest && (
-              <>
-                <div className="space-y-2">
-                  <p><strong>Business Name:</strong> {selectedRequest.businessName}</p>
-                  <p><strong>Business Type:</strong> {selectedRequest.businessType}</p>
-                  <p><strong>Description:</strong> {selectedRequest.description}</p>
-                  <p><strong>Phone:</strong> {selectedRequest.phone}</p>
-                  <p><strong>Address:</strong> {selectedRequest.address}</p>
-                  <p><strong>Website:</strong> {selectedRequest.website}</p>
-                  <p><strong>Tax ID:</strong> {selectedRequest.taxId}</p>
-                </div>
-
-                <div className="space-y-2">
-                  <p><strong>Submitted by:</strong> {selectedRequest.user?.name ?? selectedRequest.user?.email}</p>
-                  <p><strong>User email:</strong> {selectedRequest.user?.email}</p>
-                  <p><strong>Submitted at:</strong> {selectedRequest.submittedAt ? new Date(selectedRequest.submittedAt).toLocaleString() : '-'}</p>
-                
-                
-                </div>
-              </>
-            )}
-          </div>
-
-          <DialogFooter>
-            <div className="flex gap-2">
-              {selectedRequest && selectedRequest.status === 'PENDING' && (
-                <>
-                  <Button variant="default" onClick={() => handleApprove(selectedRequest.id)}>
-                    <Check className="h-4 w-4 mr-1" /> Approve
-                  </Button>
-                  <Button variant="destructive" onClick={() => handleReject(selectedRequest.id)}>
-                    <X className="h-4 w-4 mr-1" /> Reject
-                  </Button>
-                </>
-              )}
-              <Button onClick={() => setDetailsOpen(false)}>Close</Button>
-            </div>
-          </DialogFooter>
+              <DialogFooter className="gap-2 sm:justify-between">
+                <Button variant="ghost" onClick={() => setSelected(null)}>
+                  Close
+                </Button>
+                <Actions r={selected} size="default" />
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>
