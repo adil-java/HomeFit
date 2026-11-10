@@ -41,6 +41,12 @@ interface BalanceData {
   isVerified: boolean
 }
 
+const ERROR_COPY = {
+  offline: { title: "You're offline", text: "Check your internet connection, then try again." },
+  auth: { title: "Sign in as a seller", text: "Please sign in with your seller account to see your earnings." },
+  server: { title: "Earnings aren't available right now", text: "Our server didn't respond. Please try again in a minute." },
+} as const
+
 const EMPTY_EARNINGS: Earnings = { currency: "pkr", feePercent: 8, paid: 0, onHold: 0, recent: [] }
 
 export const SellerBalanceScreen: React.FC<SellerBalanceScreenProps> = ({ sellerId }) => {
@@ -54,6 +60,7 @@ export const SellerBalanceScreen: React.FC<SellerBalanceScreenProps> = ({ seller
   const [balance, setBalance] = useState<BalanceData | null>(() => cachedBalance ?? null)
   const [loading, setLoading] = useState(() => !cachedBalance)
   const [refreshing, setRefreshing] = useState(false)
+  const [errorKind, setErrorKind] = useState<"offline" | "auth" | "server" | null>(null)
 
   useEffect(() => {
     fetchBalance()
@@ -82,7 +89,9 @@ export const SellerBalanceScreen: React.FC<SellerBalanceScreenProps> = ({ seller
       }
       setBalance(next)
       saveCachedBalance(next)
+      setErrorKind(null)
     } catch (error: any) {
+      setErrorKind(error?.kind === "offline" || error?.kind === "auth" ? error.kind : "server")
       // Keeps cached data; the screen shows a retry hint when there is none
     } finally {
       setLoading(false)
@@ -111,7 +120,20 @@ export const SellerBalanceScreen: React.FC<SellerBalanceScreenProps> = ({ seller
           {loading ? (
             <ActivityIndicator color={c.primary} />
           ) : (
-            <Text style={[styles.muted, { color: c.textSecondary }]}>Could not load your earnings. Pull down to try again.</Text>
+            <View style={{ alignItems: "center" }}>
+              <Text style={[styles.errorTitle, { color: c.text }]}>{ERROR_COPY[errorKind || "server"].title}</Text>
+              <Text style={[styles.muted, { color: c.textSecondary }]}>{ERROR_COPY[errorKind || "server"].text}</Text>
+              <TouchableOpacity
+                style={[styles.primaryButton, { backgroundColor: c.primary, paddingHorizontal: 24 }]}
+                onPress={() => {
+                  setLoading(true)
+                  fetchBalance()
+                }}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.primaryButtonText}>Try again</Text>
+              </TouchableOpacity>
+            </View>
           )}
         </View>
       </SafeAreaView>
@@ -283,7 +305,8 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 18, fontFamily: 'Manrope_700Bold' },
   content: { paddingTop: 16, paddingBottom: 32, width: "100%", maxWidth: 640, alignSelf: "center" },
-  muted: { fontSize: 14, textAlign: "center", fontFamily: "Manrope_500Medium" },
+  muted: { fontSize: 14, lineHeight: 20, textAlign: "center", fontFamily: "Manrope_500Medium" },
+  errorTitle: { fontSize: 17, fontFamily: "Manrope_700Bold", textAlign: "center", marginBottom: 6 },
 
   card: { borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, padding: 16, marginBottom: 16 },
   listCard: { padding: 0, overflow: "hidden" },

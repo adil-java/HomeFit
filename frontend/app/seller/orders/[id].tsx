@@ -10,6 +10,8 @@ import {
   TouchableWithoutFeedback,
   ActivityIndicator,
   useWindowDimensions,
+  Linking,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
@@ -34,7 +36,10 @@ import { setOrderStatus } from '@/store/slices/ordersSlice';
 import { apiService } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useScreenCache } from '@/hooks/useScreenCache';
-import { Order } from '@/types/order';
+import { formatPKR } from '@/constants/pricing';
+
+// Order as returned by GET /api/orders/:id
+type Order = any;
 import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 import { logger } from '@/utils/logger';
 
@@ -63,13 +68,34 @@ const getStatusConfig = (status: string) => {
   };
 };
 
-const statusConfig = {
-  pending: { icon: Clock, color: '#C98A12', label: 'Order Pending' },
-  processing: { icon: Package, color: '#5576B5', label: 'Processing' },
-  shipped: { icon: Truck, color: '#4F8A8B', label: 'Shipped' },
-  delivered: { icon: CheckCircle, color: '#3E9A6A', label: 'Delivered' },
-  cancelled: { icon: XCircle, color: '#D2504A', label: 'Cancelled' },
+// Statuses a seller can set (the server expects these exact values)
+const STATUS_OPTIONS = [
+  { value: 'PENDING', icon: Clock, color: '#C98A12', label: 'Order Pending' },
+  { value: 'PROCESSING', icon: Package, color: '#5576B5', label: 'Processing' },
+  { value: 'SHIPPED', icon: Truck, color: '#4F8A8B', label: 'Shipped' },
+  { value: 'DELIVERED', icon: CheckCircle, color: '#3E9A6A', label: 'Delivered' },
+  { value: 'CANCELLED', icon: XCircle, color: '#D2504A', label: 'Cancelled' },
+];
+
+const PAYMENT_STATUS: Record<string, { label: string; color: string }> = {
+  PAID: { label: 'PAID', color: '#3E9A6A' },
+  PENDING: { label: 'PAYMENT PENDING', color: '#C98A12' },
+  FAILED: { label: 'PAYMENT FAILED', color: '#D2504A' },
+  REFUNDED: { label: 'REFUNDED', color: '#8A867F' },
+  PARTIALLY_REFUNDED: { label: 'PARTLY REFUNDED', color: '#8A867F' },
 };
+
+const firstImage = (item: any): string | null => {
+  const imgs = item?.product?.images;
+  const list = Array.isArray(imgs) ? imgs : typeof imgs === 'string' ? [imgs] : [];
+  return list.find((u: unknown) => typeof u === 'string' && u) || null;
+};
+
+const optionText = (item: any) =>
+  Object.entries(item?.options || {})
+    .filter(([k, v]) => k !== 'imageUrl' && v !== undefined && v !== null && v !== '' && typeof v !== 'object')
+    .map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1)}: ${v}`)
+    .join(' · ');
 
 export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -171,10 +197,63 @@ export default function OrderDetailScreen() {
   }
 
   // Use the safe status config getter
-  const statusConfig = getStatusConfig(order.status || 'pending');
-  const StatusIcon = statusConfig.icon;
-  const statusColor = statusConfig.color;
-  const statusLabel = statusConfig.label;
+  const current = getStatusConfig(order.status || 'pending');
+  const StatusIcon = current.icon;
+  const statusColor = current.color;
+  const statusLabel = current.label;
+  const orderStatus = String(order.status || 'PENDING').toUpperCase();
+
+  // Only this seller's items (an order can include other sellers' products)
+  const allItems: any[] = Array.isArray(order.items) ? order.items : [];
+  const myItems = allItems.filter((i) => !i?.product?.sellerId || i.product.sellerId === user?.uid);
+  const hasOtherSellers = myItems.length < allItems.length;
+  const myItemsValue = myItems.reduce((sum, i) => sum + (Number(i.price) || 0) * (Number(i.quantity) || 0), 0);
+  const shippingFee = Number(order.shipping) || 0;
+  const tax = Number(order.tax) || 0;
+  const discount = Number(order.discount) || 0;
+  const payment = PAYMENT_STATUS[String(order.paymentStatus || '').toUpperCase()] || PAYMENT_STATUS.PENDING;
+  const customer = order.shippingAddress || order.billingAddress || {};
+  const customerName = customer.name || order.user?.name || 'Customer';
+  const customerEmail = customer.email || order.user?.email;
+  const customerPhone = customer.phone;
+  const addressLine = (a: any) => a?.street || a?.address;
+  const cityLine = (a: any) => [a?.city, a?.state, a?.postalCode || a?.zipCode].filter(Boolean).join(', ');
+
+  const contactCustomer = () => {
+    const options: { text: string; onPress?: () => void; style?: 'cancel' }[] = [];
+    if (customerPhone) options.push({ text: `Call ${customerPhone}`, onPress: () => Linking.openURL(`tel:${customerPhone}`).catch(() => {}) });
+    if (customerEmail)
+      options.push({
+        text: 'Send email',
+        onPress: () =>
+          Linking.openURL(`mailto:${customerEmail}?subject=${encodeURIComponent(`Your HomeFit order #${order.orderNumber}`)}`).catch(() => {}),
+      });
+    if (!options.length) {
+      Alert.alert('No contact details', "This customer didn't leave a phone number or email.");
+      return;
+    }
+    Alert.alert('Contact customer', customerName, [...options, { text: 'Cancel', style: 'cancel' }]);
+  };
+
+  // Timeline from the saved status changes
+  const history: any[] = Array.isArray(order.statusHistory) ? order.statusHistory : [];
+  const reachedAt = (status: string) =>
+    history.filter((h) => String(h.status).toUpperCase() === status).map((h) => h.createdAt).sort()[0];
+  const rank: Record<string, number> = { PENDING: 0, PROCESSING: 1, SHIPPED: 2, DELIVERED: 3 };
+  const currentRank = rank[orderStatus] ?? -1;
+  const timeline = [
+    { key: 'placed', label: 'Order placed', date: order.createdAt, done: true },
+    {
+      key: 'paid',
+      label: 'Payment confirmed',
+      date: order.paymentConfirmedAt || (String(order.paymentStatus).toUpperCase() === 'PAID' ? order.createdAt : null),
+      done: String(order.paymentStatus).toUpperCase() === 'PAID',
+    },
+    { key: 'processing', label: 'Processing', date: reachedAt('PROCESSING'), done: currentRank >= 1 },
+    { key: 'shipped', label: 'Shipped', date: reachedAt('SHIPPED'), done: currentRank >= 2 },
+    { key: 'delivered', label: 'Delivered', date: reachedAt('DELIVERED'), done: currentRank >= 3 },
+    ...(orderStatus === 'CANCELLED' ? [{ key: 'cancelled', label: 'Cancelled', date: reachedAt('CANCELLED'), done: true }] : []),
+  ];
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -186,7 +265,9 @@ export default function OrderDetailScreen() {
         onRequestClose={() => !isUpdating && setShowStatusModal(false)}
       >
         <TouchableWithoutFeedback 
-          onPress={() => !isUpdating && setShowStatusModal(false)}
+          onPress={() => {
+            if (!isUpdating) setShowStatusModal(false);
+          }}
           disabled={isUpdating}
         >
           <View style={styles.modalOverlay}>
@@ -200,7 +281,7 @@ export default function OrderDetailScreen() {
                     onPress={() => !isUpdating && setShowStatusModal(false)}
                     disabled={isUpdating}
                   >
-                    <X size={24} color={isUpdating ? theme.colors.textDisabled : theme.colors.text} />
+                    <X size={24} color={isUpdating ? theme.colors.textSecondary : theme.colors.text} />
                   </TouchableOpacity>
                 </View>
                 
@@ -211,8 +292,8 @@ export default function OrderDetailScreen() {
                 ) : null}
                 
                 <View style={styles.statusOptions}>
-                  {Object.entries(statusConfig).map(([status, config]) => {
-                    const isCurrentStatus = order.status === status;
+                  {STATUS_OPTIONS.map(({ value: status, ...config }) => {
+                    const isCurrentStatus = orderStatus === status;
                     const isDisabled = isUpdating || isCurrentStatus;
                     
                     return (
@@ -295,7 +376,7 @@ export default function OrderDetailScreen() {
                 Tap to update status
               </Text>
               <Text style={[styles.customerInfo, { color: theme.colors.text }]}>
-                Customer: {order.billingAddress?.name || 'Guest'} • {order.billingAddress?.email || 'No email'}
+                Customer: {customerName}{customerEmail ? ` • ${customerEmail}` : ''}
               </Text>
             </View>
           </View>
@@ -303,14 +384,14 @@ export default function OrderDetailScreen() {
           <View style={styles.sellerStatusActions}>
             <TouchableOpacity 
               style={[styles.statusActionButton, compact && styles.statusActionButtonCompact, { backgroundColor: theme.colors.primary }]}
-              onPress={() => {}}
+              onPress={() => setShowStatusModal(true)}
             >
               <Edit size={16} color="#fff" />
               <Text style={styles.statusActionText}>Update Status</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.statusActionButton, compact && styles.statusActionButtonCompact, { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border }]}
-              onPress={() => {}}
+              onPress={contactCustomer}
             >
               <MessageCircle size={16} color={theme.colors.primary} />
               <Text style={[styles.statusActionText, { color: theme.colors.primary }]}>Contact</Text>
@@ -325,69 +406,79 @@ export default function OrderDetailScreen() {
           </Text>
           
           <View style={[styles.summaryCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-            {order.items.map((item, index) => (
-              <View key={index} style={styles.orderItem}>
-                <Image source={{ uri: item?.product?.images[0] }} style={[styles.itemImage, compact && styles.itemImageCompact]} />
-                <View style={styles.itemInfo}>
-                  <Text style={[styles.itemName, { color: theme.colors.text }]}>
-                    {item?.product?.name}
-                  </Text>
-                  <Text style={[styles.itemDetails, { color: theme.colors.textSecondary }]}>
-                    Qty: {item.quantity} × Rs. {item.price.toFixed(2)}
+            {myItems.map((item: any, index: number) => {
+              const image = firstImage(item);
+              const opts = optionText(item);
+              return (
+                <View key={item.id || index} style={styles.orderItem}>
+                  {image ? (
+                    <Image source={{ uri: image }} style={[styles.itemImage, compact && styles.itemImageCompact]} />
+                  ) : (
+                    <View style={[styles.itemImage, compact && styles.itemImageCompact, { backgroundColor: theme.colors.background, alignItems: 'center', justifyContent: 'center' }]}>
+                      <Package size={20} color={theme.colors.textSecondary} />
+                    </View>
+                  )}
+                  <View style={styles.itemInfo}>
+                    <Text style={[styles.itemName, { color: theme.colors.text }]} numberOfLines={2}>
+                      {item.productName || item?.product?.name || 'Product'}
+                    </Text>
+                    {!!opts && (
+                      <Text style={[styles.itemDetails, { color: theme.colors.textSecondary }]} numberOfLines={1}>
+                        {opts}
+                      </Text>
+                    )}
+                    <Text style={[styles.itemDetails, { color: theme.colors.textSecondary }]}>
+                      Qty: {item.quantity} × {formatPKR(item.price)}
+                    </Text>
+                  </View>
+                  <Text style={[styles.itemTotal, { color: theme.colors.text }]}>
+                    {formatPKR((Number(item.price) || 0) * (Number(item.quantity) || 0))}
                   </Text>
                 </View>
-                <Text style={[styles.itemTotal, { color: theme.colors.text }]}>
-                  Rs. {(item.price * item.quantity).toFixed(2)}
-                </Text>
+              );
+            })}
+
+            {hasOtherSellers && (
+              <Text style={[styles.itemDetails, { color: theme.colors.textSecondary, marginTop: 4 }]}>
+                This order also has items from other sellers. Only your items are shown.
+              </Text>
+            )}
+
+            <View style={styles.divider} />
+
+            {(hasOtherSellers
+              ? [{ label: 'Your items', value: formatPKR(myItemsValue) }]
+              : [
+                  { label: 'Subtotal', value: formatPKR(Number(order.subtotal) || myItemsValue) },
+                  { label: 'Shipping', value: shippingFee > 0 ? formatPKR(shippingFee) : 'Free' },
+                  ...(tax > 0 ? [{ label: 'Tax', value: formatPKR(tax) }] : []),
+                  ...(discount > 0 ? [{ label: 'Discount', value: `−${formatPKR(discount)}` }] : []),
+                ]
+            ).map((row) => (
+              <View key={row.label} style={styles.summaryRow}>
+                <Text style={[styles.summaryLabel, { color: theme.colors.textSecondary }]}>{row.label}</Text>
+                <Text style={[styles.summaryValue, { color: theme.colors.text }]}>{row.value}</Text>
               </View>
             ))}
-            
-            <View style={styles.divider} />
-            
-            <View style={styles.summaryRow}>
-              <Text style={[styles.summaryLabel, { color: theme.colors.textSecondary }]}>
-                Subtotal
-              </Text>
-              <Text style={[styles.summaryValue, { color: theme.colors.text }]}>
-                Rs. {order.subtotal?.toFixed(2) || order.total.toFixed(2)}
-              </Text>
-            </View>
-            
-            <View style={styles.summaryRow}>
-              <Text style={[styles.summaryLabel, { color: theme.colors.textSecondary }]}>
-                Shipping
-              </Text>
-              <Text style={[styles.summaryValue, { color: theme.colors.text }]}>
-                {order.shippingCost ? `Rs. ${order.shippingCost.toFixed(2)}` : 'Free'}
-              </Text>
-            </View>
-            
-            {order.discount > 0 && (
-              <View style={styles.summaryRow}>
-                <Text style={[styles.summaryLabel, { color: theme.colors.textSecondary }]}>
-                  Discount
-                </Text>
-                <Text style={[styles.summaryValue, { color: '#3E9A6A' }]}>
-                  Rs. {order.discount.toFixed(2)}
-                </Text>
-              </View>
-            )}
-            
+
             <View style={[styles.summaryRow, styles.totalRow]}>
               <Text style={[styles.totalLabel, { color: theme.colors.text }]}>
-                Total
+                {hasOtherSellers ? 'Order total (all sellers)' : 'Total'}
               </Text>
               <Text style={[styles.totalValue, { color: theme.colors.text }]}>
-                Rs. {order.total.toFixed(2)}
+                {formatPKR(order.total)}
               </Text>
             </View>
-            
-            <View style={[styles.paymentStatus, { backgroundColor: order.paymentMethod === 'card' ? '#3E9A6A10' : '#D2504A10' }]}>
-              <Text style={[styles.paymentStatusText, { color: order.paymentMethod === 'card' ? '#3E9A6A' : '#D2504A' }]}>
-                {order.paymentMethod === 'card' ? 'PAID' : 'PENDING PAYMENT'}
+
+            <View style={[styles.paymentStatus, { backgroundColor: payment.color + '10' }]}>
+              <Text style={[styles.paymentStatusText, { color: payment.color }]}>
+                {payment.label}
               </Text>
               <Text style={[styles.paymentMethod, { color: theme.colors.textSecondary }]}>
-                {order.paymentMethod} • {order.paymentMethod === 'card' ? 'Paid on ' + new Date(order.createdAt).toLocaleDateString() : 'Not paid'}
+                {/card/i.test(order.paymentMethod || '') ? 'Card' : order.paymentMethod || 'Card'}
+                {String(order.paymentStatus).toUpperCase() === 'PAID'
+                  ? ` • Paid on ${new Date(order.paymentConfirmedAt || order.createdAt).toLocaleDateString()}`
+                  : ''}
               </Text>
             </View>
           </View>
@@ -402,16 +493,18 @@ export default function OrderDetailScreen() {
           <View style={[styles.infoCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
             <View style={styles.infoRow}>
               <Text style={[styles.infoLabel, { color: theme.colors.textSecondary }]}>Name</Text>
-              <Text style={[styles.infoValue, { color: theme.colors.text }]}>{order.billingAddress?.name || 'Guest'}</Text>
+              <Text style={[styles.infoValue, { color: theme.colors.text }]}>{customerName}</Text>
             </View>
-            <View style={styles.infoRow}>
-              <Text style={[styles.infoLabel, { color: theme.colors.textSecondary }]}>Email</Text>
-              <Text style={[styles.infoValue, { color: theme.colors.primary }]}>{order.billingAddress?.email || 'No email'}</Text>
-            </View>
-            {order.billingAddress?.phone && (
+            {!!customerEmail && (
+              <View style={styles.infoRow}>
+                <Text style={[styles.infoLabel, { color: theme.colors.textSecondary }]}>Email</Text>
+                <Text style={[styles.infoValue, { color: theme.colors.primary }]}>{customerEmail}</Text>
+              </View>
+            )}
+            {!!customerPhone && (
               <View style={styles.infoRow}>
                 <Text style={[styles.infoLabel, { color: theme.colors.textSecondary }]}>Phone</Text>
-                <Text style={[styles.infoValue, { color: theme.colors.text }]}>{order.billingAddress?.phone}</Text>
+                <Text style={[styles.infoValue, { color: theme.colors.text }]}>{customerPhone}</Text>
               </View>
             )}
           </View>
@@ -428,15 +521,15 @@ export default function OrderDetailScreen() {
                 {order.shippingAddress?.name || 'No name'}
               </Text>
               <Text style={[styles.addressText, { color: theme.colors.text }]}>
-                {order.shippingAddress?.address || 'No address'}
+                {addressLine(order.shippingAddress) || 'No street address'}
               </Text>
-              <Text style={[styles.addressText, { color: theme.colors.text }]}>
-                {order.shippingAddress?.city}{order.shippingAddress?.state ? `, ${order.shippingAddress.state}` : ''} {order.shippingAddress?.zipCode}
-              </Text>
+              {!!cityLine(order.shippingAddress) && (
+                <Text style={[styles.addressText, { color: theme.colors.text }]}>{cityLine(order.shippingAddress)}</Text>
+              )}
               <Text style={[styles.addressText, { color: theme.colors.text }]}>
                 {order.shippingAddress?.country}
               </Text>
-              {order.shippingAddress?.phone && (
+              {!!order.shippingAddress?.phone && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
                   <Phone size={13} color={theme.colors.textSecondary} />
                   <Text style={[styles.addressText, { color: theme.colors.text }]}>{order.shippingAddress.phone}</Text>
@@ -455,16 +548,16 @@ export default function OrderDetailScreen() {
                   <Text style={[styles.addressName, { color: theme.colors.text }]}>
                     {order.billingAddress.name || 'No name'}
                   </Text>
-                  <Text style={[styles.addressText, { color: theme.colors.text }]}>
-                    {order.billingAddress.address}
-                  </Text>
-                  <Text style={[styles.addressText, { color: theme.colors.text }]}>
-                    {order.billingAddress.city}{order.billingAddress.state ? `, ${order.billingAddress.state}` : ''} {order.billingAddress.zipCode}
-                  </Text>
+                  {!!addressLine(order.billingAddress) && (
+                    <Text style={[styles.addressText, { color: theme.colors.text }]}>{addressLine(order.billingAddress)}</Text>
+                  )}
+                  {!!cityLine(order.billingAddress) && (
+                    <Text style={[styles.addressText, { color: theme.colors.text }]}>{cityLine(order.billingAddress)}</Text>
+                  )}
                   <Text style={[styles.addressText, { color: theme.colors.text }]}>
                     {order.billingAddress.country}
                   </Text>
-                  {order.billingAddress.phone && (
+                  {!!order.billingAddress.phone && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
                       <Phone size={13} color={theme.colors.textSecondary} />
                       <Text style={[styles.addressText, { color: theme.colors.text }]}>{order.billingAddress.phone}</Text>
@@ -480,43 +573,27 @@ export default function OrderDetailScreen() {
           </View>
         </View>
 
-        {/* Order Notes */}
-        <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}> 
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-              Order Notes
-            </Text>
-            <TouchableOpacity>
-              <Text style={[styles.addNoteText, { color: theme.colors.primary }]}>
-                + Add Note
-              </Text>
-            </TouchableOpacity>
-          </View>
-          
-          <View style={[styles.notesCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-            {order.notes?.length > 0 ? (
-              order.notes.map((note, index) => (
-                <View key={index} style={styles.noteItem}>
+        {/* Order Notes (only when there are any) */}
+        {Array.isArray(order.notes) && order.notes.length > 0 && (
+          <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Order Notes</Text>
+            <View style={[styles.notesCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+              {order.notes.map((note: any, index: number) => (
+                <View key={note.id || index} style={styles.noteItem}>
                   <View style={styles.noteHeader}>
-                    <Text style={[styles.noteAuthor, { color: theme.colors.text }]}>
-                      {note.author}
-                    </Text>
-                    <Text style={[styles.noteDate, { color: theme.colors.textSecondary }]}>
-                      {new Date(note.date).toLocaleString()}
-                    </Text>
+                    <Text style={[styles.noteAuthor, { color: theme.colors.text }]}>{note.author || 'Note'}</Text>
+                    {!!(note.createdAt || note.date) && (
+                      <Text style={[styles.noteDate, { color: theme.colors.textSecondary }]}>
+                        {new Date(note.createdAt || note.date).toLocaleString()}
+                      </Text>
+                    )}
                   </View>
-                  <Text style={[styles.noteContent, { color: theme.colors.text }]}>
-                    {note.content}
-                  </Text>
+                  <Text style={[styles.noteContent, { color: theme.colors.text }]}>{note.content}</Text>
                 </View>
-              ))
-            ) : (
-              <Text style={[styles.emptyNotes, { color: theme.colors.textSecondary }]}>
-                No notes for this order
-              </Text>
-            )}
+              ))}
+            </View>
           </View>
-        </View>
+        )}
 
         {/* Order Timeline */}
         <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}> 
@@ -525,25 +602,20 @@ export default function OrderDetailScreen() {
           </Text>
           
           <View style={[styles.timelineCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-            {[
-              { status: 'order_placed', label: 'Order Placed', date: order.createdAt },
-              { status: 'payment_confirmed', label: 'Payment Confirmed', date: order.paidAt },
-              { status: 'order_processed', label: 'Order Processed', date: order.processedAt },
-              { status: 'shipped', label: 'Shipped', date: order.shippedAt },
-              { status: 'delivered', label: 'Delivered', date: order.deliveredAt },
-            ].map((step, index) => (
-              <View key={step.status} style={styles.timelineStep}>
-                <View style={[styles.timelineDot, { 
-                  backgroundColor: index <= (order.statusTimeline || []).indexOf(step.status) 
-                    ? theme.colors.primary 
-                    : theme.colors.border 
-                }]} />
+            {timeline.map((step) => (
+              <View key={step.key} style={styles.timelineStep}>
+                <View
+                  style={[
+                    styles.timelineDot,
+                    { backgroundColor: step.done ? (step.key === 'cancelled' ? '#D2504A' : theme.colors.primary) : theme.colors.border },
+                  ]}
+                />
                 <View style={styles.timelineContent}>
-                  <Text style={[styles.timelineLabel, { color: theme.colors.text }]}>
+                  <Text style={[styles.timelineLabel, { color: step.done ? theme.colors.text : theme.colors.textSecondary }]}>
                     {step.label}
                   </Text>
                   <Text style={[styles.timelineDate, { color: theme.colors.textSecondary }]}>
-                    {step.date ? new Date(step.date).toLocaleString() : 'Pending'}
+                    {step.date ? new Date(step.date).toLocaleString() : step.done ? 'Done' : 'Not yet'}
                   </Text>
                 </View>
               </View>
@@ -556,21 +628,21 @@ export default function OrderDetailScreen() {
       <View style={[styles.bottomActions, compact && styles.bottomActionsCompact, { borderTopColor: theme.colors.border, paddingHorizontal: horizontalPadding }]}>
         <TouchableOpacity 
           style={[styles.actionButton, compact && styles.actionButtonCompact, { backgroundColor: theme.colors.background, borderColor: theme.colors.border }]}
-          onPress={() => {}}
+          onPress={contactCustomer}
         >
-          <Printer size={20} color={theme.colors.primary} />
+          <Phone size={20} color={theme.colors.primary} />
           <Text style={[styles.actionButtonText, { color: theme.colors.primary }]}>
-            Print
+            Contact customer
           </Text>
         </TouchableOpacity>
         
         <TouchableOpacity 
           style={[styles.actionButton, compact && styles.actionButtonCompact, { backgroundColor: theme.colors.primary }]}
-          onPress={() => {}}
+          onPress={() => setShowStatusModal(true)}
         >
           <Truck size={20} color="#fff" />
           <Text style={[styles.actionButtonText, { color: '#fff' }]}>
-            Update Shipping
+            Update status
           </Text>
         </TouchableOpacity>
       </View>

@@ -24,6 +24,7 @@ import { apiService } from '@/services/api';
 import { BackHandler } from 'react-native';
 import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 import { logger } from '@/utils/logger';
+import { formatPKR } from '@/constants/pricing';
 
 // Helper function to safely get status config with fallback
 const normalizeStatusKey = (status: string) => {
@@ -294,9 +295,15 @@ export default function OrdersScreen() {
         </View>
         <View style={styles.orderSummary}>
           <Text style={[styles.summaryText, { color: theme.colors.text }]}>
-            {order.items?.length || 0} items • Rs. {order.total?.toFixed(2) || '0.00'}
+            {/* Items here are only this seller's (the server filters them) */}
+            {(() => {
+              const items: any[] = Array.isArray(order.items) ? order.items : [];
+              const units = items.reduce((n, i) => n + (Number(i.quantity) || 0), 0);
+              const value = items.reduce((n, i) => n + (Number(i.price) || 0) * (Number(i.quantity) || 0), 0);
+              return `${units} ${units === 1 ? 'item' : 'items'} • ${formatPKR(value)}`;
+            })()}
           </Text>
-          {order.paymentMethod === 'card' ? (
+          {String(order.paymentStatus || '').toUpperCase() === 'PAID' ? (
             <View style={[styles.paidBadge, { backgroundColor: '#3E9A6A20' }]}>
               <Text style={[styles.paidText, { color: '#3E9A6A' }]}>Paid</Text>
             </View>

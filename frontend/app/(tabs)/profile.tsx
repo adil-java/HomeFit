@@ -21,6 +21,8 @@ import {
   Moon,
   Heart,
   Package,
+  LayoutDashboard,
+  Wallet,
 } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -145,6 +147,13 @@ export default function ProfileScreen() {
             </View>
           </TouchableOpacity>
         </View>
+
+        {isSeller && (
+          <Group label="Your store">
+            <Row icon={LayoutDashboard} title="Seller dashboard" subtitle="Sales, orders and products" onPress={() => router.navigate('/seller/dashboard')} />
+            <Row icon={Wallet} title="Earnings" subtitle="What you've been paid" onPress={() => router.navigate('/seller/sellerBalance')} last />
+          </Group>
+        )}
 
         <Group label="Account">
           <Row icon={User} title="Personal information" onPress={() => router.push('/profile/personal-info')} />

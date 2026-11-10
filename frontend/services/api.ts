@@ -838,10 +838,16 @@ class ApiService {
     recent: { id: string; orderNumber?: string; date: string; amount: number; itemsValue: number | null; status: 'paid' | 'on_hold' | 'cancelled' }[];
   }> {
     const headers = await this.getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}/Stripe/earnings`, { headers });
+    let response: Response;
+    try {
+      response = await fetch(`${API_BASE_URL}/Stripe/earnings`, { headers });
+    } catch {
+      throw Object.assign(new Error('No internet connection'), { kind: 'offline' });
+    }
     const json = await response.json().catch(() => ({}));
     if (!response.ok || !json?.success) {
-      throw new Error(json?.error || 'Could not load your earnings');
+      const kind = response.status === 401 || response.status === 403 ? 'auth' : 'server';
+      throw Object.assign(new Error(json?.error || 'Earnings unavailable'), { kind });
     }
     return json.data;
   }

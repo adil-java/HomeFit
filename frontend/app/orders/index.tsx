@@ -168,7 +168,7 @@ export default function OrdersScreen() {
 
     return (
       <TouchableOpacity
-        style={[styles.orderCard, { backgroundColor: theme.colors.card, padding: compact ? 14 : 16 }]}
+        style={[styles.orderCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, padding: compact ? 14 : 16 }]}
         onPress={() => router.push(`/orders/${order.id}`)}
       >
         <View style={styles.orderHeader}>

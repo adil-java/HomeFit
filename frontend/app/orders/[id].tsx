@@ -34,6 +34,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useScreenCache } from '@/hooks/useScreenCache';
 import HeaderBackButton from '@/components/Shared/HeaderBackButton';
 import { logger } from '@/utils/logger';
+import { formatPKR } from '@/constants/pricing';
 
 const statusConfig = {
   pending: { icon: Clock, color: '#C98A12', label: 'Order Pending' },
@@ -45,7 +46,8 @@ const statusConfig = {
 
 interface OrderItem {
   id: string;
-  name: string;
+  productName?: string;
+  name?: string;
   price: number;
   quantity: number;
   productId: string;
@@ -53,7 +55,31 @@ interface OrderItem {
     imageUrl?: string;
     [key: string]: any;
   };
+  product?: { id: string; name?: string; images?: string[] | string };
 }
+
+const money = (n: unknown) => formatPKR(Number(n) || 0);
+
+const firstImage = (item: OrderItem): string | null => {
+  const imgs = item.product?.images;
+  const list = Array.isArray(imgs) ? imgs : typeof imgs === 'string' ? [imgs] : [];
+  return list.find((u) => typeof u === 'string' && u) || item.options?.imageUrl || null;
+};
+
+// Chosen options saved with the item ("color: Walnut · size: King")
+const optionText = (item: OrderItem) =>
+  Object.entries(item.options || {})
+    .filter(([k, v]) => k !== 'imageUrl' && v !== undefined && v !== null && v !== '' && typeof v !== 'object')
+    .map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1)}: ${v}`)
+    .join(' · ');
+
+const PAYMENT_STATUS: Record<string, { label: string; tone: 'success' | 'warning' | 'error' }> = {
+  PAID: { label: 'Paid', tone: 'success' },
+  PENDING: { label: 'Payment pending', tone: 'warning' },
+  FAILED: { label: 'Payment failed', tone: 'error' },
+  REFUNDED: { label: 'Refunded', tone: 'warning' },
+  PARTIALLY_REFUNDED: { label: 'Partly refunded', tone: 'warning' },
+};
 
 interface OrderStatusHistory {
   status: string;
@@ -69,14 +95,20 @@ export interface Order {
   currency: string;
   items: OrderItem[];
   shippingAddress: {
-    name: string;
-    street: string;
-    city: string;
-    postalCode: string;
-    country: string;
-    phone: string;
-    email: string;
-  };
+    name?: string;
+    street?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    country?: string;
+    phone?: string;
+    email?: string;
+  } | null;
+  subtotal?: number;
+  tax?: number;
+  shipping?: number;
+  discount?: number;
+  paymentStatus?: string;
   paymentMethod: string;
   createdAt: string;
   statusHistory?: OrderStatusHistory[];
@@ -195,6 +227,16 @@ export default function OrderDetailScreen() {
   const statusColor = statusInfo.color;
   const statusLabel = statusInfo.label;
 
+  const addr = order.shippingAddress || {};
+  const cityLine = [addr.city, addr.state, addr.postalCode].filter(Boolean).join(', ');
+  const itemsValue = order.items.reduce((sum, item) => sum + (Number(item.price) || 0) * item.quantity, 0);
+  const subtotal = Number(order.subtotal) || itemsValue;
+  const shipping = Number(order.shipping ?? order.shippingFee) || 0;
+  const tax = Number(order.tax) || 0;
+  const discount = Number(order.discount) || 0;
+  const payment = PAYMENT_STATUS[String(order.paymentStatus || '').toUpperCase()] || PAYMENT_STATUS.PENDING;
+  const paymentMethodLabel = /card/i.test(order.paymentMethod || '') ? 'Credit / debit card' : order.paymentMethod || 'Card';
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -236,28 +278,44 @@ export default function OrderDetailScreen() {
             Items ({totalItems})
           </Text>
           
-          {order.items.map((item, index) => (
-            <View
-              key={item.id || index}
-              style={[styles.itemCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
-            >
-              <Image 
-                source={{ uri: item.options?.imageUrl || 'https://via.placeholder.com/60' }} 
-                style={[styles.itemImage, compact && styles.itemImageCompact]} 
-              />
-              <View style={styles.itemInfo}>
-                <Text style={[styles.itemName, { color: theme.colors.text }]} numberOfLines={2}>
-                  {item.name}
-                </Text>
-                <Text style={[styles.itemPrice, { color: theme.colors.text }]}>
-                  {order.currency} {item.price.toFixed(2)} × {item.quantity}
-                </Text>
-                <Text style={[styles.itemTotal, { color: theme.colors.textSecondary }]}>
-                  Total: {order.currency} {(item.price * item.quantity).toFixed(2)}
-                </Text>
-              </View>
-            </View>
-          ))}
+          {order.items.map((item, index) => {
+            const image = firstImage(item);
+            const opts = optionText(item);
+            const name = item.productName || item.product?.name || item.name || 'Product';
+            return (
+              <TouchableOpacity
+                key={item.id || index}
+                activeOpacity={0.7}
+                disabled={!item.productId}
+                onPress={() => router.push(`/product/${item.productId}`)}
+                style={[styles.itemCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+              >
+                {image ? (
+                  <Image source={{ uri: image }} style={[styles.itemImage, compact && styles.itemImageCompact]} />
+                ) : (
+                  <View style={[styles.itemImage, compact && styles.itemImageCompact, styles.itemImageEmpty, { backgroundColor: theme.colors.background }]}>
+                    <Package size={22} color={theme.colors.textSecondary} />
+                  </View>
+                )}
+                <View style={styles.itemInfo}>
+                  <Text style={[styles.itemName, { color: theme.colors.text }]} numberOfLines={2}>
+                    {name}
+                  </Text>
+                  {!!opts && (
+                    <Text style={[styles.itemTotal, { color: theme.colors.textSecondary, marginBottom: 2 }]} numberOfLines={1}>
+                      {opts}
+                    </Text>
+                  )}
+                  <Text style={[styles.itemPrice, { color: theme.colors.text }]}>
+                    {money(item.price)} × {item.quantity}
+                  </Text>
+                  <Text style={[styles.itemTotal, { color: theme.colors.textSecondary }]}>
+                    Total: {money(item.price * item.quantity)}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
         {/* Shipping Address */}
@@ -270,20 +328,20 @@ export default function OrderDetailScreen() {
             <MapPin size={20} color={theme.colors.primary} />
             <View style={styles.addressInfo}>
               <Text style={[styles.addressName, { color: theme.colors.text }]}>
-                {order.shippingAddress.name}
+                {addr.name || 'Delivery address'}
               </Text>
-              <Text style={[styles.addressText, { color: theme.colors.textSecondary }]}>
-                {order.shippingAddress.street}
-              </Text>
-              <Text style={[styles.addressText, { color: theme.colors.textSecondary }]}>
-                {order.shippingAddress.city}, {order.shippingAddress.postalCode}
-              </Text>
-              <Text style={[styles.addressText, { color: theme.colors.textSecondary }]}>
-                {order.shippingAddress.country}
-              </Text>
-              <Text style={[styles.addressPhone, { color: theme.colors.primary }]}>
-                {order.shippingAddress.phone}
-              </Text>
+              {!!addr.street && (
+                <Text style={[styles.addressText, { color: theme.colors.textSecondary }]}>{addr.street}</Text>
+              )}
+              {!!cityLine && (
+                <Text style={[styles.addressText, { color: theme.colors.textSecondary }]}>{cityLine}</Text>
+              )}
+              {!!addr.country && (
+                <Text style={[styles.addressText, { color: theme.colors.textSecondary }]}>{addr.country}</Text>
+              )}
+              {!!addr.phone && (
+                <Text style={[styles.addressPhone, { color: theme.colors.primary }]}>{addr.phone}</Text>
+              )}
             </View>
           </View>
         </View>
@@ -298,10 +356,10 @@ export default function OrderDetailScreen() {
             <CreditCard size={20} color={theme.colors.primary} />
             <View style={styles.paymentInfo}>
               <Text style={[styles.paymentMethod, { color: theme.colors.text }]}>
-                {order.paymentMethod}
+                {paymentMethodLabel}
               </Text>
-              <Text style={[styles.paymentStatus, { color: theme.colors.success }]}>
-                Payment Successful
+              <Text style={[styles.paymentStatus, { color: theme.colors[payment.tone] }]}>
+                {payment.label}
               </Text>
             </View>
           </View>
@@ -314,30 +372,24 @@ export default function OrderDetailScreen() {
           </Text>
           
           <View style={[styles.summaryCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, padding: compact ? 12 : 16 }]}> 
-            <View style={styles.summaryRow}>
-              <Text style={[styles.summaryLabel, { color: theme.colors.textSecondary }]}>
-                Subtotal ({totalItems} items)
-              </Text>
-              <Text style={[styles.summaryValue, { color: theme.colors.text }]}>
-                {order.currency} {order.total.toFixed(2)}
-              </Text>
-            </View>
-            
-            <View style={styles.summaryRow}>
-              <Text style={[styles.summaryLabel, { color: theme.colors.textSecondary }]}>
-                Shipping
-              </Text>
-              <Text style={[styles.summaryValue, { color: theme.colors.text }]}>
-                {order.shippingFee ? `${order.currency} ${order.shippingFee.toFixed(2)}` : 'Free'}
-              </Text>
-            </View>
-            
+            {[
+              { label: `Subtotal (${totalItems} ${totalItems === 1 ? 'item' : 'items'})`, value: money(subtotal) },
+              { label: 'Shipping', value: shipping > 0 ? money(shipping) : 'Free' },
+              ...(tax > 0 ? [{ label: 'Tax', value: money(tax) }] : []),
+              ...(discount > 0 ? [{ label: 'Discount', value: `−${money(discount)}` }] : []),
+            ].map((row) => (
+              <View key={row.label} style={styles.summaryRow}>
+                <Text style={[styles.summaryLabel, { color: theme.colors.textSecondary }]}>{row.label}</Text>
+                <Text style={[styles.summaryValue, { color: theme.colors.text }]}>{row.value}</Text>
+              </View>
+            ))}
+
             <View style={[styles.summaryRow, styles.totalRow]}>
               <Text style={[styles.totalLabel, { color: theme.colors.text }]}>
                 Total
               </Text>
               <Text style={[styles.totalValue, { color: theme.colors.text }]}>
-                {order.currency} {(order.total + (order.shippingFee || 0)).toFixed(2)}
+                {money(order.total)}
               </Text>
             </View>
           </View>
@@ -499,6 +551,10 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 8,
     marginRight: 12,
+  },
+  itemImageEmpty: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   itemImageCompact: {
     width: 52,

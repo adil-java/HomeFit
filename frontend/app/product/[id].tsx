@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -34,6 +34,45 @@ import { addComment, deleteComment, makeSelectCommentsByProductId } from '@/stor
 import { ARPreviewButton } from '@/components/ARPreviewButton';
 import Toast from 'react-native-toast-message';
 import HeaderBackButton from '@/components/Shared/HeaderBackButton';
+import { apiService } from '@/services/api';
+
+const toList = (v: unknown): any[] => {
+  if (Array.isArray(v)) return v;
+  if (typeof v === 'string') {
+    try {
+      const parsed = JSON.parse(v);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+};
+
+// Same shape for products from the home list and from the server, with safe
+// defaults so an unusual product can't crash the screen.
+const normalizeProduct = (p: any) => {
+  if (!p) return null;
+  const price = Number(p.price) || 0;
+  const comparePrice = Number(p.comparePrice) || 0;
+  const rating = Number(p.rating ?? p.averageRating ?? 0) || 0;
+  return {
+    ...p,
+    price,
+    comparePrice: comparePrice > price ? comparePrice : 0,
+    rating: Math.round(rating * 10) / 10,
+    reviews: Number(p.reviews) || 0,
+    quantity: Number(p.quantity ?? p.stock ?? 0) || 0,
+    description: typeof p.description === 'string' ? p.description : '',
+    images: toList(p.images).filter((u) => typeof u === 'string' && u),
+    tags: toList(p.tags).map(String),
+    modelUrl: p.modelUrl ?? p.ARModelUrl ?? null,
+    variants: toList(p.variants)
+      .filter((v: any) => v?.name)
+      .map((v: any) => ({ ...v, options: toList(v.options).map(String) }))
+      .filter((v: any) => v.options.length > 0),
+  };
+};
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -42,9 +81,35 @@ export default function ProductDetailScreen() {
   const responsiveProductImageHeight = Math.min(Math.max(width * 0.9, 300), 420);
   const { theme } = useTheme();
   const dispatch = useDispatch<AppDispatch>();
-  const product = useSelector((state: RootState) => 
+  const storeProduct = useSelector((state: RootState) =>
     state.products.products.find(p => p.id === id)
   );
+  // Not in the home list (opened from wishlist, a link, or before home loaded,
+  // or hidden from the list) → load it from the server.
+  const [fetchedProduct, setFetchedProduct] = useState<any>(null);
+  const [fetchState, setFetchState] = useState<'idle' | 'loading' | 'missing' | 'error'>('idle');
+  useEffect(() => {
+    if (storeProduct || !id) return;
+    let alive = true;
+    setFetchState('loading');
+    apiService
+      .getProductById(String(id))
+      .then((res: any) => {
+        if (!alive) return;
+        const raw = res?.data?.data ?? res?.data;
+        if (res?.success && raw?.id) {
+          setFetchedProduct({ ...raw, category: raw?.categories?.[0]?.name });
+          setFetchState('idle');
+        } else {
+          setFetchState(/not found/i.test(String(res?.error)) ? 'missing' : 'error');
+        }
+      })
+      .catch(() => alive && setFetchState('error'));
+    return () => {
+      alive = false;
+    };
+  }, [id, storeProduct]);
+  const product: any = useMemo(() => normalizeProduct(storeProduct ?? fetchedProduct), [storeProduct, fetchedProduct]);
   const wishlist = useSelector((state: RootState) => state.wishlist.items);
   // Memoized comments selector to avoid returning a new array every render
   const selectCommentsByProductId = React.useMemo(makeSelectCommentsByProductId, []);
@@ -63,7 +128,7 @@ export default function ProductDetailScreen() {
   
   // Format price with currency
   const formatPrice = (price: number) => {
-    return `Rs. ${price.toFixed(2)}`;
+    return `Rs. ${(Number(price) || 0).toFixed(2)}`;
   };
 
   if (!product) {
@@ -73,7 +138,15 @@ export default function ProductDetailScreen() {
           <HeaderBackButton onPress={() => router.back()} size={24} />
         </View>
         <View style={styles.centeredContainer}>
-          <Text style={[styles.errorText, { color: theme.colors.text }]}>Product not found</Text>
+          {fetchState === 'loading' ? (
+            <ActivityIndicator color={theme.colors.primary} />
+          ) : (
+            <Text style={[styles.errorText, { color: theme.colors.text }]}>
+              {fetchState === 'error'
+                ? "Couldn't load this product. Check your connection and try again."
+                : 'This product is no longer available.'}
+            </Text>
+          )}
         </View>
       </SafeAreaView>
     );
@@ -333,7 +406,7 @@ export default function ProductDetailScreen() {
           {/* Image Indicators */}
           {product.images.length > 1 && (
             <View style={styles.imageIndicators}>
-              {product.images.map((_, index) => (
+              {product.images.map((_: string, index: number) => (
                 <View
                   key={index}
                   style={[
@@ -360,9 +433,11 @@ export default function ProductDetailScreen() {
           <Text style={[styles.productName, { color: theme.colors.text }]}>
             {product.name}
           </Text>
-           <Text style={[styles.description, { color: theme.colors.textSecondary }]}>
+           {!!product.description && (
+            <Text style={[styles.description, { color: theme.colors.textSecondary }]}>
               {product.description}
             </Text>
+           )}
           
           <View style={styles.ratingContainer}>
             <View style={styles.ratingStars}>
@@ -385,7 +460,7 @@ export default function ProductDetailScreen() {
               <Text style={[styles.price, { color: theme.colors.accent, fontSize: 24, fontWeight: '700', fontFamily: 'Manrope_700Bold' }]}> 
                 {formatPrice(product.price)}
               </Text>
-              {product.comparePrice && product.comparePrice > product.price && (
+              {product.comparePrice > 0 && (
                 <Text style={[styles.comparePrice, { color: theme.colors.textSecondary }]}>
                   {formatPrice(product.comparePrice)}
                 </Text>
@@ -469,8 +544,8 @@ export default function ProductDetailScreen() {
           </View>
 
           {/* Product Variants */}
-          {product.variants?.map((variant: any) => (
-            <View key={variant.id} style={[
+          {product.variants.map((variant: any) => (
+            <View key={variant.id || variant.name} style={[
               styles.variantSection, 
               { 
                 borderColor: theme.colors.border,
@@ -585,7 +660,7 @@ export default function ProductDetailScreen() {
             <View style={styles.featuresSection}>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Features</Text>
               <View style={styles.featuresList}>
-                {product.tags.map((tag, index) => (
+                {product.tags.map((tag: string, index: number) => (
                   <View key={index} style={[styles.featureItem, { backgroundColor: theme.colors.surface }]}>
                     <Text style={[styles.featureText, { color: theme.colors.text }]}>{tag}</Text>
                   </View>
