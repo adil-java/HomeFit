@@ -630,6 +630,32 @@ class ApiService {
     }
   }
 
+  /** Edit a product: FormData with a JSON "productData" part + optional "files" (new photos). */
+  async updateProductForm(productId: string, formData: FormData) {
+    try {
+      const headers = await this.getAuthHeaders();
+      // Let fetch set the multipart boundary
+      // @ts-ignore
+      delete headers['Content-Type'];
+      const response = await fetch(`${API_BASE_URL}/products/${productId}`, {
+        method: 'PUT',
+        headers,
+        body: formData,
+      });
+      const json = await response.json().catch(() => ({}));
+      if (!response.ok || json?.success === false) {
+        throw new Error(json?.error || json?.message || 'Could not save your changes');
+      }
+      return { success: true, data: json?.data ?? json };
+    } catch (error) {
+      logger.error('Error updating product:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Could not save your changes',
+      };
+    }
+  }
+
   async updateProduct(productId: string, productData: any, files: any[] = []) {
     try {
       const headers = await this.getAuthHeaders();

@@ -83,7 +83,7 @@ export default function AuthIndex() {
               {/* Logo */}
               <View style={[styles.logoContainer, { backgroundColor: cardBg, width: logoSize, height: logoSize }]}>
                 <Image 
-                  source={require('@/assets/images/LOGO.png')} 
+                  source={require('@/assets/images/logo.png')} 
                   style={styles.logo}
                   resizeMode="contain"
                 />

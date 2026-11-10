@@ -6,6 +6,21 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const prisma = new PrismaClient();
 
 /**
+ * Country for new seller (Express) accounts. Stripe only allows sellers that can
+ * take card payments in the platform's own region, so by default use the
+ * platform account's country. STRIPE_CONNECT_COUNTRY overrides it.
+ */
+let platformCountry = null;
+async function getConnectCountry() {
+  if (process.env.STRIPE_CONNECT_COUNTRY) return process.env.STRIPE_CONNECT_COUNTRY.toUpperCase();
+  if (!platformCountry) {
+    const platform = await stripe.accounts.retrieve();
+    platformCountry = platform.country;
+  }
+  return platformCountry;
+}
+
+/**
  * SELLER ONBOARDING SERVICE
  * Creates Stripe Express account and returns onboarding link
  */
@@ -17,18 +32,28 @@ export async function createConnectAccount(userId, email, businessName, { return
       select: { stripeConnectId: true }
     });
 
-    let account;
-    
+    const country = await getConnectCountry();
+    let account = null;
+
     if (existingUser?.stripeConnectId) {
-      // Use existing Stripe account
-      account = await stripe.accounts.retrieve(existingUser.stripeConnectId);
-    } else {
+      // Reuse the seller's account, unless Stripe rejected it or it was made
+      // for another country and never finished (those can never be activated)
+      const existing = await stripe.accounts.retrieve(existingUser.stripeConnectId).catch(() => null);
+      const rejected = existing?.requirements?.disabled_reason?.startsWith("rejected");
+      const wrongCountry = existing && existing.country !== country && !existing.charges_enabled;
+      if (existing && !rejected && !wrongCountry) {
+        account = existing;
+      } else {
+        logger.debug(`Replacing unusable Stripe account ${existingUser.stripeConnectId} for user ${userId}`);
+      }
+    }
+
+    if (!account) {
       // Create new Stripe account
       account = await stripe.accounts.create({
         type: "express",
-        // Stripe Connect is not available in every country — set
-        // STRIPE_CONNECT_COUNTRY to where your sellers' bank accounts are.
-        country: process.env.STRIPE_CONNECT_COUNTRY || "US",
+        // Must be a country the platform can onboard sellers in (see getConnectCountry)
+        country,
         email,
         business_type: "individual",
         business_profile: {
@@ -126,6 +151,18 @@ export async function getSellerAccountStatus(sellerId) {
   }
 
   const account = await stripe.accounts.retrieve(seller.stripeConnectId);
+
+  // A rejected / wrong-country account can't be finished; show "not set up" so
+  // the seller can start again (onboarding then creates a fresh account).
+  const rejected = account.requirements?.disabled_reason?.startsWith("rejected");
+  const wrongCountry = !account.charges_enabled && account.country !== (await getConnectCountry());
+  if (rejected || wrongCountry) {
+    return {
+      status: "NOT_CONNECTED",
+      onboarded: false,
+      detailsSubmitted: false,
+    };
+  }
 
   // Keep our copy in sync (the webhook may not be configured). Used for the
   // "Verified seller" badge and the onboarding check.

@@ -287,7 +287,17 @@ export const updateProduct = async (req, res) => {
       return res.status(denied.status).json(denied.body);
     }
 
-    const result = await updateProductService(id, req.body, req.files);
+    // The app sends the fields as one JSON "productData" part (same as create)
+    let productData = req.body || {};
+    if (typeof productData.productData === 'string') {
+      try {
+        productData = JSON.parse(productData.productData);
+      } catch {
+        return res.status(400).json({ success: false, error: 'Invalid product data format' });
+      }
+    }
+
+    const result = await updateProductService(id, productData, req.files);
 
     if (!result.success) {
       return res.status(400).json(result);

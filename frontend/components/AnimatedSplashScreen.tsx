@@ -134,7 +134,7 @@ export default function AnimatedSplashScreen({ readyToHide, onFinish }: Animated
         ]}
       >
         <Image
-          source={require('../assets/images/LOGO.png')}
+          source={require('../assets/images/logo.png')}
           style={styles.logo}
           resizeMode="contain"
         />
@@ -172,7 +172,7 @@ export default function AnimatedSplashScreen({ readyToHide, onFinish }: Animated
 const styles = StyleSheet.create({
   container: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, // (StyleSheet.absoluteFillObject was removed in this RN version)
-    // Matches the LOGO.png background color exactly
+    // Matches the logo.png background color exactly
     backgroundColor: '#2f3b4b',
     justifyContent: 'center',
     alignItems: 'center',

@@ -576,107 +576,93 @@ export const deleteProductService = async (id, sellerId) => {
   }
 };
 
-export const updateProduct = async (id, productData, files = []) => {
-  const {
-    name,
-    description,
-    price,
-    comparePrice,
-    cost,
-    sku,
-    barcode,
-    quantity,
-    isActive,
-    isFeatured,
-    images,
-    categoryIds,
-    variants,
-  } = productData;
+export const updateProduct = async (id, productData = {}, files = []) => {
+  // Multipart forms send everything as text; accept JSON strings and "true"/"1".
+  const parseJson = (v) => {
+    if (typeof v !== 'string') return v;
+    try { return JSON.parse(v); } catch { return v; }
+  };
+  const toBool = (v) => (typeof v === 'string' ? v === 'true' || v === '1' : !!v);
+  const has = (k) => productData[k] !== undefined && productData[k] !== null && productData[k] !== '';
 
-  const updateData = { ...productData };
+  // Only these fields can be changed by a seller (never seller, slug, rating…)
+  const data = {};
+  if (has('name')) {
+    data.name = String(productData.name).trim();
+    data.slug = generateSlug(data.name);
+  }
+  if (productData.description !== undefined) data.description = String(productData.description ?? '');
+  if (has('price')) {
+    const price = parseFloat(productData.price);
+    if (!Number.isFinite(price) || price <= 0) return { success: false, error: 'Please enter a valid price' };
+    data.price = price;
+  }
+  if (productData.comparePrice !== undefined) {
+    const v = parseFloat(productData.comparePrice);
+    data.comparePrice = Number.isFinite(v) && v > 0 ? v : null;
+  }
+  if (productData.cost !== undefined) {
+    const v = parseFloat(productData.cost);
+    data.cost = Number.isFinite(v) && v >= 0 ? v : null;
+  }
+  if (has('quantity')) {
+    const q = parseInt(productData.quantity, 10);
+    if (!Number.isInteger(q) || q < 0) return { success: false, error: 'Please enter a valid stock quantity' };
+    data.quantity = q;
+  }
+  if (productData.isActive !== undefined) data.isActive = toBool(productData.isActive);
+  if (productData.isFeatured !== undefined) data.isFeatured = toBool(productData.isFeatured);
 
+  // Images: the ones the seller kept + any newly uploaded files
+  const keptImages = parseJson(productData.images);
+  let newImageUrls = [];
   if (files && files.length > 0) {
-    const imageUploads = files.map(file =>
-      uploadToCloudinary(file.path, 'ecommerce/products')
-    );
-    const uploadedImages = await Promise.all(imageUploads);
-    updateData.images = uploadedImages.map(img => img.url);
+    const uploaded = await Promise.all(files.map((file) => uploadToCloudinary(file.path, 'ecommerce/products')));
+    newImageUrls = uploaded.map((img) => img.url);
+  }
+  if (Array.isArray(keptImages) || newImageUrls.length > 0) {
+    const images = [...(Array.isArray(keptImages) ? keptImages.filter((u) => typeof u === 'string' && u) : []), ...newImageUrls];
+    if (images.length === 0) return { success: false, error: 'Please keep at least one product image' };
+    data.images = images;
   }
 
-  delete updateData.id;
-  delete updateData.slug;
-  delete updateData.createdAt;
-  delete updateData.updatedAt;
-
-  if (name) {
-    updateData.slug = generateSlug(name);
+  // Categories: only ids that exist
+  const categoryIds = parseJson(productData.categoryIds);
+  if (Array.isArray(categoryIds)) {
+    const existing = await prisma.category.findMany({
+      where: { id: { in: categoryIds.map(String) } },
+      select: { id: true },
+    });
+    data.categories = { set: existing.map((c) => ({ id: c.id })) };
   }
 
-  if (price) updateData.price = parseFloat(price);
-  if (comparePrice) updateData.comparePrice = parseFloat(comparePrice);
-  if (cost) updateData.cost = parseFloat(cost);
-  if (quantity) updateData.quantity = parseInt(quantity);
+  // Variants: same shape as create ({ name, value } list → one row per name with options)
+  const variants = parseJson(productData.variants);
+  if (Array.isArray(variants)) {
+    const groups = {};
+    for (const v of variants) {
+      if (!v || !v.name || v.value === undefined) continue;
+      (groups[v.name] ||= new Set()).add(String(v.value));
+    }
+    data.variants = {
+      deleteMany: {},
+      create: Object.entries(groups).map(([name, options]) => ({ name, options: Array.from(options) })),
+    };
+  }
 
   try {
-
-    const [updatedProduct] = await prisma.$transaction([
-
-      prisma.product.update({
-        where: { id },
-        data: {
-          ...updateData,
-          ...(categoryIds && {
-            categories: {
-              set: categoryIds.map((id) => ({ id })),
-            },
-          }),
-        },
-        include: {
-          categories: true,
-          variants: true,
-        },
-      }),
-      ...(variants
-        ? [
-            prisma.variant.deleteMany({
-              where: { productId: id },
-            }),
-          ]
-        : []),
-    ]);
-
-    if (variants && variants.length > 0) {
-      await prisma.variant.createMany({
-        data: variants.map((variant) => ({
-          ...variant,
-          productId: id,
-        })),
-      });
-
-      const productWithVariants = await prisma.product.findUnique({
-        where: { id },
-        include: {
-          categories: true,
-          variants: true,
-        },
-      });
-
-      return {
-        success: true,
-        data: productWithVariants,
-      };
-    }
-
-    return {
-      success: true,
-      data: updatedProduct,
-    };
+    const product = await prisma.product.update({
+      where: { id },
+      data,
+      include: { categories: true, variants: true },
+    });
+    return { success: true, data: product };
   } catch (error) {
     logger.error('Error updating product:', error);
-    return {
-      success: false,
-      error: 'Failed to update product',
-    };
+    if (error?.code === 'P2002') {
+      return { success: false, error: 'Another product already uses this name. Please choose a different name.' };
+    }
+    return { success: false, error: 'Failed to update product' };
   }
 };
 
